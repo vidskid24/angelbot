@@ -1,0 +1,23 @@
+{
+  "name": "angelbot",
+  "version": "1.0.0",
+  "description": "Fifth-Dimensional Wisdom Companion — Discord bot",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "deploy": "node src/bot/deploy-commands.js",
+    "ingest": "node src/rag/run-ingest.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": ["discord", "bot", "wisdom", "companion"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "openai": "^4.52.0",
+    "dotenv": "^16.3.1"
+  }
+}
