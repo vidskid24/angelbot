@@ -6,12 +6,12 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { embed } from '../lib/openai.js';
+import { embed } from '../lib/gemini.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '../..');
 const EMBEDDINGS_PATH = join(ROOT, 'data', 'embeddings.json');
-const DEFAULT_TOP_K = 5;
+const DEFAULT_TOP_K = 6;
 
 function cosineSimilarity(a, b) {
   if (a.length !== b.length) return 0;
@@ -44,7 +44,17 @@ export async function retrieve(query, topK = DEFAULT_TOP_K) {
   const chunks = data.chunks;
   if (!chunks || chunks.length === 0) return '';
 
-  const queryEmbedding = await embed(query);
+  let queryEmbedding;
+  try {
+    queryEmbedding = await embed(query);
+  } catch (err) {
+    const status = Number(err?.status);
+    if (status === 429 || status === 500 || status === 503) {
+      console.warn('RAG retrieval degraded: embedding temporarily unavailable.', err?.message || err);
+      return '';
+    }
+    throw err;
+  }
   const withScore = chunks.map((c) => ({
     text: c.text,
     score: cosineSimilarity(c.embedding, queryEmbedding),

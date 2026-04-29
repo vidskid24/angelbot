@@ -1,97 +1,83 @@
-# AngelBot — Fifth-Dimensional Wisdom Companion
+# AngelBot - Web Companion API
 
-A Discord bot that speaks as a fifth-dimensional wisdom companion: supportive, empowering, and non-authoritarian. It uses a fixed system identity plus optional RAG over your own transcribed or channeled style-guide documents.
+AngelBot now runs as a web API for a WordPress-embedded chat experience gated through Thinkific SSO. It keeps the same wisdom companion, memory, and RAG behavior, but no longer includes Discord runtime paths.
 
 ## Requirements
 
 - Node.js 18+
-- A [Discord application](https://discord.com/developers/applications) (Bot token + Application ID)
-- An [OpenAI API key](https://platform.openai.com/api-keys)
+- A Google AI (Gemini) API key
+- Thinkific school with Custom SSO (JWT) enabled
+- A WordPress page where you embed the chat widget
 
 ## Setup
 
-1. **Clone or open the project** and install dependencies:
+1. Install dependencies:
 
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 
-2. **Configure environment**
+2. Configure environment:
 
-   Copy the example env file and fill in your values:
+```bash
+cp .env.example .env
+```
 
-   ```bash
-   cp .env.example .env
-   ```
+Required `.env` values:
 
-   Edit `.env` and set:
+- `PORT` (default `3000`)
+- `PUBLIC_API_BASE_URL` (public API base URL)
+- `WORDPRESS_CHAT_URL` (WordPress page URL hosting chat)
+- `CORS_ORIGINS` (comma-separated allowed web origins)
+- `APP_SESSION_SECRET` (long random string)
+- `THINKIFIC_SUBDOMAIN` (without `.thinkific.com`)
+- `THINKIFIC_SSO_SIGNING_SECRET`
+- `THINKIFIC_HANDOFF_SECRET`
+- `GEMINI_API_KEY`
 
-   - `DISCORD_BOT_TOKEN` — Bot token from Discord Developer Portal → your app → Bot → Reset Token / Copy
-   - `DISCORD_CLIENT_ID` — Application ID from Discord Developer Portal → your app → General Information → Application ID
-   - `OPENAI_API_KEY` — Your OpenAI API key
+3. Start the API:
 
-   Optional (see `.env.example`):
+```bash
+npm start
+```
 
-   - `OPENAI_CHAT_MODEL` — Chat model (default: `gpt-4o-mini`)
-   - `OPENAI_EMBEDDING_MODEL` — For RAG (default: `text-embedding-3-small`)
-   - `STYLE_GUIDES_PATH` — Folder for style-guide files (default: `data/style-guides`)
-   - `MAX_HISTORY_TURNS` — Conversation history length per channel (default: 10)
-   - `RATE_LIMIT_PER_MINUTE` — Max `/wisdom` requests per user per minute (default: 5)
+4. Health check:
 
-3. **Register the slash command**
+```bash
+curl http://localhost:3000/healthz
+```
 
-   Run once (and again if you change commands):
+## API Routes
 
-   ```bash
-   npm run deploy
-   ```
+Public/auth routes:
 
-4. **Invite the bot to your server**
+- `GET /healthz`
+- `GET /auth/thinkific/start?handoff=...`
+- `GET /auth/thinkific/done?state=...`
+- `POST /auth/thinkific/handoff-url`
 
-   In Discord Developer Portal → your app → OAuth2 → URL Generator:
+Authenticated routes (Bearer app session JWT):
 
-   - Scopes: **bot**
-   - Bot permissions: **Use Application Commands**, **Send Messages**, **Read Message History** (and any you need for the channels it will use)
+- `POST /api/chat/send`
+- `POST /api/memories`
+- `GET /api/memories`
+- `DELETE /api/memories?name=...`
 
-   Open the generated URL in your browser and select the server to invite the bot.
+## WordPress Embed
 
-5. **Start the bot**
+Use `wordpress/angel-chat-widget.js` on your WordPress chat page. After successful Thinkific SSO flow, users are redirected back with a hash token:
 
-   ```bash
-   npm start
-   ```
+- `#angelbot_access_token=<jwt>`
 
-   In Discord, use the `/wisdom` command and enter your message to talk to the companion.
+The widget reads/stores that token and calls `/api/chat/send`.
 
-## Style guides (RAG)
+## Style Guides (RAG)
 
-To shape the bot’s tone with your own material (transcripts, channeled text, etc.):
+Style guide ingestion still works the same:
 
-1. Add `.txt` or `.md` files into `data/style-guides/` (or the path set in `STYLE_GUIDES_PATH`).
-2. Run ingestion so the bot can use them:
+```bash
+npm run ingest
+npm run ingest:new
+```
 
-   ```bash
-   npm run ingest
-   ```
-
-   This chunks the files, computes embeddings, and saves them to `data/embeddings.json`. Re-run after adding or editing style-guide files.
-
-The bot will use the written system prompt plus up to 5 relevant excerpts from these files when answering.
-
-## Scripts
-
-| Command        | Description                                      |
-|----------------|--------------------------------------------------|
-| `npm start`    | Start the Discord bot                            |
-| `npm run deploy` | Register slash commands with Discord (run once) |
-| `npm run ingest` | Chunk and embed style-guide files for RAG       |
-
-## DM usage
-
-The bot works in any channel where it can read and send messages. For private reflection, invite the bot and open a DM; use `/wisdom` there. Conversation history is kept per channel (including each DM channel).
-
-## Troubleshooting
-
-- **“OPENAI_API_KEY is not set”** — Ensure `.env` exists and contains `OPENAI_API_KEY`.
-- **Slash command not visible** — Run `npm run deploy` and wait a few minutes; ensure the bot has “Use Application Commands” and is in the server.
-- **Empty or generic style** — Add files to `data/style-guides/` and run `npm run ingest`.
+Files are read from `data/style-guides` or Dropbox if configured.

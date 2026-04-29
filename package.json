@@ -1,23 +1,33 @@
 {
   "name": "angelbot",
   "version": "1.0.0",
-  "description": "Fifth-Dimensional Wisdom Companion — Discord bot",
+  "description": "Fifth-Dimensional Alchemy Scribe — Web companion API",
   "main": "src/index.js",
   "type": "module",
   "scripts": {
     "start": "node src/index.js",
-    "deploy": "node src/bot/deploy-commands.js",
-    "ingest": "node src/rag/run-ingest.js"
+    "ingest": "node src/rag/run-ingest.js",
+    "ingest:new": "node src/rag/run-ingest.js --new",
+    "metrics:embed": "node scripts/summarize-embed-metrics.js"
   },
   "engines": {
     "node": ">=18"
   },
-  "keywords": ["discord", "bot", "wisdom", "companion"],
+  "keywords": [
+    "web",
+    "thinkific",
+    "wordpress",
+    "wisdom",
+    "companion"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "discord.js": "^14.14.1",
-    "openai": "^4.52.0",
-    "dotenv": "^16.3.1"
+    "@google/generative-ai": "^0.24.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.21.2",
+    "jose": "^5.9.6",
+    "pdf-parse": "^1.1.1"
   }
 }
