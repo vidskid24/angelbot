@@ -11,7 +11,7 @@ export function createChatApiRouter() {
       if (!rateLimitCheck(userId)) {
         res.status(429).json({
           error: 'rate_limited',
-          message: 'You’re pausing to breathe—that’s wise. when you\'re ready, try again.',
+          message: 'You are pausing to breathe-that is wise. When you are ready, try again.',
         });
         return;
       }
@@ -20,7 +20,8 @@ export function createChatApiRouter() {
         res.status(400).json({ error: 'message_required' });
         return;
       }
-      const sessionKey = String(req.body?.sessionId || `web:${userId}:default`).slice(0, 200);
+      const rawSessionId = String(req.body?.sessionId || 'default').slice(0, 120);
+      const sessionKey = `web:${userId}:${rawSessionId}`;
       const out = await processWisdomMessage({ userId, sessionKey, message });
       if (!out.ok) {
         res.status(500).json({ error: out.code || 'error', message: out.text });
@@ -33,7 +34,7 @@ export function createChatApiRouter() {
       res.json({
         kind: 'reply',
         text: out.displayFull,
-        sessionId: sessionKey,
+        sessionId: rawSessionId,
       });
     } catch (e) {
       next(e);

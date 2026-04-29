@@ -1,10 +1,10 @@
 /**
- * HTTP server for WordPress-embedded chat (Thinkific SSO + app session JWT).
+ * HTTP server for WordPress/Thinkific-embedded chat (app session JWT).
  */
 
 import express from 'express';
 import cors from 'cors';
-import { createAuthThinkificRouter } from './routes/auth-thinkific.js';
+import { createAuthBootstrapRouter } from './routes/auth-bootstrap.js';
 import { createChatApiRouter } from './routes/api-chat.js';
 import { createMemoriesApiRouter } from './routes/api-memories.js';
 import { requireSession } from './middleware/require-session.js';
@@ -32,7 +32,7 @@ export function startWebServer() {
     res.json({ ok: true });
   });
 
-  app.use(createAuthThinkificRouter());
+  app.use(createAuthBootstrapRouter());
 
   const api = express.Router();
   api.use(requireSession);
@@ -48,6 +48,6 @@ export function startWebServer() {
   const port = parseInt(process.env.PORT || '3000', 10) || 3000;
   app.listen(port, () => {
     console.log(`AngelBot web API listening on :${port}`);
-    console.log(`Thinkific SSO start: GET /auth/thinkific/start?handoff=...`);
+    console.log('Bootstrap token route: POST /auth/bootstrap');
   });
 }

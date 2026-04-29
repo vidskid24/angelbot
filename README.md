@@ -1,13 +1,12 @@
 # AngelBot - Web Companion API
 
-AngelBot now runs as a web API for a WordPress-embedded chat experience gated through Thinkific SSO. It keeps the same wisdom companion, memory, and RAG behavior, but no longer includes Discord runtime paths.
+AngelBot runs as a web API for an embedded chat experience (WordPress or Thinkific pages). It uses short-lived app bearer tokens from a bootstrap endpoint, preserving per-user memory/history isolation when a stable user ID is supplied.
 
 ## Requirements
 
 - Node.js 18+
-- A Google AI (Gemini) API key
-- Thinkific school with Custom SSO (JWT) enabled
-- A WordPress page where you embed the chat widget
+- Google AI (Gemini) API key
+- A page where you can embed `div#angelbot-chat-root`
 
 ## Setup
 
@@ -27,13 +26,15 @@ Required `.env` values:
 
 - `PORT` (default `3000`)
 - `PUBLIC_API_BASE_URL` (public API base URL)
-- `WORDPRESS_CHAT_URL` (WordPress page URL hosting chat)
+- `WORDPRESS_CHAT_URL` (page URL hosting chat)
 - `CORS_ORIGINS` (comma-separated allowed web origins)
 - `APP_SESSION_SECRET` (long random string)
-- `THINKIFIC_SUBDOMAIN` (without `.thinkific.com`)
-- `THINKIFIC_SSO_SIGNING_SECRET`
-- `THINKIFIC_HANDOFF_SECRET`
 - `GEMINI_API_KEY`
+
+Recommended optional:
+
+- `BOOTSTRAP_ALLOWED_ORIGINS` (explicit allowlist for `/auth/bootstrap`)
+- `APP_BOOTSTRAP_TOKEN_TTL_SECONDS` (default `900`)
 
 3. Start the API:
 
@@ -52,9 +53,7 @@ curl http://localhost:3000/healthz
 Public/auth routes:
 
 - `GET /healthz`
-- `GET /auth/thinkific/start?handoff=...`
-- `GET /auth/thinkific/done?state=...`
-- `POST /auth/thinkific/handoff-url`
+- `POST /auth/bootstrap`
 
 Authenticated routes (Bearer app session JWT):
 
@@ -63,17 +62,16 @@ Authenticated routes (Bearer app session JWT):
 - `GET /api/memories`
 - `DELETE /api/memories?name=...`
 
-## WordPress Embed
+## Embed Notes
 
-Use `wordpress/angel-chat-widget.js` on your WordPress chat page. After successful Thinkific SSO flow, users are redirected back with a hash token:
+Use `wordpress/angel-chat-widget.js` and set:
 
-- `#angelbot_access_token=<jwt>`
+- `window.ANGELBOT_API_BASE`
+- `window.ANGELBOT_USER` with `external_id` or `email`
 
-The widget reads/stores that token and calls `/api/chat/send`.
+The widget requests `/auth/bootstrap`, stores `access_token` in sessionStorage, then calls chat APIs.
 
 ## Style Guides (RAG)
-
-Style guide ingestion still works the same:
 
 ```bash
 npm run ingest

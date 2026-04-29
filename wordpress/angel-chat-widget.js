@@ -1,15 +1,12 @@
 /**
- * Minimal embeddable chat for a WordPress page.
+ * Minimal embeddable chat for a WordPress/Thinkific page.
  *
  * Setup:
- * 1. Host this file or inline it after setting window.ANGELBOT_API_BASE and optionally window.ANGELBOT_SESSION_ID.
- * 2. After Thinkific SSO completes, the app redirects to your page with hash:
- *    #angelbot_access_token=<jwt>
- * 3. The script reads the token from the hash, stores it in sessionStorage, clears the hash.
- *
- * Example (before this script):
- *   window.ANGELBOT_API_BASE = 'https://api.yoursite.com';
- *   window.ANGELBOT_SESSION_ID = 'my-thread-1'; // optional, stable per conversation
+ * 1. Set window.ANGELBOT_API_BASE (required).
+ * 2. Provide user context for bootstrap token issuance:
+ *    window.ANGELBOT_USER = { external_id, email, first_name, last_name };
+ *    - external_id OR email is required
+ * 3. Optional: window.ANGELBOT_SESSION_ID for stable thread id
  */
 
 (function () {
@@ -19,29 +16,41 @@
     return;
   }
 
-  const HASH_KEY = 'angelbot_access_token=';
   const STORAGE_KEY = 'angelbot_access_token';
-
-  function readTokenFromHash() {
-    const h = window.location.hash || '';
-    if (!h.includes(HASH_KEY)) return null;
-    const part = h.slice(1).split('&').find((p) => p.startsWith(HASH_KEY));
-    if (!part) return null;
-    return decodeURIComponent(part.slice(HASH_KEY.length));
-  }
-
-  function bootstrapToken() {
-    const fromHash = readTokenFromHash();
-    if (fromHash) {
-      sessionStorage.setItem(STORAGE_KEY, fromHash);
-      const url = new URL(window.location.href);
-      url.hash = '';
-      history.replaceState(null, '', url.pathname + url.search);
-    }
-  }
 
   function getToken() {
     return sessionStorage.getItem(STORAGE_KEY);
+  }
+
+  function setToken(tok) {
+    sessionStorage.setItem(STORAGE_KEY, tok);
+  }
+
+  async function ensureToken() {
+    const existing = getToken();
+    if (existing) return existing;
+
+    const user = window.ANGELBOT_USER || {};
+    if (!user.external_id && !user.email) {
+      throw new Error('Missing ANGELBOT_USER.external_id or ANGELBOT_USER.email');
+    }
+
+    const res = await fetch(API.replace(/\/$/, '') + '/auth/bootstrap', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        external_id: user.external_id || undefined,
+        email: user.email || undefined,
+        first_name: user.first_name || undefined,
+        last_name: user.last_name || undefined,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.access_token) {
+      throw new Error(data.error || data.message || 'bootstrap_failed');
+    }
+    setToken(data.access_token);
+    return data.access_token;
   }
 
   function mount(rootId) {
@@ -53,10 +62,10 @@
 
     root.innerHTML =
       '<div class="angelbot-chat" style="font-family:system-ui,sans-serif;max-width:42rem">' +
-      '<p id="angelbot-status" style="color:#666;font-size:0.9rem">Not signed in. Open the chat from your course link.</p>' +
+      '<p id="angelbot-status" style="color:#666;font-size:0.9rem">Preparing chat session...</p>' +
       '<div id="angelbot-log" style="border:1px solid #ddd;border-radius:8px;padding:12px;min-height:12rem;max-height:24rem;overflow:auto;background:#fafafa;margin:8px 0"></div>' +
-      '<textarea id="angelbot-input" rows="3" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid #ccc" placeholder="Your reflection or question…"></textarea>' +
-      '<button id="angelbot-send" type="button" style="margin-top:8px;padding:8px 16px;border-radius:8px;border:0;background:#333;color:#fff;cursor:pointer">Send</button>' +
+      '<textarea id="angelbot-input" rows="3" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid #ccc" placeholder="Your reflection or question..."></textarea>' +
+      '<button id="angelbot-send" type="button" style="margin-top:8px;padding:8px 16px;border-radius:8px;border:0;background:#333;color:#fff;cursor:pointer" disabled>Send</button>' +
       '</div>';
 
     const status = root.querySelector('#angelbot-status');
@@ -80,15 +89,21 @@
         .replace(/>/g, '&gt;');
     }
 
-    const token = getToken();
-    if (token) status.textContent = 'Signed in. Session is stored in this browser until you close the tab.';
+    ensureToken()
+      .then(function () {
+        status.textContent = 'Signed in. Your session is active in this browser tab.';
+        btn.disabled = false;
+      })
+      .catch(function (e) {
+        status.textContent = 'Unable to create session: ' + String(e && e.message ? e.message : e);
+      });
 
     async function send() {
       const message = (input.value || '').trim();
       if (!message) return;
       const tok = getToken();
       if (!tok) {
-        status.textContent = 'Missing session. Use your course SSO link to open this page.';
+        status.textContent = 'Missing session token. Refresh and try again.';
         return;
       }
       append('You', message);
@@ -118,12 +133,11 @@
     }
 
     btn.addEventListener('click', send);
-    input.addEventListener('keydown', (ev) => {
+    input.addEventListener('keydown', function (ev) {
       if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) send();
     });
   }
 
-  bootstrapToken();
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
       mount(window.ANGELBOT_ROOT_ID);

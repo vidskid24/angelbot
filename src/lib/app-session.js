@@ -1,5 +1,5 @@
 /**
- * App session JWT for WordPress / browser clients (after Thinkific SSO leg).
+ * App session JWT for WordPress / browser clients (from bootstrap auth flow).
  */
 
 import { SignJWT, jwtVerify } from 'jose';
