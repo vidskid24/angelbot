@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * ANGELBOT_WIDGET_VERSION=3
+ * ANGELBOT_WIDGET_VERSION=4
  *
  * Hosted by the API at GET /angel-chat-widget.js when deployed.
  */
@@ -22,9 +22,28 @@
     sessionStorage.setItem(STORAGE_KEY, tok);
   }
 
+  function clearToken() {
+    sessionStorage.removeItem(STORAGE_KEY);
+  }
+
+  function isTokenExpired(tok) {
+    try {
+      const part = tok.split('.')[1];
+      if (!part) return true;
+      const payload = JSON.parse(
+        atob(part.replace(/-/g, '+').replace(/_/g, '/'))
+      );
+      if (!payload.exp) return false;
+      return payload.exp * 1000 < Date.now() + 30000;
+    } catch {
+      return true;
+    }
+  }
+
   async function ensureToken() {
     const existing = getToken();
-    if (existing) return existing;
+    if (existing && !isTokenExpired(existing)) return existing;
+    if (existing) clearToken();
 
     const user = window.ANGELBOT_USER || {};
     if (!user.external_id && !user.email) {
@@ -137,35 +156,48 @@
 
     setInputEnabled(false);
 
+    async function postChat(message, token) {
+      const sessionId = window.ANGELBOT_SESSION_ID || undefined;
+      const res = await fetch(API.replace(/\/$/, '') + '/api/chat/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + token,
+        },
+        body: JSON.stringify({ message, sessionId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      return { res, data };
+    }
+
     async function send() {
       if (!ready || sending) return;
       const message = (input.value || '').trim();
       if (!message) return;
-      const tok = getToken();
-      if (!tok) {
-        status.textContent = 'Missing session token. Refresh and try again.';
-        return;
-      }
       sending = true;
       setInputEnabled(false);
       append('You', message);
       input.value = '';
       try {
-        const sessionId = window.ANGELBOT_SESSION_ID || undefined;
-        const res = await fetch(API.replace(/\/$/, '') + '/api/chat/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: 'Bearer ' + tok,
-          },
-          body: JSON.stringify({ message, sessionId }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          append('System', data.message || data.error || 'Request failed');
+        let tok = await ensureToken();
+        let result = await postChat(message, tok);
+        if (
+          result.res.status === 401 &&
+          (result.data.error === 'invalid_token' || result.data.error === 'missing_bearer_token')
+        ) {
+          clearToken();
+          tok = await ensureToken();
+          result = await postChat(message, tok);
+        }
+        if (!result.res.ok) {
+          if (result.data.error === 'invalid_token') {
+            clearToken();
+            status.textContent = 'Session expired. Refresh the page to sign in again.';
+          }
+          append('System', result.data.message || result.data.error || 'Request failed');
           return;
         }
-        append('Companion', data.text || '');
+        append('Companion', result.data.text || '');
       } catch (e) {
         append('System', String(e && e.message ? e.message : e));
       } finally {
