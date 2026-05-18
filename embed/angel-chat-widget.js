@@ -75,11 +75,16 @@
     const input = root.querySelector('#angelbot-input');
     const btn = root.querySelector('#angelbot-send');
 
-    function append(role, text) {
+    function append(role, text, html) {
       const d = document.createElement('div');
       d.style.margin = '8px 0';
       d.style.whiteSpace = 'pre-wrap';
-      const body = role === 'You' ? escapeHtml(text) : formatMessageHtml(text);
+      const body =
+        role === 'You'
+          ? escapeHtml(text)
+          : html != null && html !== ''
+            ? html
+            : formatMessageHtml(text);
       d.innerHTML = '<strong>' + escapeHtml(role) + '</strong><br/>' + body;
       log.appendChild(d);
       log.scrollTop = log.scrollHeight;
@@ -94,8 +99,13 @@
 
     /** Escape HTML, then render **bold** markers as <strong> for web chat. */
     function formatMessageHtml(s) {
-      const escaped = escapeHtml(s);
-      return escaped.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+      let escaped = escapeHtml(s);
+      let prev;
+      do {
+        prev = escaped;
+        escaped = escaped.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
+      } while (escaped !== prev);
+      return escaped;
     }
 
     ensureToken()
@@ -133,7 +143,7 @@
           append('System', data.message || data.error || 'Request failed');
           return;
         }
-        append('Companion', data.text || '');
+        append('Companion', data.text || '', data.html);
       } catch (e) {
         append('System', String(e && e.message ? e.message : e));
       } finally {

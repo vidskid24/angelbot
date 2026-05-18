@@ -157,17 +157,14 @@ export async function processWisdomMessage({ userId, sessionKey, message }) {
     const retrievalQuery = buildRetrievalQuery(message, history);
     const styleExcerpts = await retrieve(retrievalQuery, 2);
     const reply = await getWisdomReply(message, history, styleExcerpts || null, savedContext, userSeemsToBeConcluding);
-    const questionText = message.replace(/\*/g, '\\*');
-    const header = `You shared: *${questionText}*\n\n`;
-    const displayFull = header + reply;
     appendTurn(sessionKey, message, reply);
     if (userSeemsToBeConcluding) saveOfferPendingBySession.set(sessionKey, true);
     return {
       ok: true,
       kind: 'reply',
       assistantReply: reply,
-      displayFull,
-      chunks: chunkDisplayContent(displayFull),
+      displayFull: reply,
+      chunks: chunkDisplayContent(reply),
     };
   } catch (err) {
     console.error('Wisdom reply error:', err);

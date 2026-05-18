@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { check as rateLimitCheck } from '../../bot/rate-limit.js';
+import { formatChatTextHtml } from '../../lib/format-chat-text.js';
 import { processWisdomMessage } from '../../services/chat-service.js';
 
 export function createChatApiRouter() {
@@ -28,12 +29,13 @@ export function createChatApiRouter() {
         return;
       }
       if (out.kind === 'memory_saved') {
-        res.json({ kind: 'memory_saved', text: out.text });
+        res.json({ kind: 'memory_saved', text: out.text, html: formatChatTextHtml(out.text) });
         return;
       }
       res.json({
         kind: 'reply',
-        text: out.displayFull,
+        text: out.assistantReply,
+        html: formatChatTextHtml(out.assistantReply),
         sessionId: rawSessionId,
       });
     } catch (e) {
