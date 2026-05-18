@@ -1,5 +1,7 @@
 /**
- * Minimal embeddable chat for a WordPress/Thinkific page.
+ * Minimal embeddable chat for a Thinkific (or any) site page.
+ *
+ * Hosted by the API at GET /angel-chat-widget.js when deployed.
  *
  * Setup:
  * 1. Set window.ANGELBOT_API_BASE (required).

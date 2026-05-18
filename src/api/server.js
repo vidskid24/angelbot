@@ -1,13 +1,18 @@
 /**
- * HTTP server for WordPress/Thinkific-embedded chat (app session JWT).
+ * HTTP server for Thinkific-embedded chat (app session JWT).
  */
 
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { createAuthBootstrapRouter } from './routes/auth-bootstrap.js';
 import { createChatApiRouter } from './routes/api-chat.js';
 import { createMemoriesApiRouter } from './routes/api-memories.js';
 import { requireSession } from './middleware/require-session.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const WIDGET_PATH = path.join(__dirname, '../../embed/angel-chat-widget.js');
 
 function parseCorsOrigins() {
   const raw = process.env.CORS_ORIGINS || '';
@@ -32,6 +37,14 @@ export function startWebServer() {
     res.json({ ok: true });
   });
 
+  app.get('/angel-chat-widget.js', (_req, res, next) => {
+    res.type('application/javascript');
+    res.set('Cache-Control', 'public, max-age=300');
+    res.sendFile(WIDGET_PATH, (err) => {
+      if (err) next(err);
+    });
+  });
+
   app.use(createAuthBootstrapRouter());
 
   const api = express.Router();
@@ -49,5 +62,6 @@ export function startWebServer() {
   app.listen(port, () => {
     console.log(`AngelBot web API listening on :${port}`);
     console.log('Bootstrap token route: POST /auth/bootstrap');
+    console.log('Embed widget: GET /angel-chat-widget.js');
   });
 }

@@ -1,5 +1,5 @@
 /**
- * App session JWT for WordPress / browser clients (from bootstrap auth flow).
+ * App session JWT for browser clients (from bootstrap auth flow).
  */
 
 import { SignJWT, jwtVerify } from 'jose';

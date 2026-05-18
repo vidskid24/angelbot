@@ -1,12 +1,12 @@
 # AngelBot - Web Companion API
 
-AngelBot runs as a web API for an embedded chat experience (WordPress or Thinkific pages). It uses short-lived app bearer tokens from a bootstrap endpoint, preserving per-user memory/history isolation when a stable user ID is supplied.
+AngelBot runs as a web API for an embedded chat experience on Thinkific site pages. It uses short-lived app bearer tokens from a bootstrap endpoint, preserving per-user memory/history isolation when a stable user ID is supplied.
 
 ## Requirements
 
 - Node.js 18+
 - Google AI (Gemini) API key
-- A page where you can embed `div#angelbot-chat-root`
+- A Thinkific page with `<div id="angelbot-chat-root">` and a hosted copy of `embed/angel-chat-widget.js`
 
 ## Setup
 
@@ -24,16 +24,14 @@ cp .env.example .env
 
 Required `.env` values:
 
-- `PORT` (default `3000`)
-- `PUBLIC_API_BASE_URL` (public API base URL)
-- `WORDPRESS_CHAT_URL` (page URL hosting chat)
-- `CORS_ORIGINS` (comma-separated allowed web origins)
 - `APP_SESSION_SECRET` (long random string)
 - `GEMINI_API_KEY`
+- `CORS_ORIGINS` (comma-separated allowed web origins, e.g. `https://courses.masteringalchemy.com`)
 
-Recommended optional:
+Optional:
 
-- `BOOTSTRAP_ALLOWED_ORIGINS` (explicit allowlist for `/auth/bootstrap`)
+- `PORT` (default `3000`; often set by the host)
+- `BOOTSTRAP_ALLOWED_ORIGINS` (explicit allowlist for `/auth/bootstrap`; defaults to `CORS_ORIGINS`)
 - `APP_BOOTSTRAP_TOKEN_TTL_SECONDS` (default `900`)
 
 3. Start the API:
@@ -62,14 +60,53 @@ Authenticated routes (Bearer app session JWT):
 - `GET /api/memories`
 - `DELETE /api/memories?name=...`
 
-## Embed Notes
+## Thinkific embed
 
-Use `wordpress/angel-chat-widget.js` and set:
+**Page body** (on the chat page only):
 
-- `window.ANGELBOT_API_BASE`
-- `window.ANGELBOT_USER` with `external_id` or `email`
+```html
+<div id="angelbot-chat-root"></div>
+```
 
-The widget requests `/auth/bootstrap`, stores `access_token` in sessionStorage, then calls chat APIs.
+**Site footer** (runs on all pages; loads the widget only when the mount div exists):
+
+```html
+<script>
+(function () {
+  function initAngelBot() {
+    if (!document.getElementById('angelbot-chat-root')) return;
+
+    var api = 'https://your-app.onrender.com';
+    window.ANGELBOT_API_BASE = api;
+    window.ANGELBOT_USER = {
+      external_id: 'test-user-123',
+      email: 'test@example.com'
+    };
+
+    var s = document.createElement('script');
+    s.src = api + '/angel-chat-widget.js';
+    s.defer = true;
+    document.head.appendChild(s);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAngelBot);
+  } else {
+    initAngelBot();
+  }
+})();
+</script>
+```
+
+Replace `https://your-app.onrender.com` with your deployed API origin (no trailing slash). The API serves the widget at `GET /angel-chat-widget.js`. You can still host `embed/angel-chat-widget.js` elsewhere if you prefer.
+
+Widget globals:
+
+- `window.ANGELBOT_API_BASE` — API origin, e.g. `https://your-app.onrender.com`
+- `window.ANGELBOT_USER` — `{ external_id, email, first_name, last_name }`; `external_id` or `email` required
+- `window.ANGELBOT_SESSION_ID` — optional stable thread id
+
+The widget calls `POST /auth/bootstrap`, stores `access_token` in `sessionStorage`, then calls chat APIs.
 
 ## Style Guides (RAG)
 
