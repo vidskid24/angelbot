@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * ANGELBOT_WIDGET_VERSION=5
+ * ANGELBOT_WIDGET_VERSION=7
  *
  * Hosted by the API at GET /angel-chat-widget.js when deployed.
  */
@@ -115,7 +115,7 @@
       '<div class="angelbot-chat" style="font-family:system-ui,sans-serif;max-width:42rem">' +
       '<p id="angelbot-status" style="color:#666;font-size:0.9rem">Preparing chat session...</p>' +
       '<div id="angelbot-log" style="border:1px solid #ddd;border-radius:8px;padding:12px;min-height:12rem;max-height:24rem;overflow:auto;background:#fafafa;margin:8px 0"></div>' +
-      '<textarea id="angelbot-input" rows="3" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid #ccc" placeholder="Your reflection or question… (Enter to send, Shift+Enter for new line)"></textarea>' +
+      '<textarea id="angelbot-input" rows="3" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid #ccc" placeholder="Write a message..."></textarea>' +
       '</div>';
 
     const status = root.querySelector('#angelbot-status');
@@ -189,7 +189,7 @@
 
     ensureToken()
       .then(function () {
-        status.textContent = 'Signed in. Your session is active in this browser tab.';
+        status.textContent = "You're Signed in.";
         ready = true;
         setInputEnabled(true);
       })
