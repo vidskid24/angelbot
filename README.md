@@ -84,7 +84,7 @@ Authenticated routes (Bearer app session JWT):
     };
 
     var s = document.createElement('script');
-    s.src = api + '/angel-chat-widget.js?v=4';
+    s.src = api + '/angel-chat-widget.js?v=5';
     s.defer = true;
     document.head.appendChild(s);
   }

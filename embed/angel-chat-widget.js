@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * ANGELBOT_WIDGET_VERSION=4
+ * ANGELBOT_WIDGET_VERSION=5
  *
  * Hosted by the API at GET /angel-chat-widget.js when deployed.
  */
@@ -103,7 +103,15 @@
     }
 
     root.innerHTML =
-      '<style>.angelbot-chat .angelbot-bold{font-weight:700!important}</style>' +
+      '<style>' +
+      '.angelbot-chat .angelbot-bold{font-weight:700!important}' +
+      '.angelbot-thinking{margin:8px 0;color:#666;font-size:0.95rem}' +
+      '.angelbot-thinking-dots{display:inline-block;margin-left:2px}' +
+      '.angelbot-thinking-dots span{display:inline-block;animation:angelbot-dot 1.2s ease-in-out infinite}' +
+      '.angelbot-thinking-dots span:nth-child(2){animation-delay:.15s}' +
+      '.angelbot-thinking-dots span:nth-child(3){animation-delay:.3s}' +
+      '@keyframes angelbot-dot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}' +
+      '</style>' +
       '<div class="angelbot-chat" style="font-family:system-ui,sans-serif;max-width:42rem">' +
       '<p id="angelbot-status" style="color:#666;font-size:0.9rem">Preparing chat session...</p>' +
       '<div id="angelbot-log" style="border:1px solid #ddd;border-radius:8px;padding:12px;min-height:12rem;max-height:24rem;overflow:auto;background:#fafafa;margin:8px 0"></div>' +
@@ -115,9 +123,45 @@
     const input = root.querySelector('#angelbot-input');
     let ready = false;
     let sending = false;
+    let thinkingEl = null;
 
     function setInputEnabled(on) {
       input.disabled = !on;
+    }
+
+    function removeThinking() {
+      if (thinkingEl && thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
+      thinkingEl = null;
+      const stale = log.querySelector('#angelbot-thinking');
+      if (stale) stale.remove();
+    }
+
+    function showThinking() {
+      removeThinking();
+      const d = document.createElement('div');
+      d.id = 'angelbot-thinking';
+      d.className = 'angelbot-thinking';
+
+      const label = document.createElement('strong');
+      label.textContent = 'Companion';
+      d.appendChild(label);
+      d.appendChild(document.createElement('br'));
+
+      const line = document.createElement('span');
+      line.appendChild(document.createTextNode('Reflecting'));
+      const dots = document.createElement('span');
+      dots.className = 'angelbot-thinking-dots';
+      for (let i = 0; i < 3; i++) {
+        const dot = document.createElement('span');
+        dot.textContent = '.';
+        dots.appendChild(dot);
+      }
+      line.appendChild(dots);
+      d.appendChild(line);
+
+      thinkingEl = d;
+      log.appendChild(d);
+      log.scrollTop = log.scrollHeight;
     }
 
     function append(role, text) {
@@ -178,6 +222,7 @@
       setInputEnabled(false);
       append('You', message);
       input.value = '';
+      showThinking();
       try {
         let tok = await ensureToken();
         let result = await postChat(message, tok);
@@ -201,6 +246,7 @@
       } catch (e) {
         append('System', String(e && e.message ? e.message : e));
       } finally {
+        removeThinking();
         sending = false;
         setInputEnabled(true);
         input.focus();
