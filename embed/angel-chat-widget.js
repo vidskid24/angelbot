@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * ANGELBOT_WIDGET_VERSION=9
+ * ANGELBOT_WIDGET_VERSION=10
  *
  * Hosted by the API at GET /angel-chat-widget.js when deployed.
  */
@@ -13,6 +13,25 @@
   }
 
   const STORAGE_KEY = 'angelbot_access_token';
+
+  const WELCOME_PROMPTS = [
+    "What's present for you right now?",
+    'Share what is on your heart, or simply begin wherever you are.',
+    'Where would you like to begin today?',
+    'What are you noticing in your body or in your field?',
+    'Bring whatever is here — there is nothing to figure out.',
+    'What reflection or question is alive for you?',
+    'Take a breath. What wants your attention?',
+    'How are you arriving in your space today?',
+    'What would feel supportive to explore together?',
+    'What thread are you sitting with today?',
+    'What would you like to be witnessed in today?',
+    'Is there a feeling, pattern, or moment you would like to unpack?',
+  ];
+
+  function pickWelcomePrompt() {
+    return WELCOME_PROMPTS[Math.floor(Math.random() * WELCOME_PROMPTS.length)];
+  }
 
   function getToken() {
     return sessionStorage.getItem(STORAGE_KEY);
@@ -104,8 +123,11 @@
 
     root.innerHTML =
       '<style>' +
-      '.angelbot-chat{font-family:system-ui,-apple-system,sans-serif;max-width:600px;width:100%;color:#1a1a1a}' +
+      '.angelbot-chat{font-family:system-ui,-apple-system,sans-serif;max-width:600px;width:100%;margin:0 auto;padding:0 16px;box-sizing:border-box;color:#1a1a1a}' +
       '.angelbot-chat .angelbot-bold{font-weight:700!important}' +
+      '#angelbot-welcome{margin:0 0 20px}' +
+      '.angelbot-hello{font-size:clamp(2.25rem,7vw,3.25rem);font-weight:400;margin:0 0 14px;line-height:1.15;letter-spacing:-0.02em}' +
+      '.angelbot-welcome-prompt{font-size:1.05rem;line-height:1.55;color:#444;margin:0}' +
       '#angelbot-status{margin:0 0 12px;color:#666;font-size:0.9rem;text-align:center}' +
       '#angelbot-log{min-height:12rem;max-height:28rem;overflow:auto;padding:4px 0;margin:0 0 16px}' +
       '.angelbot-msg-user{display:flex;justify-content:flex-end;margin:12px 0}' +
@@ -123,14 +145,29 @@
       '</style>' +
       '<div class="angelbot-chat">' +
       '<p id="angelbot-status">Preparing chat session...</p>' +
+      '<div id="angelbot-welcome"></div>' +
       '<div id="angelbot-log"></div>' +
       '<textarea id="angelbot-input" rows="2" placeholder="Write a message..."></textarea>' +
       '</div>';
 
     const status = root.querySelector('#angelbot-status');
+    const welcome = root.querySelector('#angelbot-welcome');
     const log = root.querySelector('#angelbot-log');
     const input = root.querySelector('#angelbot-input');
     let ready = false;
+
+    function showWelcome() {
+      const hello = document.createElement('p');
+      hello.className = 'angelbot-hello';
+      hello.textContent = 'Hello.';
+      const prompt = document.createElement('p');
+      prompt.className = 'angelbot-welcome-prompt';
+      prompt.textContent = pickWelcomePrompt();
+      welcome.appendChild(hello);
+      welcome.appendChild(prompt);
+    }
+
+    showWelcome();
     let sending = false;
     let thinkingEl = null;
 
