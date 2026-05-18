@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * ANGELBOT_WIDGET_VERSION=7
+ * ANGELBOT_WIDGET_VERSION=9
  *
  * Hosted by the API at GET /angel-chat-widget.js when deployed.
  */
@@ -104,18 +104,27 @@
 
     root.innerHTML =
       '<style>' +
+      '.angelbot-chat{font-family:system-ui,-apple-system,sans-serif;max-width:600px;width:100%;color:#1a1a1a}' +
       '.angelbot-chat .angelbot-bold{font-weight:700!important}' +
-      '.angelbot-thinking{margin:8px 0;color:#666;font-size:0.95rem}' +
+      '#angelbot-status{margin:0 0 12px;color:#666;font-size:0.9rem;text-align:center}' +
+      '#angelbot-log{min-height:12rem;max-height:28rem;overflow:auto;padding:4px 0;margin:0 0 16px}' +
+      '.angelbot-msg-user{display:flex;justify-content:flex-end;margin:12px 0}' +
+      '.angelbot-msg-user .angelbot-bubble{background:#e8e4dc;border-radius:14px;padding:12px 16px;max-width:85%;line-height:1.5;white-space:pre-wrap}' +
+      '.angelbot-msg-bot{margin:16px 0;line-height:1.55;white-space:pre-wrap;max-width:100%}' +
+      '.angelbot-msg-system{margin:12px 0;padding:10px 12px;border-radius:8px;background:#f0ebe3;color:#5c5348;font-size:0.9rem;line-height:1.45}' +
+      '.angelbot-thinking{margin:16px 0;color:#666;font-size:0.95rem}' +
       '.angelbot-thinking-dots{display:inline-block;margin-left:2px}' +
       '.angelbot-thinking-dots span{display:inline-block;animation:angelbot-dot 1.2s ease-in-out infinite}' +
       '.angelbot-thinking-dots span:nth-child(2){animation-delay:.15s}' +
       '.angelbot-thinking-dots span:nth-child(3){animation-delay:.3s}' +
       '@keyframes angelbot-dot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}' +
+      '#angelbot-input{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid #ddd;background:#fff;font:inherit;font-size:1rem;resize:vertical}' +
+      '#angelbot-input:focus{outline:2px solid #c9c0b5;outline-offset:1px;border-color:#c9c0b5}' +
       '</style>' +
-      '<div class="angelbot-chat" style="font-family:system-ui,sans-serif;max-width:42rem">' +
-      '<p id="angelbot-status" style="color:#666;font-size:0.9rem">Preparing chat session...</p>' +
-      '<div id="angelbot-log" style="border:1px solid #ddd;border-radius:8px;padding:12px;min-height:12rem;max-height:24rem;overflow:auto;background:#fafafa;margin:8px 0"></div>' +
-      '<textarea id="angelbot-input" rows="3" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid #ccc" placeholder="Write a message..."></textarea>' +
+      '<div class="angelbot-chat">' +
+      '<p id="angelbot-status">Preparing chat session...</p>' +
+      '<div id="angelbot-log"></div>' +
+      '<textarea id="angelbot-input" rows="2" placeholder="Write a message..."></textarea>' +
       '</div>';
 
     const status = root.querySelector('#angelbot-status');
@@ -140,12 +149,7 @@
       removeThinking();
       const d = document.createElement('div');
       d.id = 'angelbot-thinking';
-      d.className = 'angelbot-thinking';
-
-      const label = document.createElement('strong');
-      label.textContent = 'Companion';
-      d.appendChild(label);
-      d.appendChild(document.createElement('br'));
+      d.className = 'angelbot-thinking angelbot-msg-bot';
 
       const line = document.createElement('span');
       line.appendChild(document.createTextNode('Reflecting'));
@@ -165,31 +169,39 @@
     }
 
     function append(role, text) {
-      const d = document.createElement('div');
-      d.style.margin = '8px 0';
-      d.style.whiteSpace = 'pre-wrap';
+      const isUser = role === 'You';
+      const isSystem = role === 'System';
 
-      const label = document.createElement('strong');
-      label.textContent = role;
-      d.appendChild(label);
-      d.appendChild(document.createElement('br'));
+      const row = document.createElement('div');
+      row.className = isUser
+        ? 'angelbot-msg-user'
+        : isSystem
+          ? 'angelbot-msg-system'
+          : 'angelbot-msg-bot';
 
-      const body = document.createElement('span');
-      body.className = 'angelbot-message-body';
-      if (role === 'You') {
-        body.textContent = text;
+      if (isUser) {
+        const bubble = document.createElement('div');
+        bubble.className = 'angelbot-bubble';
+        bubble.textContent = text;
+        row.appendChild(bubble);
       } else {
-        appendFormattedContent(body, text);
+        const body = document.createElement('div');
+        body.className = 'angelbot-message-body';
+        if (isSystem) {
+          body.textContent = text;
+        } else {
+          appendFormattedContent(body, text);
+        }
+        row.appendChild(body);
       }
-      d.appendChild(body);
 
-      log.appendChild(d);
+      log.appendChild(row);
       log.scrollTop = log.scrollHeight;
     }
 
     ensureToken()
       .then(function () {
-        status.textContent = "You're Signed in.";
+        status.textContent = "You're Signed In";
         ready = true;
         setInputEnabled(true);
       })
