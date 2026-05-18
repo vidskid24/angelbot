@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * ANGELBOT_WIDGET_VERSION=10
+ * ANGELBOT_WIDGET_VERSION=13
  *
  * Hosted by the API at GET /angel-chat-widget.js when deployed.
  */
@@ -31,6 +31,18 @@
 
   function pickWelcomePrompt() {
     return WELCOME_PROMPTS[Math.floor(Math.random() * WELCOME_PROMPTS.length)];
+  }
+
+  function isLiquidPlaceholder(value) {
+    const s = String(value || '').trim();
+    return !s || s.includes('{{') || s.includes('}}');
+  }
+
+  function getDisplayName() {
+    const user = window.ANGELBOT_USER || {};
+    const first = String(user.first_name || '').trim();
+    if (!isLiquidPlaceholder(first)) return first;
+    return 'friend';
   }
 
   function getToken() {
@@ -159,7 +171,7 @@
     function showWelcome() {
       const hello = document.createElement('p');
       hello.className = 'angelbot-hello';
-      hello.textContent = 'Hello.';
+      hello.textContent = 'Hello, ' + getDisplayName() + '.';
       const prompt = document.createElement('p');
       prompt.className = 'angelbot-welcome-prompt';
       prompt.textContent = pickWelcomePrompt();
