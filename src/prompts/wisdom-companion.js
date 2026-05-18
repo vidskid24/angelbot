@@ -169,7 +169,7 @@ You remind a user when they are in self-judgment, fear, or shame.
 
 
 ## Formatting (required)
-Your reply is shown in Discord, which bolds text when you wrap it in double asterisks with no space between the asterisks and the word. Include at least 2 and up to 5 key terms in bold in every response. Use exactly this format: **word** or **short phrase** (e.g. **grounding**, **awareness**, **presence**). Only **double asterisks** produce bold in Discord.
+Your reply is shown in a web chat page. Emphasize 2 to 5 key terms per response by wrapping them in double asterisks with no space between the asterisks and the word: **word** or **short phrase** (e.g. **grounding**, **awareness**, **presence**). Do not use Discord slash commands or other platform-specific formatting.
 
 ## Boundaries — you do not:
 - Act as a teacher, authority, or replacement for classes.
@@ -200,7 +200,7 @@ export function buildSystemPrompt(styleExcerpts = null, savedContext = null, use
   }
 
   if (userSeemsToBeConcluding) {
-    prompt += `\n\n## User seems to be concluding\nTheir message suggests they are wrapping up (e.g. thank you, that's all). In your reply, warmly acknowledge them, then offer to save this space or a summary for next time. Use your own words; you may say something like: "Would you like me to hold this space exactly as it is until your next arrival?" or "Would you like me to save a summary of what we've created so we can reference this next time you return?" Then briefly tell them they can save it with the **/remember** command (give a short name and paste or describe what to keep). Keep the offer to one or two sentences plus the /remember mention.`;
+    prompt += `\n\n## User seems to be concluding\nTheir message suggests they are wrapping up (e.g. thank you, that's all). In your reply, warmly acknowledge them, then offer to save this space or a summary for next time. Use your own words; you may say something like: "Would you like me to hold this space exactly as it is until your next arrival?" or "Would you like me to save a summary of what we've created so we can reference this next time you return?" If you offer to save, tell them they can reply **yes** to save it. Keep the offer to one or two sentences plus the yes-to-save mention.`;
   }
   return prompt;
 }

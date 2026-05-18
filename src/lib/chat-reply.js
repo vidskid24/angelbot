@@ -1,6 +1,6 @@
 /**
  * Shared post-processing for chat completions.
- * Keeps Discord-facing behavior identical when output hits the token cap.
+ * Appends a follow-up when output hits the token cap (**bold** renders in web embed).
  *
  * @param {string} content - Raw assistant text (may be empty)
  * @param {boolean} truncatedByLength - True when the provider stopped due to max output tokens

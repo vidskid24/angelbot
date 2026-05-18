@@ -79,7 +79,8 @@
       const d = document.createElement('div');
       d.style.margin = '8px 0';
       d.style.whiteSpace = 'pre-wrap';
-      d.innerHTML = '<strong>' + role + '</strong><br/>' + escapeHtml(text);
+      const body = role === 'You' ? escapeHtml(text) : formatMessageHtml(text);
+      d.innerHTML = '<strong>' + escapeHtml(role) + '</strong><br/>' + body;
       log.appendChild(d);
       log.scrollTop = log.scrollHeight;
     }
@@ -89,6 +90,12 @@
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
+    }
+
+    /** Escape HTML, then render **bold** markers as <strong> for web chat. */
+    function formatMessageHtml(s) {
+      const escaped = escapeHtml(s);
+      return escaped.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
     }
 
     ensureToken()
