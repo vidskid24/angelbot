@@ -75,16 +75,11 @@
     const input = root.querySelector('#angelbot-input');
     const btn = root.querySelector('#angelbot-send');
 
-    function append(role, text, html) {
+    function append(role, text) {
       const d = document.createElement('div');
       d.style.margin = '8px 0';
       d.style.whiteSpace = 'pre-wrap';
-      const body =
-        role === 'You'
-          ? escapeHtml(text)
-          : html != null && html !== ''
-            ? html
-            : formatMessageHtml(text);
+      const body = role === 'You' ? escapeHtml(text) : formatMessageHtml(text);
       d.innerHTML = '<strong>' + escapeHtml(role) + '</strong><br/>' + body;
       log.appendChild(d);
       log.scrollTop = log.scrollHeight;
@@ -97,9 +92,16 @@
         .replace(/>/g, '&gt;');
     }
 
+    function normalizeBoldMarkers(s) {
+      return String(s)
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')
+        .replace(/[\u2217\uFF0A\u2055]/g, '*')
+        .replace(/\\\*\\\*/g, '**');
+    }
+
     /** Escape HTML, then render **bold** markers as <strong> for web chat. */
     function formatMessageHtml(s) {
-      let escaped = escapeHtml(s);
+      let escaped = escapeHtml(normalizeBoldMarkers(s));
       let prev;
       do {
         prev = escaped;
@@ -143,7 +145,7 @@
           append('System', data.message || data.error || 'Request failed');
           return;
         }
-        append('Companion', data.text || '', data.html);
+        append('Companion', data.text || '');
       } catch (e) {
         append('System', String(e && e.message ? e.message : e));
       } finally {

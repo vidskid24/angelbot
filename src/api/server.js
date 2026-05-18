@@ -39,7 +39,7 @@ export function startWebServer() {
 
   app.get('/angel-chat-widget.js', (_req, res, next) => {
     res.type('application/javascript');
-    res.set('Cache-Control', 'public, max-age=60');
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.sendFile(WIDGET_PATH, (err) => {
       if (err) next(err);
     });
