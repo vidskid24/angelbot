@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * ANGELBOT_WIDGET_VERSION=13
+ * ANGELBOT_WIDGET_VERSION=14
  *
  * Hosted by the API at GET /angel-chat-widget.js when deployed.
  */
@@ -13,6 +13,16 @@
   }
 
   const STORAGE_KEY = 'angelbot_access_token';
+
+  const GREETING_WORDS = [
+    'Hello',
+    'Hi',
+    'Hey',
+    'Welcome',
+    'Greetings',
+    'Good day',
+    'Well hello',
+  ];
 
   const WELCOME_PROMPTS = [
     "What's present for you right now?",
@@ -29,8 +39,20 @@
     'Is there a feeling, pattern, or moment you would like to unpack?',
   ];
 
+  function pickRandom(list) {
+    return list[Math.floor(Math.random() * list.length)];
+  }
+
   function pickWelcomePrompt() {
-    return WELCOME_PROMPTS[Math.floor(Math.random() * WELCOME_PROMPTS.length)];
+    return pickRandom(WELCOME_PROMPTS);
+  }
+
+  function pickGreetingWord() {
+    return pickRandom(GREETING_WORDS);
+  }
+
+  function formatWelcomeLine() {
+    return pickGreetingWord() + ', ' + getDisplayName();
   }
 
   function isLiquidPlaceholder(value) {
@@ -171,7 +193,7 @@
     function showWelcome() {
       const hello = document.createElement('p');
       hello.className = 'angelbot-hello';
-      hello.textContent = 'Hello, ' + getDisplayName() + '.';
+      hello.textContent = formatWelcomeLine();
       const prompt = document.createElement('p');
       prompt.className = 'angelbot-welcome-prompt';
       prompt.textContent = pickWelcomePrompt();
