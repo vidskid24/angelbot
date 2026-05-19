@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=27
+ * OMIBOT_WIDGET_VERSION=28
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -227,7 +227,12 @@
       '.omibot-layout{display:flex;align-items:flex-start;gap:0;margin-top:8px}' +
       '.omibot-sidebar{width:11.5rem;flex-shrink:0;border-right:1px solid #e0dcd4;padding:4px 12px 16px 0;box-sizing:border-box}' +
       '.omibot-sidebar .omibot-new-btn,.omibot-sidebar .omibot-thread-list,.omibot-sidebar .omibot-thread-row{width:100%}' +
-      '.omibot-sidebar-head{font-size:0.75rem;color:#666;margin:0 0 8px;line-height:1.35}' +
+      '.omibot-sidebar-head-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;line-height:1.35}' +
+      '.omibot-thread-meta-count{font-size:0.75rem;color:#666;min-width:0}' +
+      '.omibot-tier-badge{font-size:0.7rem;font-weight:600;letter-spacing:0.02em;flex-shrink:0;text-transform:capitalize}' +
+      '.omibot-tier-badge-paid{color:#5c5348}' +
+      '.omibot-tier-link{color:#7a5c1e;text-decoration:none;border-bottom:1px solid rgba(122,92,30,.45);cursor:pointer}' +
+      '.omibot-tier-link:hover{color:#1a1a1a;border-bottom-color:#1a1a1a}' +
       '.omibot-new-btn{width:100%;padding:8px 10px;margin:0 0 10px;border:1px solid #c9c0b5;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:0.85rem}' +
       '.omibot-new-btn:hover:not(:disabled){background:#f7f4ef}' +
       '.omibot-new-btn:disabled{opacity:0.45;cursor:not-allowed}' +
@@ -277,7 +282,10 @@
       '<p id="omibot-status" hidden></p>' +
       '<div class="omibot-layout">' +
       '<aside class="omibot-sidebar">' +
-      '<p class="omibot-sidebar-head" id="omibot-thread-meta">Conversations</p>' +
+      '<div class="omibot-sidebar-head-row">' +
+      '<span class="omibot-thread-meta-count" id="omibot-thread-meta">Conversations</span>' +
+      '<span id="omibot-tier-badge"></span>' +
+      '</div>' +
       '<button type="button" class="omibot-new-btn" id="omibot-new-thread">+ New conversation</button>' +
       '<div class="omibot-thread-list" id="omibot-thread-list"></div>' +
       '</aside>' +
@@ -293,6 +301,11 @@
     const input = root.querySelector('#omibot-input');
     const threadListEl = root.querySelector('#omibot-thread-list');
     const threadMetaEl = root.querySelector('#omibot-thread-meta');
+    const tierBadgeEl = root.querySelector('#omibot-tier-badge');
+    const upgradeUrl =
+      window.OMIBOT_UPGRADE_URL ||
+      window.ANGELBOT_UPGRADE_URL ||
+      'https://courses.masteringalchemy.com/pages/omi-ai';
     const newThreadBtn = root.querySelector('#omibot-new-thread');
     const mainEl = root.querySelector('.omibot-main');
 
@@ -371,8 +384,24 @@
     function updateThreadMeta() {
       const n = threadsMeta.threadCount;
       const cap = threadsMeta.threadLimit;
+      const tier = threadsMeta.tier === 'paid' ? 'paid' : 'free';
       threadMetaEl.textContent = n + ' of ' + cap + ' conversations';
       newThreadBtn.disabled = n >= cap;
+      tierBadgeEl.replaceChildren();
+      if (tier === 'paid') {
+        tierBadgeEl.className = 'omibot-tier-badge omibot-tier-badge-paid';
+        tierBadgeEl.textContent = 'Paid';
+      } else {
+        tierBadgeEl.className = 'omibot-tier-badge';
+        const link = document.createElement('a');
+        link.className = 'omibot-tier-link';
+        link.href = upgradeUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = 'Free';
+        link.title = 'Upgrade to Omi AI paid';
+        tierBadgeEl.appendChild(link);
+      }
     }
 
     function getThreadFromCache(threadId) {
