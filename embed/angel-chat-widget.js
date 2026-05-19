@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * ANGELBOT_WIDGET_VERSION=18
+ * ANGELBOT_WIDGET_VERSION=19
  *
  * Hosted by the API at GET /angel-chat-widget.js when deployed.
  */
@@ -217,6 +217,21 @@
       input.disabled = !on;
     }
 
+    function isNearPageBottom(thresholdPx) {
+      const threshold = thresholdPx == null ? 120 : thresholdPx;
+      const doc = document.documentElement;
+      const scrollY = window.scrollY || doc.scrollTop || 0;
+      const viewportBottom = scrollY + window.innerHeight;
+      const pageBottom = Math.max(doc.scrollHeight, document.body.scrollHeight);
+      return viewportBottom >= pageBottom - threshold;
+    }
+
+    function scrollIntoViewIfNearBottom(el) {
+      if (el && isNearPageBottom()) {
+        el.scrollIntoView({ block: 'end' });
+      }
+    }
+
     function removeThinking() {
       if (thinkingEl && thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
       thinkingEl = null;
@@ -244,7 +259,7 @@
 
       thinkingEl = d;
       log.appendChild(d);
-      d.scrollIntoView({ block: 'end' });
+      scrollIntoViewIfNearBottom(d);
     }
 
     function append(role, text) {
@@ -275,7 +290,7 @@
       }
 
       log.appendChild(row);
-      row.scrollIntoView({ block: 'end' });
+      scrollIntoViewIfNearBottom(row);
     }
 
     ensureToken()
@@ -341,7 +356,7 @@
         removeThinking();
         sending = false;
         setInputEnabled(true);
-        input.focus();
+        input.focus({ preventScroll: true });
       }
     }
 
