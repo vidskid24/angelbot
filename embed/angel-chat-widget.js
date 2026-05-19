@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * ANGELBOT_WIDGET_VERSION=14
+ * ANGELBOT_WIDGET_VERSION=15
  *
  * Hosted by the API at GET /angel-chat-widget.js when deployed.
  */
@@ -160,7 +160,7 @@
       '.angelbot-chat{font-family:system-ui,-apple-system,sans-serif;max-width:600px;width:100%;margin:0 auto;padding:0 16px;box-sizing:border-box;color:#1a1a1a}' +
       '.angelbot-chat .angelbot-bold{font-weight:700!important}' +
       '#angelbot-welcome{margin:0 0 20px}' +
-      '.angelbot-hello{font-size:clamp(2.25rem,7vw,3.25rem);font-weight:400;margin:0 0 14px;line-height:1.15;letter-spacing:-0.02em}' +
+      '.angelbot-hello{font-size:clamp(2rem,6vw,2.75rem);font-weight:400;margin:0 0 14px;line-height:1.15;letter-spacing:-0.02em}' +
       '.angelbot-welcome-prompt{font-size:1.05rem;line-height:1.55;color:#444;margin:0}' +
       '#angelbot-status{margin:0 0 12px;color:#666;font-size:0.9rem;text-align:center}' +
       '#angelbot-log{min-height:12rem;max-height:28rem;overflow:auto;padding:4px 0;margin:0 0 16px}' +
