@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=43
+ * OMIBOT_WIDGET_VERSION=49
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -195,17 +195,24 @@
 
   function appendFormattedContent(parent, text) {
     const normalized = normalizeBoldMarkers(text);
-    const re = /\*\*([^*]+?)\*\*/g;
+    const re = /\*\*([^*]+?)\*\*|\*([^*]+?)\*/g;
     let lastIndex = 0;
     let match;
     while ((match = re.exec(normalized)) !== null) {
       if (match.index > lastIndex) {
         parent.appendChild(document.createTextNode(normalized.slice(lastIndex, match.index)));
       }
-      const strong = document.createElement('strong');
-      strong.className = 'omibot-bold';
-      strong.textContent = match[1];
-      parent.appendChild(strong);
+      if (match[1] !== undefined) {
+        const strong = document.createElement('strong');
+        strong.className = 'omibot-bold';
+        strong.textContent = match[1];
+        parent.appendChild(strong);
+      } else if (match[2] !== undefined) {
+        const em = document.createElement('em');
+        em.className = 'omibot-italic';
+        em.textContent = match[2];
+        parent.appendChild(em);
+      }
       lastIndex = re.lastIndex;
     }
     if (lastIndex < normalized.length) {
@@ -224,6 +231,7 @@
       '<style>' +
       '.omibot-shell{font-family:system-ui,-apple-system,sans-serif;max-width:920px;width:100%;margin:0 auto;padding:0 16px;box-sizing:border-box;color:#1a1a1a}' +
       '.omibot-shell .omibot-bold{font-weight:700!important}' +
+      '.omibot-shell .omibot-italic{font-style:italic}' +
       '.omibot-layout{display:flex;align-items:flex-start;gap:0;margin-top:8px}' +
       '.omibot-sidebar{width:11.5rem;flex-shrink:0;border-right:1px solid #e0dcd4;padding:4px 12px 16px 0;box-sizing:border-box}' +
       '.omibot-sidebar .omibot-new-btn,.omibot-sidebar .omibot-thread-list,.omibot-sidebar .omibot-thread-row{width:100%}' +
