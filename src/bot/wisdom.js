@@ -10,9 +10,10 @@ import { chat } from '../lib/gemini.js';
  * @param {string} userMessage - Current user message
  * @param {Array<{ role: 'user' | 'assistant'; content: string }>} [history] - Prior turns (oldest first)
  * @param {string} [styleExcerpts] - Optional RAG style excerpts to inject into system prompt
+ * @param {string} [userPreferencesBlock] - Optional per-user preference instructions
  * @returns {Promise<string>}
  */
-export async function getWisdomReply(userMessage, history = [], styleExcerpts = null) {
+export async function getWisdomReply(userMessage, history = [], styleExcerpts = null, userPreferencesBlock = null) {
   let styleLimit = 1600;
   let historyTurnsLimit = 8;
   let perTurnLimit = 1200;
@@ -20,12 +21,12 @@ export async function getWisdomReply(userMessage, history = [], styleExcerpts = 
   let styleExcerptsCapped = styleExcerpts ? String(styleExcerpts).slice(0, styleLimit) : null;
   let historyCapped = Array.isArray(history) ? history.slice(-historyTurnsLimit) : [];
   historyCapped = historyCapped.map((t) => ({ role: t.role, content: String(t.content || '').slice(0, perTurnLimit) }));
-  let systemContent = buildSystemPrompt(styleExcerptsCapped);
+  let systemContent = buildSystemPrompt(styleExcerptsCapped, userPreferencesBlock);
 
   while (systemContent.length > 6500 && styleLimit > 600) {
     styleLimit -= 200;
     styleExcerptsCapped = styleExcerpts ? String(styleExcerpts).slice(0, styleLimit) : null;
-    systemContent = buildSystemPrompt(styleExcerptsCapped);
+    systemContent = buildSystemPrompt(styleExcerptsCapped, userPreferencesBlock);
   }
 
   const messages = [{ role: 'system', content: systemContent }];

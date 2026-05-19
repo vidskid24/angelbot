@@ -1,4 +1,5 @@
 import { getPool } from './pool.js';
+import { normalizePreferences } from '../lib/user-preferences.js';
 
 /**
  * @param {string} userId
@@ -11,6 +12,54 @@ export async function getUserProfile(userId) {
     [userId]
   );
   return rows[0] || null;
+}
+
+/**
+ * @param {string} userId
+ * @returns {Promise<{ tone: string; maExperience: string; preferencesCompleted: boolean }>}
+ */
+export async function getUserPreferences(userId) {
+  const { rows } = await getPool().query(
+    `SELECT tone, ma_experience, preferences_completed_at
+     FROM user_profiles WHERE user_id = $1`,
+    [userId]
+  );
+  const row = rows[0];
+  if (!row) {
+    return {
+      ...normalizePreferences({}),
+      preferencesCompleted: false,
+    };
+  }
+  const prefs = normalizePreferences({
+    tone: row.tone,
+    maExperience: row.ma_experience,
+  });
+  return {
+    ...prefs,
+    preferencesCompleted: Boolean(row.preferences_completed_at),
+  };
+}
+
+/**
+ * @param {string} userId
+ * @param {{ tone: string; maExperience: string; markCompleted?: boolean }} prefs
+ */
+export async function updateUserPreferences(userId, prefs) {
+  const { tone, maExperience } = normalizePreferences(prefs);
+  const markCompleted = prefs.markCompleted !== false;
+  await getPool().query(
+    `UPDATE user_profiles SET
+       tone = $2,
+       ma_experience = $3,
+       preferences_completed_at = CASE
+         WHEN $4 THEN COALESCE(preferences_completed_at, NOW())
+         ELSE preferences_completed_at
+       END,
+       updated_at = NOW()
+     WHERE user_id = $1`,
+    [userId, tone, maExperience, markCompleted]
+  );
 }
 
 /**

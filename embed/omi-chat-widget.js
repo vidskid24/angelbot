@@ -290,6 +290,23 @@
       '@keyframes omibot-dot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}' +
       '#omibot-input{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid #ddd;background:#fff;font:inherit;font-size:1rem;resize:vertical}' +
       '#omibot-input:focus{outline:2px solid #c9c0b5;outline-offset:1px;border-color:#c9c0b5}' +
+      '.omibot-prefs-btn{display:block;width:100%;margin:10px 0 0;padding:0;border:none;background:transparent;font:inherit;font-size:0.88rem;color:#7a5c1e;text-align:left;cursor:pointer;text-decoration:underline;text-underline-offset:2px}' +
+      '.omibot-prefs-btn:hover{color:#1a1a1a}' +
+      '.omibot-prefs-overlay{position:fixed;inset:0;z-index:100001;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(26,26,26,.45)}' +
+      '.omibot-prefs-overlay[hidden]{display:none!important}' +
+      '.omibot-prefs-dialog{width:100%;max-width:26rem;background:#fff;border-radius:14px;padding:22px 20px;box-shadow:0 12px 40px rgba(0,0,0,.18)}' +
+      '.omibot-prefs-dialog h2{margin:0 0 8px;font-size:1.35rem;font-weight:500}' +
+      '.omibot-prefs-dialog p{margin:0 0 18px;font-size:0.92rem;line-height:1.5;color:#555}' +
+      '.omibot-prefs-field{margin:0 0 14px}' +
+      '.omibot-prefs-field label{display:block;font-size:0.85rem;font-weight:600;color:#444;margin-bottom:6px}' +
+      '.omibot-prefs-field select{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid #ddd;font:inherit;font-size:0.95rem;background:#fff}' +
+      '.omibot-prefs-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}' +
+      '.omibot-prefs-save{padding:10px 18px;border-radius:10px;border:none;background:#7a5c1e;color:#fff;font:inherit;font-size:0.95rem;cursor:pointer}' +
+      '.omibot-prefs-save:hover{background:#5c4616}' +
+      '.omibot-prefs-save:disabled{opacity:.55;cursor:not-allowed}' +
+      '.omibot-prefs-cancel{padding:10px 14px;border-radius:10px;border:1px solid #ddd;background:#fff;font:inherit;font-size:0.95rem;cursor:pointer;color:#444}' +
+      '.omibot-prefs-cancel:hover{background:#f7f4ef}' +
+      '.omibot-prefs-error{margin:10px 0 0;font-size:0.85rem;color:#8b3a3a}' +
       '@media(max-width:640px){.omibot-layout{flex-direction:column}.omibot-sidebar{width:100%;border-right:none;border-bottom:1px solid #e0dcd4;padding:0 0 12px;margin-bottom:12px}.omibot-main{padding-left:0}}' +
       '</style>' +
       '<div class="omibot-shell">' +
@@ -297,6 +314,7 @@
       '<div class="omibot-layout">' +
       '<aside class="omibot-sidebar">' +
       '<div class="omibot-tier-row"><span id="omibot-tier-badge"></span></div>' +
+      '<button type="button" class="omibot-prefs-btn" id="omibot-prefs-open">Your preferences</button>' +
       '<button type="button" class="omibot-new-btn" id="omibot-new-thread">+ New conversation</button>' +
       '<p class="omibot-recents-label">Recents</p>' +
       '<div class="omibot-thread-list" id="omibot-thread-list"></div>' +
@@ -403,6 +421,164 @@
     }
 
     const newThreadBtn = root.querySelector('#omibot-new-thread');
+    const prefsOpenBtn = root.querySelector('#omibot-prefs-open');
+
+    let userPrefs = { tone: 'warm', maExperience: 'some_experience', preferencesCompleted: false };
+
+    const prefsOverlay = document.createElement('div');
+    prefsOverlay.className = 'omibot-prefs-overlay';
+    prefsOverlay.id = 'omibot-prefs-overlay';
+    prefsOverlay.hidden = true;
+    prefsOverlay.setAttribute('role', 'presentation');
+    prefsOverlay.innerHTML =
+      '<div class="omibot-prefs-dialog" role="dialog" aria-modal="true" aria-labelledby="omibot-prefs-title">' +
+      '<h2 id="omibot-prefs-title">Personalize Omi</h2>' +
+      '<p id="omibot-prefs-desc">Choose how you would like Omi to speak with you. You can change these anytime.</p>' +
+      '<div class="omibot-prefs-field">' +
+      '<label for="omibot-pref-tone">Tone</label>' +
+      '<select id="omibot-pref-tone">' +
+      '<option value="warm">Warm and companionable</option>' +
+      '<option value="professional">Professional and clear</option>' +
+      '<option value="concise">Concise and direct</option>' +
+      '</select></div>' +
+      '<div class="omibot-prefs-field">' +
+      '<label for="omibot-pref-ma">Experience with Mastering Alchemy</label>' +
+      '<select id="omibot-pref-ma">' +
+      '<option value="new">Just getting started</option>' +
+      '<option value="some_experience">Some experience</option>' +
+      '<option value="long_time">Long-time participant</option>' +
+      '</select></div>' +
+      '<p class="omibot-prefs-error" id="omibot-prefs-error" hidden></p>' +
+      '<div class="omibot-prefs-actions">' +
+      '<button type="button" class="omibot-prefs-save" id="omibot-prefs-save">Save preferences</button>' +
+      '<button type="button" class="omibot-prefs-cancel" id="omibot-prefs-cancel" hidden>Cancel</button>' +
+      '</div></div>';
+    root.appendChild(prefsOverlay);
+
+    const prefsDialog = prefsOverlay.querySelector('.omibot-prefs-dialog');
+    const prefsTitleEl = prefsOverlay.querySelector('#omibot-prefs-title');
+    const prefsDescEl = prefsOverlay.querySelector('#omibot-prefs-desc');
+    const prefsToneSelect = prefsOverlay.querySelector('#omibot-pref-tone');
+    const prefsMaSelect = prefsOverlay.querySelector('#omibot-pref-ma');
+    const prefsSaveBtn = prefsOverlay.querySelector('#omibot-prefs-save');
+    const prefsCancelBtn = prefsOverlay.querySelector('#omibot-prefs-cancel');
+    const prefsErrorEl = prefsOverlay.querySelector('#omibot-prefs-error');
+
+    function syncPrefsFormFromState() {
+      if (prefsToneSelect) prefsToneSelect.value = userPrefs.tone || 'warm';
+      if (prefsMaSelect) prefsMaSelect.value = userPrefs.maExperience || 'some_experience';
+    }
+
+    function setPrefsError(msg) {
+      if (!prefsErrorEl) return;
+      if (msg) {
+        prefsErrorEl.textContent = msg;
+        prefsErrorEl.hidden = false;
+      } else {
+        prefsErrorEl.textContent = '';
+        prefsErrorEl.hidden = true;
+      }
+    }
+
+    function openPrefsModal(mode) {
+      const isOnboarding = mode === 'onboarding';
+      if (prefsTitleEl) {
+        prefsTitleEl.textContent = isOnboarding ? 'Welcome — personalize Omi' : 'Your preferences';
+      }
+      if (prefsDescEl) {
+        prefsDescEl.textContent = isOnboarding
+          ? 'Before you begin, choose how you would like Omi to speak with you and how familiar you are with Mastering Alchemy.'
+          : 'Choose how you would like Omi to speak with you. You can change these anytime.';
+      }
+      if (prefsCancelBtn) prefsCancelBtn.hidden = isOnboarding;
+      syncPrefsFormFromState();
+      setPrefsError('');
+      prefsOverlay.hidden = false;
+      if (prefsSaveBtn) prefsSaveBtn.disabled = false;
+      if (isOnboarding) {
+        ready = false;
+        setInputEnabled(false);
+      }
+      if (prefsToneSelect) prefsToneSelect.focus();
+    }
+
+    function closePrefsModal() {
+      prefsOverlay.hidden = true;
+      setPrefsError('');
+    }
+
+    async function fetchPreferences(token) {
+      const res = await fetch(API_BASE + '/api/user/preferences', { headers: authHeaders(token) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return null;
+      return data;
+    }
+
+    async function savePreferencesFromModal(token) {
+      setPrefsError('');
+      if (prefsSaveBtn) prefsSaveBtn.disabled = true;
+      try {
+        const res = await fetch(API_BASE + '/api/user/preferences', {
+          method: 'PATCH',
+          headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders(token)),
+          body: JSON.stringify({
+            tone: prefsToneSelect ? prefsToneSelect.value : 'warm',
+            maExperience: prefsMaSelect ? prefsMaSelect.value : 'some_experience',
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setPrefsError(data.message || data.error || 'Could not save preferences.');
+          return false;
+        }
+        userPrefs = {
+          tone: data.tone || 'warm',
+          maExperience: data.maExperience || 'some_experience',
+          preferencesCompleted: Boolean(data.preferencesCompleted),
+        };
+        closePrefsModal();
+        if (!ready) {
+          ready = true;
+          refreshInputEnabled();
+        }
+        return true;
+      } catch (e) {
+        setPrefsError(String(e && e.message ? e.message : e));
+        return false;
+      } finally {
+        if (prefsSaveBtn) prefsSaveBtn.disabled = false;
+      }
+    }
+
+    if (prefsOpenBtn) {
+      prefsOpenBtn.addEventListener('click', function () {
+        openPrefsModal('edit');
+      });
+    }
+
+    prefsSaveBtn.addEventListener('click', function () {
+      ensureToken()
+        .then(function (tok) {
+          return savePreferencesFromModal(tok);
+        })
+        .catch(function (e) {
+          setPrefsError(String(e && e.message ? e.message : e));
+        });
+    });
+
+    prefsCancelBtn.addEventListener('click', function () {
+      closePrefsModal();
+    });
+
+    prefsOverlay.addEventListener('click', function (ev) {
+      if (ev.target !== prefsOverlay) return;
+      if (prefsCancelBtn && !prefsCancelBtn.hidden) closePrefsModal();
+    });
+
+    prefsDialog.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+    });
+
     const mainEl = root.querySelector('.omibot-main');
 
     const threadToolbar = document.createElement('div');
@@ -1091,10 +1267,22 @@
       const token = await ensureToken();
       status.textContent = '';
       status.hidden = true;
+      const prefs = await fetchPreferences(token);
+      if (prefs) {
+        userPrefs = {
+          tone: prefs.tone || 'warm',
+          maExperience: prefs.maExperience || 'some_experience',
+          preferencesCompleted: Boolean(prefs.preferencesCompleted),
+        };
+      }
       await fetchThreads(token);
       beginNewConversation();
-      ready = true;
-      refreshInputEnabled();
+      if (prefs && !userPrefs.preferencesCompleted) {
+        openPrefsModal('onboarding');
+      } else {
+        ready = true;
+        refreshInputEnabled();
+      }
     }
 
     ensureToken()

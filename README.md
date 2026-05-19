@@ -70,6 +70,8 @@ Public/auth routes:
 Authenticated routes (Bearer app session JWT):
 
 - `POST /api/chat/send` — body: `{ message, threadId? }`; returns `threadId`
+- `GET /api/user/preferences` — tone and MA experience settings
+- `PATCH /api/user/preferences` — save preferences (`{ tone?, maExperience? }`)
 - `GET /api/threads` — list conversations (limit by tier)
 - `POST /api/threads` — create conversation (`{ title? }`)
 - `PATCH /api/threads/:threadId` — rename (`{ title }`)
@@ -114,7 +116,7 @@ Paid vs free thread and daily message limits are enforced on the server. Configu
     }
 
     var s = document.createElement('script');
-    s.src = api + '/omi-chat-widget.js?v=44';
+    s.src = api + '/omi-chat-widget.js?v=45';
     s.defer = true;
     document.head.appendChild(s);
   }

@@ -1,0 +1,59 @@
+import { Router } from 'express';
+import { isDbEnabled } from '../../db/pool.js';
+import * as users from '../../db/users.js';
+import { isValidMaExperience, isValidTone } from '../../lib/user-preferences.js';
+import { ensureUserTier } from '../../lib/tier.js';
+
+export function createUserPreferencesApiRouter() {
+  const r = Router();
+
+  r.get('/api/user/preferences', async (req, res, next) => {
+    try {
+      if (!isDbEnabled()) {
+        res.status(503).json({ error: 'database_not_configured' });
+        return;
+      }
+      const userId = req.omiUser.sub;
+      await ensureUserTier(userId, req.omiUser.email);
+      const prefs = await users.getUserPreferences(userId);
+      res.json(prefs);
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  r.patch('/api/user/preferences', async (req, res, next) => {
+    try {
+      if (!isDbEnabled()) {
+        res.status(503).json({ error: 'database_not_configured' });
+        return;
+      }
+      const userId = req.omiUser.sub;
+      await ensureUserTier(userId, req.omiUser.email);
+
+      const tone = req.body?.tone;
+      const maExperience = req.body?.maExperience;
+      if (tone != null && !isValidTone(tone)) {
+        res.status(400).json({ error: 'invalid_tone' });
+        return;
+      }
+      if (maExperience != null && !isValidMaExperience(maExperience)) {
+        res.status(400).json({ error: 'invalid_ma_experience' });
+        return;
+      }
+
+      const existing = await users.getUserPreferences(userId);
+      await users.updateUserPreferences(userId, {
+        tone: tone != null ? tone : existing.tone,
+        maExperience: maExperience != null ? maExperience : existing.maExperience,
+        markCompleted: true,
+      });
+      const prefs = await users.getUserPreferences(userId);
+      res.json(prefs);
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  return r;
+}

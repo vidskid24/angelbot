@@ -182,12 +182,17 @@ Your reply is shown in a web chat page. Emphasize 2 to 5 key terms per response 
 Base every response only on the text above and the style reference (if present). If the user's question goes beyond what is provided, acknowledge that;`;
 
 /**
- * Builds the full system message, optionally appending RAG style excerpts.
+ * Builds the full system message, optionally appending user prefs and RAG style excerpts.
  * @param {string} [styleExcerpts] - Optional text from style-guide retrieval to append.
+ * @param {string} [userPreferencesBlock] - Optional per-user tone and experience instructions.
  * @returns {string}
  */
-export function buildSystemPrompt(styleExcerpts = null) {
+export function buildSystemPrompt(styleExcerpts = null, userPreferencesBlock = null) {
   let prompt = ALCHEMY_SCRIBE_SYSTEM_PROMPT;
+
+  if (userPreferencesBlock && userPreferencesBlock.trim()) {
+    prompt += `\n\n${userPreferencesBlock.trim()}`;
+  }
 
   if (styleExcerpts && styleExcerpts.trim()) {
     prompt += `\n\n## MA framework and content (style reference)\nThe following material is MA framework and content. Use it for tone and content. You may quote directly from this material and offer techniques or practices when applicable. Where the user's question touches on it, include relevant ideas, quotes, or techniques, then invite them to explore or try them.\n\n${styleExcerpts.trim()}`;

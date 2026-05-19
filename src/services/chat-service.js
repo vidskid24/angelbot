@@ -5,7 +5,9 @@
 import { getWisdomReply } from '../bot/wisdom.js';
 import { getHistory, appendTurn } from '../bot/memory.js';
 import * as threadDb from '../db/threads.js';
+import * as users from '../db/users.js';
 import { generateThreadTitleFromMessage } from '../lib/gemini.js';
+import { buildUserPreferencesPromptBlock } from '../lib/user-preferences.js';
 import { retrieve } from '../rag/retrieve.js';
 
 function isContextDependentFollowup(message) {
@@ -56,7 +58,12 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
   try {
     const retrievalQuery = buildRetrievalQuery(message, history);
     const styleExcerpts = await retrieve(retrievalQuery, 2);
-    const reply = await getWisdomReply(message, history, styleExcerpts || null);
+    let userPreferencesBlock = null;
+    if (useDb) {
+      const prefs = await users.getUserPreferences(userId);
+      userPreferencesBlock = buildUserPreferencesPromptBlock(prefs);
+    }
+    const reply = await getWisdomReply(message, history, styleExcerpts || null, userPreferencesBlock);
     let threadTitle = null;
     if (useDb && threadId) {
       await threadDb.appendThreadTurn(threadId, message, reply);
