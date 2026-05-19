@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=39
+ * OMIBOT_WIDGET_VERSION=40
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -237,7 +237,7 @@
       '.omibot-new-btn:hover:not(:disabled){background:#f7f4ef}' +
       '.omibot-new-btn:disabled{opacity:0.45;cursor:not-allowed}' +
       '.omibot-recents-label{font-size:0.75rem;color:#666;margin:0 0 6px;line-height:1.35}' +
-      '.omibot-thread-list{margin:0;padding:0;max-height:16rem;overflow-y:auto}' +
+      '.omibot-thread-list{margin:0;padding:0;overflow:visible}' +
       '.omibot-thread-list-item{margin:0;padding:0;list-style:none}' +
       '.omibot-thread-row{display:flex;align-items:center;gap:2px;width:100%;box-sizing:border-box;margin:0 0 6px;border-radius:8px;position:relative}' +
       '.omibot-thread-row.active{background:#e8e4dc}' +
@@ -288,7 +288,7 @@
       '@keyframes omibot-dot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}' +
       '#omibot-input{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid #ddd;background:#fff;font:inherit;font-size:1rem;resize:vertical}' +
       '#omibot-input:focus{outline:2px solid #c9c0b5;outline-offset:1px;border-color:#c9c0b5}' +
-      '@media(max-width:640px){.omibot-layout{flex-direction:column}.omibot-sidebar{width:100%;border-right:none;border-bottom:1px solid #e0dcd4;padding:0 0 12px;margin-bottom:12px}.omibot-main{padding-left:0}.omibot-thread-list{max-height:8rem}}' +
+      '@media(max-width:640px){.omibot-layout{flex-direction:column}.omibot-sidebar{width:100%;border-right:none;border-bottom:1px solid #e0dcd4;padding:0 0 12px;margin-bottom:12px}.omibot-main{padding-left:0}}' +
       '</style>' +
       '<div class="omibot-shell">' +
       '<p id="omibot-status" hidden></p>' +
