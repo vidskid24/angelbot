@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=23
+ * OMIBOT_WIDGET_VERSION=25
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -235,13 +235,15 @@
       '.omibot-shell{font-family:system-ui,-apple-system,sans-serif;max-width:920px;width:100%;margin:0 auto;padding:0 16px;box-sizing:border-box;color:#1a1a1a}' +
       '.omibot-shell .omibot-bold{font-weight:700!important}' +
       '.omibot-layout{display:flex;align-items:flex-start;gap:0;margin-top:8px}' +
-      '.omibot-sidebar{width:11.5rem;flex-shrink:0;border-right:1px solid #e0dcd4;padding:4px 12px 16px 0}' +
+      '.omibot-sidebar{width:11.5rem;flex-shrink:0;border-right:1px solid #e0dcd4;padding:4px 12px 16px 0;box-sizing:border-box}' +
+      '.omibot-sidebar .omibot-new-btn,.omibot-sidebar .omibot-thread-list,.omibot-sidebar .omibot-thread-row{width:100%}' +
       '.omibot-sidebar-head{font-size:0.75rem;color:#666;margin:0 0 8px;line-height:1.35}' +
       '.omibot-new-btn{width:100%;padding:8px 10px;margin:0 0 10px;border:1px solid #c9c0b5;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:0.85rem}' +
       '.omibot-new-btn:hover:not(:disabled){background:#f7f4ef}' +
       '.omibot-new-btn:disabled{opacity:0.45;cursor:not-allowed}' +
-      '.omibot-thread-list{list-style:none;margin:0;padding:0;max-height:16rem;overflow-y:auto}' +
-      '.omibot-thread-row{display:flex;align-items:center;gap:4px;margin:0 0 4px;border-radius:8px}' +
+      '.omibot-thread-list{margin:0;padding:0;max-height:16rem;overflow-y:auto}' +
+      '.omibot-thread-list-item{margin:0;padding:0;list-style:none}' +
+      '.omibot-thread-row{display:flex;align-items:center;gap:4px;width:100%;box-sizing:border-box;margin:0 0 6px;border-radius:8px}' +
       '.omibot-thread-row.active{background:#e8e4dc}' +
       '.omibot-thread-row:hover:not(.active){background:#f7f4ef}' +
       '.omibot-thread-select{flex:1;min-width:0;text-align:left;padding:8px 6px 8px 10px;border:none;background:transparent;cursor:pointer;font:inherit;font-size:0.82rem;line-height:1.35;color:#1a1a1a}' +
@@ -279,12 +281,12 @@
       '@media(max-width:640px){.omibot-layout{flex-direction:column}.omibot-sidebar{width:100%;border-right:none;border-bottom:1px solid #e0dcd4;padding:0 0 12px;margin-bottom:12px}.omibot-main{padding-left:0}.omibot-thread-list{max-height:8rem}}' +
       '</style>' +
       '<div class="omibot-shell">' +
-      '<p id="omibot-status">Preparing chat session...</p>' +
+      '<p id="omibot-status" hidden></p>' +
       '<div class="omibot-layout">' +
       '<aside class="omibot-sidebar">' +
       '<p class="omibot-sidebar-head" id="omibot-thread-meta">Conversations</p>' +
       '<button type="button" class="omibot-new-btn" id="omibot-new-thread">+ New conversation</button>' +
-      '<ul class="omibot-thread-list" id="omibot-thread-list"></ul>' +
+      '<div class="omibot-thread-list" id="omibot-thread-list"></div>' +
       '</aside>' +
       '<div class="omibot-main">' +
       '<div id="omibot-welcome"></div>' +
@@ -548,15 +550,16 @@
     function renderThreadList(activeId) {
       threadListEl.replaceChildren();
       if (!threadsCache.length) {
-        const empty = document.createElement('li');
-        empty.style.cssText = 'font-size:0.8rem;color:#888;padding:4px 10px';
+        const empty = document.createElement('div');
+        empty.style.cssText = 'font-size:0.8rem;color:#888;padding:4px 0';
         empty.textContent = 'No saved chats yet';
         threadListEl.appendChild(empty);
         return;
       }
       for (let i = 0; i < threadsCache.length; i++) {
         const t = threadsCache[i];
-        const li = document.createElement('li');
+        const item = document.createElement('div');
+        item.className = 'omibot-thread-list-item';
         const row = document.createElement('div');
         row.className = 'omibot-thread-row' + (t.id === activeId ? ' active' : '');
 
@@ -606,8 +609,8 @@
         actions.appendChild(delBtn);
         row.appendChild(selectBtn);
         row.appendChild(actions);
-        li.appendChild(row);
-        threadListEl.appendChild(li);
+        item.appendChild(row);
+        threadListEl.appendChild(item);
       }
     }
 
@@ -704,7 +707,8 @@
 
     async function initSession() {
       const token = await ensureToken();
-      status.textContent = "You're Signed In";
+      status.textContent = '';
+      status.hidden = true;
       await fetchThreads(token);
 
       let activeId = getThreadId();
@@ -734,6 +738,7 @@
         return initSession();
       })
       .catch(function (e) {
+        status.hidden = false;
         status.textContent = 'Unable to create session: ' + String(e && e.message ? e.message : e);
         setInputEnabled(false);
       });
@@ -775,6 +780,7 @@
         if (!result.res.ok) {
           if (result.data.error === 'invalid_token') {
             clearToken();
+            status.hidden = false;
             status.textContent = 'Session expired. Refresh the page to sign in again.';
           }
           append('System', result.data.message || result.data.error || 'Request failed');
