@@ -65,6 +65,56 @@ export function createThreadsApiRouter() {
     }
   });
 
+  r.patch('/api/threads/:threadId', async (req, res, next) => {
+    try {
+      if (!isDbEnabled()) {
+        res.status(503).json({ error: 'database_not_configured' });
+        return;
+      }
+      const userId = req.omiUser.sub;
+      const threadId = String(req.params.threadId || '').trim();
+      const title = String(req.body?.title || '').trim();
+      if (!title) {
+        res.status(400).json({ error: 'title_required' });
+        return;
+      }
+      const thread = await threadDb.updateThreadTitle(threadId, userId, title);
+      if (!thread) {
+        res.status(404).json({ error: 'thread_not_found' });
+        return;
+      }
+      res.json({
+        thread: {
+          id: thread.id,
+          title: thread.title,
+          createdAt: thread.created_at,
+          updatedAt: thread.updated_at,
+        },
+      });
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  r.delete('/api/threads/:threadId', async (req, res, next) => {
+    try {
+      if (!isDbEnabled()) {
+        res.status(503).json({ error: 'database_not_configured' });
+        return;
+      }
+      const userId = req.omiUser.sub;
+      const threadId = String(req.params.threadId || '').trim();
+      const removed = await threadDb.deleteThread(threadId, userId);
+      if (!removed) {
+        res.status(404).json({ error: 'thread_not_found' });
+        return;
+      }
+      res.json({ ok: true });
+    } catch (e) {
+      next(e);
+    }
+  });
+
   r.get('/api/threads/:threadId', async (req, res, next) => {
     try {
       if (!isDbEnabled()) {

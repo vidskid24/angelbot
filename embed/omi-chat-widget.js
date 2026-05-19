@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=22
+ * OMIBOT_WIDGET_VERSION=23
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -241,11 +241,23 @@
       '.omibot-new-btn:hover:not(:disabled){background:#f7f4ef}' +
       '.omibot-new-btn:disabled{opacity:0.45;cursor:not-allowed}' +
       '.omibot-thread-list{list-style:none;margin:0;padding:0;max-height:16rem;overflow-y:auto}' +
-      '.omibot-thread-item{display:block;width:100%;text-align:left;padding:8px 10px;border:none;background:transparent;border-radius:8px;cursor:pointer;font:inherit;font-size:0.82rem;line-height:1.35;margin:0 0 2px;color:#1a1a1a}' +
-      '.omibot-thread-item:hover{background:#f0ebe3}' +
-      '.omibot-thread-item.active{background:#e8e4dc;font-weight:600}' +
+      '.omibot-thread-row{display:flex;align-items:center;gap:4px;margin:0 0 4px;border-radius:8px}' +
+      '.omibot-thread-row.active{background:#e8e4dc}' +
+      '.omibot-thread-row:hover:not(.active){background:#f7f4ef}' +
+      '.omibot-thread-select{flex:1;min-width:0;text-align:left;padding:8px 6px 8px 10px;border:none;background:transparent;cursor:pointer;font:inherit;font-size:0.82rem;line-height:1.35;color:#1a1a1a}' +
+      '.omibot-thread-row.active .omibot-thread-select{font-weight:600}' +
       '.omibot-thread-item-title{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-      '.omibot-thread-item-date{display:block;font-size:0.7rem;color:#888;margin-top:2px}' +
+      '.omibot-thread-item-date{display:block;font-size:0.7rem;color:#888;margin-top:2px;font-weight:400}' +
+      '.omibot-thread-actions{display:flex;flex-shrink:0;padding-right:4px}' +
+      '.omibot-icon-btn{border:none;background:transparent;cursor:pointer;font:inherit;font-size:0.9rem;line-height:1;padding:4px 5px;border-radius:4px;color:#666}' +
+      '.omibot-icon-btn:hover{background:#e0dcd4;color:#1a1a1a}' +
+      '.omibot-icon-btn-danger:hover{background:#f5e8e6;color:#8b3a34}' +
+      '.omibot-thread-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 10px;font-size:0.9rem}' +
+      '.omibot-thread-toolbar[hidden]{display:none!important}' +
+      '#omibot-active-title{font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+      '.omibot-toolbar-btn{border:none;background:transparent;cursor:pointer;font:inherit;font-size:0.82rem;color:#5c5348;text-decoration:underline;padding:0}' +
+      '.omibot-toolbar-btn:hover{color:#1a1a1a}' +
+      '.omibot-toolbar-btn-danger{color:#8b3a34}' +
       '.omibot-main{flex:1;min-width:0;padding-left:14px}' +
       '#omibot-welcome{margin:0 0 12px}' +
       '.omibot-hello{font-size:clamp(2rem,6vw,2.75rem);font-weight:400;margin:0 0 8px;line-height:1.15;letter-spacing:-0.02em}' +
@@ -287,6 +299,28 @@
     const threadListEl = root.querySelector('#omibot-thread-list');
     const threadMetaEl = root.querySelector('#omibot-thread-meta');
     const newThreadBtn = root.querySelector('#omibot-new-thread');
+    const mainEl = root.querySelector('.omibot-main');
+
+    const threadToolbar = document.createElement('div');
+    threadToolbar.className = 'omibot-thread-toolbar';
+    threadToolbar.id = 'omibot-thread-toolbar';
+    threadToolbar.hidden = true;
+    const activeTitleEl = document.createElement('span');
+    activeTitleEl.id = 'omibot-active-title';
+    const renameActiveBtn = document.createElement('button');
+    renameActiveBtn.type = 'button';
+    renameActiveBtn.className = 'omibot-toolbar-btn';
+    renameActiveBtn.id = 'omibot-rename-active';
+    renameActiveBtn.textContent = 'Rename';
+    const deleteActiveBtn = document.createElement('button');
+    deleteActiveBtn.type = 'button';
+    deleteActiveBtn.className = 'omibot-toolbar-btn omibot-toolbar-btn-danger';
+    deleteActiveBtn.id = 'omibot-delete-active';
+    deleteActiveBtn.textContent = 'Delete';
+    threadToolbar.appendChild(activeTitleEl);
+    threadToolbar.appendChild(renameActiveBtn);
+    threadToolbar.appendChild(deleteActiveBtn);
+    mainEl.insertBefore(threadToolbar, welcome);
 
     let ready = false;
     let welcomeDismissed = false;
@@ -332,6 +366,107 @@
       threadMetaEl.textContent = n + ' of ' + cap + ' conversations';
       newThreadBtn.disabled = n >= cap;
     }
+
+    function getThreadFromCache(threadId) {
+      for (let i = 0; i < threadsCache.length; i++) {
+        if (threadsCache[i].id === threadId) return threadsCache[i];
+      }
+      return null;
+    }
+
+    function updateActiveToolbar(threadId) {
+      if (!threadId || !isValidThreadId(threadId)) {
+        threadToolbar.hidden = true;
+        return;
+      }
+      const t = getThreadFromCache(threadId);
+      activeTitleEl.textContent = (t && t.title) || 'Conversation';
+      threadToolbar.hidden = false;
+    }
+
+    function promptThreadTitle(currentTitle) {
+      const next = window.prompt('Conversation name', currentTitle || 'Conversation');
+      if (next === null) return null;
+      const trimmed = String(next).trim();
+      if (!trimmed) return null;
+      return trimmed.slice(0, 200);
+    }
+
+    async function renameThread(threadId) {
+      if (!threadId || sending) return;
+      const t = getThreadFromCache(threadId);
+      const newTitle = promptThreadTitle((t && t.title) || 'Conversation');
+      if (newTitle === null) return;
+      let tok;
+      try {
+        tok = await ensureToken();
+      } catch (e) {
+        append('System', String(e && e.message ? e.message : e));
+        return;
+      }
+      const res = await fetch(API_BASE + '/api/threads/' + encodeURIComponent(threadId), {
+        method: 'PATCH',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders(tok)),
+        body: JSON.stringify({ title: newTitle }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        append('System', data.message || data.error || 'Could not rename conversation.');
+        return;
+      }
+      await fetchThreads(tok);
+      renderThreadList(getThreadId());
+      updateActiveToolbar(threadId);
+    }
+
+    async function deleteThread(threadId) {
+      if (!threadId || sending) return;
+      const t = getThreadFromCache(threadId);
+      const label = (t && t.title) || 'this conversation';
+      if (!window.confirm('Delete "' + label + '"? This cannot be undone.')) return;
+      let tok;
+      try {
+        tok = await ensureToken();
+      } catch (e) {
+        append('System', String(e && e.message ? e.message : e));
+        return;
+      }
+      const res = await fetch(API_BASE + '/api/threads/' + encodeURIComponent(threadId), {
+        method: 'DELETE',
+        headers: authHeaders(tok),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        append('System', data.message || data.error || 'Could not delete conversation.');
+        return;
+      }
+      const wasActive = getThreadId() === threadId;
+      await fetchThreads(tok);
+      if (wasActive) {
+        clearThreadId();
+        clearLog();
+        if (threadsCache.length) {
+          await selectThread(threadsCache[0].id, tok);
+        } else {
+          threadToolbar.hidden = true;
+          restoreWelcome();
+          renderThreadList(null);
+        }
+      } else {
+        renderThreadList(getThreadId());
+      }
+      updateThreadMeta();
+    }
+
+    renameActiveBtn.addEventListener('click', function () {
+      const id = getThreadId();
+      if (id) renameThread(id);
+    });
+
+    deleteActiveBtn.addEventListener('click', function () {
+      const id = getThreadId();
+      if (id) deleteThread(id);
+    });
 
     function clearLog() {
       log.replaceChildren();
@@ -422,23 +557,56 @@
       for (let i = 0; i < threadsCache.length; i++) {
         const t = threadsCache[i];
         const li = document.createElement('li');
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'omibot-thread-item' + (t.id === activeId ? ' active' : '');
-        btn.dataset.threadId = t.id;
-        const title = document.createElement('span');
-        title.className = 'omibot-thread-item-title';
-        title.textContent = t.title || 'Conversation';
-        const date = document.createElement('span');
-        date.className = 'omibot-thread-item-date';
-        date.textContent = formatThreadDate(t.updatedAt || t.createdAt);
-        btn.appendChild(title);
-        btn.appendChild(date);
-        btn.addEventListener('click', function () {
+        const row = document.createElement('div');
+        row.className = 'omibot-thread-row' + (t.id === activeId ? ' active' : '');
+
+        const selectBtn = document.createElement('button');
+        selectBtn.type = 'button';
+        selectBtn.className = 'omibot-thread-select';
+        selectBtn.dataset.threadId = t.id;
+        const titleEl = document.createElement('span');
+        titleEl.className = 'omibot-thread-item-title';
+        titleEl.textContent = t.title || 'Conversation';
+        const dateEl = document.createElement('span');
+        dateEl.className = 'omibot-thread-item-date';
+        dateEl.textContent = formatThreadDate(t.updatedAt || t.createdAt);
+        selectBtn.appendChild(titleEl);
+        selectBtn.appendChild(dateEl);
+        selectBtn.addEventListener('click', function () {
           if (sending || t.id === getThreadId()) return;
           selectThread(t.id);
         });
-        li.appendChild(btn);
+
+        const actions = document.createElement('div');
+        actions.className = 'omibot-thread-actions';
+
+        const renameBtn = document.createElement('button');
+        renameBtn.type = 'button';
+        renameBtn.className = 'omibot-icon-btn';
+        renameBtn.title = 'Rename';
+        renameBtn.setAttribute('aria-label', 'Rename');
+        renameBtn.textContent = '\u270E';
+        renameBtn.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          renameThread(t.id);
+        });
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'omibot-icon-btn omibot-icon-btn-danger';
+        delBtn.title = 'Delete';
+        delBtn.setAttribute('aria-label', 'Delete');
+        delBtn.textContent = '\u00D7';
+        delBtn.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          deleteThread(t.id);
+        });
+
+        actions.appendChild(renameBtn);
+        actions.appendChild(delBtn);
+        row.appendChild(selectBtn);
+        row.appendChild(actions);
+        li.appendChild(row);
         threadListEl.appendChild(li);
       }
     }
@@ -481,6 +649,7 @@
         restoreWelcome();
       }
       renderThreadList(threadId);
+      updateActiveToolbar(threadId);
     }
 
     async function createNewThread() {
@@ -496,12 +665,15 @@
         append('System', String(e && e.message ? e.message : e));
         return;
       }
+      const title = promptThreadTitle('New conversation');
+      if (title === null) return;
+
       newThreadBtn.disabled = true;
       try {
         const res = await fetch(API_BASE + '/api/threads', {
           method: 'POST',
           headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders(tok)),
-          body: JSON.stringify({ title: 'New conversation' }),
+          body: JSON.stringify({ title: title }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -515,10 +687,10 @@
         const id = data.thread && data.thread.id;
         if (id) {
           clearLog();
-          clearThreadId();
           setThreadId(id);
           restoreWelcome();
           renderThreadList(id);
+          updateActiveToolbar(id);
         }
       } finally {
         updateThreadMeta();
@@ -550,6 +722,7 @@
       } else {
         renderThreadList(null);
         restoreWelcome();
+        threadToolbar.hidden = true;
       }
 
       ready = true;
@@ -611,6 +784,7 @@
           setThreadId(result.data.threadId);
           await fetchThreads(tok);
           renderThreadList(result.data.threadId);
+          updateActiveToolbar(result.data.threadId);
         }
         append('Companion', result.data.text || '');
       } catch (e) {

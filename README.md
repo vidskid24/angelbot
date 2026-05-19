@@ -69,6 +69,8 @@ Authenticated routes (Bearer app session JWT):
 - `POST /api/chat/send` — body: `{ message, threadId? }`; returns `threadId`
 - `GET /api/threads` — list conversations (limit by tier)
 - `POST /api/threads` — create conversation (`{ title? }`)
+- `PATCH /api/threads/:threadId` — rename (`{ title }`)
+- `DELETE /api/threads/:threadId` — delete conversation
 - `GET /api/threads/:threadId` — thread + messages
 - `POST /api/memories`
 - `GET /api/memories`
@@ -112,7 +114,7 @@ Paid vs free thread limits are enforced on the server. Configure Thinkific enrol
     }
 
     var s = document.createElement('script');
-    s.src = api + '/omi-chat-widget.js?v=22';
+    s.src = api + '/omi-chat-widget.js?v=23';
     s.defer = true;
     document.head.appendChild(s);
   }

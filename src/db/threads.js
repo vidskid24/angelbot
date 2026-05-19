@@ -76,6 +76,35 @@ export async function touchThread(threadId) {
 
 /**
  * @param {string} threadId
+ * @param {string} userId
+ * @param {string} title
+ */
+export async function updateThreadTitle(threadId, userId, title) {
+  const safeTitle = String(title || '').trim().slice(0, 200) || 'Conversation';
+  const { rows } = await getPool().query(
+    `UPDATE threads SET title = $3, updated_at = NOW()
+     WHERE id = $1 AND user_id = $2
+     RETURNING id, title, created_at, updated_at`,
+    [threadId, userId, safeTitle]
+  );
+  return rows[0] || null;
+}
+
+/**
+ * @param {string} threadId
+ * @param {string} userId
+ * @returns {Promise<boolean>}
+ */
+export async function deleteThread(threadId, userId) {
+  const { rowCount } = await getPool().query(
+    'DELETE FROM threads WHERE id = $1 AND user_id = $2',
+    [threadId, userId]
+  );
+  return rowCount > 0;
+}
+
+/**
+ * @param {string} threadId
  * @returns {Promise<Array<{ role: 'user' | 'assistant'; content: string }>>}
  */
 export async function getThreadMessages(threadId) {
