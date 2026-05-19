@@ -35,7 +35,7 @@ export function createChatApiRouter() {
         if (!resolved.ok) {
           res.status(403).json({
             error: 'thread_limit',
-            message: getThreadLimitMessage(resolved.limit),
+            message: getThreadLimitMessage(resolved.limit, tier),
             limit: resolved.limit,
             tier,
           });

@@ -44,7 +44,7 @@ export function createThreadsApiRouter() {
       if (!result.ok) {
         res.status(403).json({
           error: 'thread_limit',
-          message: getThreadLimitMessage(result.limit),
+          message: getThreadLimitMessage(result.limit, tier),
           limit: result.limit,
           tier,
         });

@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=41
+ * OMIBOT_WIDGET_VERSION=42
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -280,6 +280,8 @@
       '.omibot-msg-user .omibot-bubble{background:#e8e4dc;border-radius:14px;padding:12px 16px;max-width:85%;line-height:1.5;white-space:pre-wrap}' +
       '.omibot-msg-bot{margin:16px 0;line-height:1.55;white-space:pre-wrap;max-width:100%}' +
       '.omibot-msg-system{margin:12px 0;padding:10px 12px;border-radius:8px;background:#f0ebe3;color:#5c5348;font-size:0.9rem;line-height:1.45}' +
+      '.omibot-msg-system a.omibot-tier-link{color:#7a5c1e;text-decoration:none;border-bottom:1px solid rgba(122,92,30,.45)}' +
+      '.omibot-msg-system a.omibot-tier-link:hover{color:#1a1a1a;border-bottom-color:#1a1a1a}' +
       '.omibot-thinking{margin:16px 0;color:#666;font-size:0.95rem}' +
       '.omibot-thinking-dots{display:inline-block;margin-left:2px}' +
       '.omibot-thinking-dots span{display:inline-block;animation:omibot-dot 1.2s ease-in-out infinite}' +
@@ -316,13 +318,39 @@
       window.ANGELBOT_UPGRADE_URL ||
       'https://courses.masteringalchemy.com/pages/omi-ai';
 
-    function threadLimitMessage(limit) {
-      return (
-        'You can save up to ' +
-        limit +
-        ' conversations on your plan. Please delete one to continue or ask your question in one of your other saved conversations. ' +
-        'If you would like a larger plan, please email and let us know, service@masteringalchemy.com'
+    function appendThreadLimitMessage(limit, tier) {
+      const cap = limit || 2;
+      const isPaid = tier === 'paid';
+      const row = document.createElement('div');
+      row.className = 'omibot-msg-system';
+      const body = document.createElement('div');
+      body.appendChild(
+        document.createTextNode(
+          'You can save up to ' +
+            cap +
+            ' conversations on your plan. Please delete one to continue or ask your question in one of your other saved conversations. '
+        )
       );
+      if (isPaid) {
+        body.appendChild(
+          document.createTextNode(
+            'If you would like a larger plan, please email and let us know, service@masteringalchemy.com'
+          )
+        );
+      } else {
+        body.appendChild(document.createTextNode('You can also '));
+        const link = document.createElement('a');
+        link.className = 'omibot-tier-link';
+        link.href = upgradeUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = 'upgrade';
+        body.appendChild(link);
+        body.appendChild(document.createTextNode(' to a paid plan'));
+      }
+      row.appendChild(body);
+      log.appendChild(row);
+      scrollIntoViewIfNearBottom(row);
     }
 
     const newThreadBtn = root.querySelector('#omibot-new-thread');
@@ -926,7 +954,7 @@
         return;
       }
       if (threadsMeta.threadCount >= threadsMeta.threadLimit) {
-        append('System', threadLimitMessage(threadsMeta.threadLimit));
+        appendThreadLimitMessage(threadsMeta.threadLimit, threadsMeta.tier);
         return;
       }
       let tok;
@@ -946,10 +974,11 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          append(
-            'System',
-            data.message || data.error || 'Could not start a new conversation.'
-          );
+          if (data.error === 'thread_limit') {
+            appendThreadLimitMessage(data.limit || threadsMeta.threadLimit, data.tier || threadsMeta.tier);
+          } else {
+            append('System', data.message || data.error || 'Could not start a new conversation.');
+          }
           return;
         }
         await fetchThreads(tok);
@@ -1029,6 +1058,13 @@
             clearToken();
             status.hidden = false;
             status.textContent = 'Session expired. Refresh the page to sign in again.';
+          }
+          if (result.data.error === 'thread_limit') {
+            appendThreadLimitMessage(
+              result.data.limit || threadsMeta.threadLimit,
+              result.data.tier || threadsMeta.tier
+            );
+            return;
           }
           append('System', result.data.message || result.data.error || 'Request failed');
           return;
