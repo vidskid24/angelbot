@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=50
+ * OMIBOT_WIDGET_VERSION=51
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -193,30 +193,54 @@
       .replace(/\\\*\\\*/g, '**');
   }
 
-  function appendFormattedContent(parent, text) {
-    const normalized = normalizeBoldMarkers(text);
-    const re = /\*\*([^*]+?)\*\*|\*([^*]+?)\*/g;
+  function isValidItalicContent(inner) {
+    const t = String(inner || '').trim();
+    if (!t || t.length > 40) return false;
+    if (/\n/.test(t)) return false;
+    if (t.split(/\s+/).length > 4) return false;
+    return true;
+  }
+
+  function appendItalicInTextChunk(parent, chunk) {
+    const italicRe = /(?<!\*)\*(?!\*)(?!\s)([^*\n]{1,40}?)(?<!\s)\*(?!\*)/g;
     let lastIndex = 0;
     let match;
-    while ((match = re.exec(normalized)) !== null) {
+    while ((match = italicRe.exec(chunk)) !== null) {
       if (match.index > lastIndex) {
-        parent.appendChild(document.createTextNode(normalized.slice(lastIndex, match.index)));
+        parent.appendChild(document.createTextNode(chunk.slice(lastIndex, match.index)));
       }
-      if (match[1] !== undefined) {
-        const strong = document.createElement('strong');
-        strong.className = 'omibot-bold';
-        strong.textContent = match[1];
-        parent.appendChild(strong);
-      } else if (match[2] !== undefined) {
+      if (isValidItalicContent(match[1])) {
         const em = document.createElement('em');
         em.className = 'omibot-italic';
-        em.textContent = match[2];
+        em.textContent = match[1];
         parent.appendChild(em);
+      } else {
+        parent.appendChild(document.createTextNode(match[0]));
       }
-      lastIndex = re.lastIndex;
+      lastIndex = italicRe.lastIndex;
+    }
+    if (lastIndex < chunk.length) {
+      parent.appendChild(document.createTextNode(chunk.slice(lastIndex)));
+    }
+  }
+
+  function appendFormattedContent(parent, text) {
+    const normalized = normalizeBoldMarkers(text);
+    const boldRe = /\*\*([^*]+?)\*\*/g;
+    let lastIndex = 0;
+    let match;
+    while ((match = boldRe.exec(normalized)) !== null) {
+      if (match.index > lastIndex) {
+        appendItalicInTextChunk(parent, normalized.slice(lastIndex, match.index));
+      }
+      const strong = document.createElement('strong');
+      strong.className = 'omibot-bold';
+      strong.textContent = match[1];
+      parent.appendChild(strong);
+      lastIndex = boldRe.lastIndex;
     }
     if (lastIndex < normalized.length) {
-      parent.appendChild(document.createTextNode(normalized.slice(lastIndex)));
+      appendItalicInTextChunk(parent, normalized.slice(lastIndex));
     }
   }
 

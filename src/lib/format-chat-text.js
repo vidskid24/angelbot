@@ -10,6 +10,24 @@ export function normalizeBoldMarkers(text) {
     .replace(/\\\*\\\*/g, '**');
 }
 
+const MAX_ITALIC_CHARS = 40;
+const MAX_ITALIC_WORDS = 4;
+
+/** Same-line italic only; opening * must not be followed by space (avoids "* bullet" lists). */
+const ITALIC_RE = /(?<!\*)\*(?!\*)(?!\s)([^*\n]{1,40}?)(?<!\s)\*(?!\*)/g;
+
+/**
+ * @param {string} inner
+ * @returns {boolean}
+ */
+function isValidItalicContent(inner) {
+  const t = String(inner || '').trim();
+  if (!t || t.length > MAX_ITALIC_CHARS) return false;
+  if (/\n/.test(t)) return false;
+  if (t.split(/\s+/).length > MAX_ITALIC_WORDS) return false;
+  return true;
+}
+
 /**
  * @param {string} text
  * @returns {string}
@@ -22,29 +40,50 @@ function escapeHtml(text) {
 }
 
 /**
- * Split message into plain, bold (**), and italic (*) segments (bold matched first).
+ * @param {string} chunk
+ * @param {Array<{ type: 'text' | 'bold' | 'italic'; content: string }>} segments
+ */
+function parseItalicInTextChunk(chunk, segments) {
+  let lastIndex = 0;
+  let match;
+  ITALIC_RE.lastIndex = 0;
+  while ((match = ITALIC_RE.exec(chunk)) !== null) {
+    if (match.index > lastIndex) {
+      segments.push({ type: 'text', content: chunk.slice(lastIndex, match.index) });
+    }
+    if (isValidItalicContent(match[1])) {
+      segments.push({ type: 'italic', content: match[1] });
+    } else {
+      segments.push({ type: 'text', content: match[0] });
+    }
+    lastIndex = ITALIC_RE.lastIndex;
+  }
+  if (lastIndex < chunk.length) {
+    segments.push({ type: 'text', content: chunk.slice(lastIndex) });
+  }
+}
+
+/**
+ * Split message into plain, bold (**), and safe italic (*) segments.
  * @param {string} text
  * @returns {Array<{ type: 'text' | 'bold' | 'italic'; content: string }>}
  */
 export function parseChatMarkdownSegments(text) {
   const normalized = normalizeBoldMarkers(text);
   const segments = [];
-  const re = /\*\*([^*]+?)\*\*|\*([^*]+?)\*/g;
+  const boldRe = /\*\*([^*]+?)\*\*/g;
   let lastIndex = 0;
   let match;
-  while ((match = re.exec(normalized)) !== null) {
+
+  while ((match = boldRe.exec(normalized)) !== null) {
     if (match.index > lastIndex) {
-      segments.push({ type: 'text', content: normalized.slice(lastIndex, match.index) });
+      parseItalicInTextChunk(normalized.slice(lastIndex, match.index), segments);
     }
-    if (match[1] !== undefined) {
-      segments.push({ type: 'bold', content: match[1] });
-    } else if (match[2] !== undefined) {
-      segments.push({ type: 'italic', content: match[2] });
-    }
-    lastIndex = re.lastIndex;
+    segments.push({ type: 'bold', content: match[1] });
+    lastIndex = boldRe.lastIndex;
   }
   if (lastIndex < normalized.length) {
-    segments.push({ type: 'text', content: normalized.slice(lastIndex) });
+    parseItalicInTextChunk(normalized.slice(lastIndex), segments);
   }
   return segments;
 }
