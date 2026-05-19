@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=29
+ * OMIBOT_WIDGET_VERSION=31
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -229,7 +229,7 @@
       '.omibot-sidebar .omibot-new-btn,.omibot-sidebar .omibot-thread-list,.omibot-sidebar .omibot-thread-row{width:100%}' +
       '.omibot-sidebar-head-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;line-height:1.35}' +
       '.omibot-thread-meta-count{font-size:0.75rem;color:#666;min-width:0}' +
-      '.omibot-tier-badge{font-size:0.7rem;font-weight:600;letter-spacing:0.02em;flex-shrink:0;text-transform:capitalize}' +
+      '.omibot-tier-badge{font-size:0.7rem;font-weight:600;letter-spacing:0.04em;flex-shrink:0;text-transform:uppercase}' +
       '.omibot-tier-badge-paid{color:#5c5348}' +
       '.omibot-tier-link{color:#7a5c1e;text-decoration:none;border-bottom:1px solid rgba(122,92,30,.45);cursor:pointer}' +
       '.omibot-tier-link:hover{color:#1a1a1a;border-bottom-color:#1a1a1a}' +
@@ -255,9 +255,20 @@
       '.omibot-thread-menu-item:hover{background:#f7f4ef}' +
       '.omibot-thread-menu-item-danger{color:#8b3a34}' +
       '.omibot-thread-menu-item-danger:hover{background:#f5e8e6}' +
-      '.omibot-thread-toolbar{display:flex;align-items:center;margin:0 0 10px;font-size:0.9rem}' +
+      '.omibot-thread-toolbar{display:flex;align-items:center;margin:0 0 12px}' +
       '.omibot-thread-toolbar[hidden]{display:none!important}' +
-      '#omibot-active-title{font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}' +
+      '.omibot-active-title-btn{display:flex;align-items:center;gap:8px;max-width:100%;padding:0;border:none;background:transparent;cursor:pointer;font:inherit;font-size:1.08rem;font-style:italic;font-weight:600;color:#1a1a1a;text-align:left;line-height:1.35}' +
+      '.omibot-active-title-btn:hover:not(:disabled){color:#5c5348}' +
+      '.omibot-active-title-btn:disabled{cursor:default}' +
+      '#omibot-active-title{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:italic}' +
+      '.omibot-active-title-chevron{flex-shrink:0;font-size:0.75rem;line-height:1;opacity:0.65;transition:transform .15s ease}' +
+      '.omibot-active-title-btn.is-open .omibot-active-title-chevron{transform:rotate(180deg);opacity:0.9}' +
+      '.omibot-active-title-chevron[hidden]{display:none}' +
+      '.omibot-thread-switcher-dropdown{position:fixed;z-index:100000;display:none;min-width:12rem;max-width:min(22rem,92vw);max-height:14rem;overflow-y:auto;background:#fff;border:1px solid #e0dcd4;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);padding:4px 0}' +
+      '.omibot-thread-switcher-dropdown.is-open{display:block}' +
+      '.omibot-thread-switcher-item{display:block;width:100%;text-align:left;padding:9px 14px;border:none;background:transparent;cursor:pointer;font:inherit;font-size:0.92rem;font-style:italic;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+      '.omibot-thread-switcher-item:hover{background:#f7f4ef}' +
+      '.omibot-thread-switcher-item.active{background:#e8e4dc;font-weight:600}' +
       '.omibot-main{flex:1;min-width:0;padding-left:14px}' +
       '#omibot-welcome{margin:0 0 12px}' +
       '.omibot-hello{font-size:clamp(2rem,6vw,2.75rem);font-weight:400;margin:0 0 8px;line-height:1.15;letter-spacing:-0.02em}' +
@@ -313,10 +324,34 @@
     threadToolbar.className = 'omibot-thread-toolbar';
     threadToolbar.id = 'omibot-thread-toolbar';
     threadToolbar.hidden = true;
+
+    const activeTitleBtn = document.createElement('button');
+    activeTitleBtn.type = 'button';
+    activeTitleBtn.className = 'omibot-active-title-btn';
+    activeTitleBtn.id = 'omibot-active-title-btn';
+    activeTitleBtn.setAttribute('aria-haspopup', 'listbox');
+
     const activeTitleEl = document.createElement('span');
     activeTitleEl.id = 'omibot-active-title';
-    threadToolbar.appendChild(activeTitleEl);
+
+    const activeTitleChevron = document.createElement('span');
+    activeTitleChevron.className = 'omibot-active-title-chevron';
+    activeTitleChevron.setAttribute('aria-hidden', 'true');
+    activeTitleChevron.textContent = '\u25BE';
+
+    activeTitleBtn.appendChild(activeTitleEl);
+    activeTitleBtn.appendChild(activeTitleChevron);
+    threadToolbar.appendChild(activeTitleBtn);
     mainEl.insertBefore(threadToolbar, welcome);
+
+    let threadSwitcherOpen = false;
+
+    const threadSwitcherDropdown = document.createElement('div');
+    threadSwitcherDropdown.className = 'omibot-thread-switcher-dropdown';
+    threadSwitcherDropdown.id = 'omibot-thread-switcher-dropdown';
+    threadSwitcherDropdown.setAttribute('role', 'listbox');
+    threadSwitcherDropdown.hidden = true;
+    document.body.appendChild(threadSwitcherDropdown);
 
     let openMenuRow = null;
     let openMenuThreadId = null;
@@ -366,7 +401,85 @@
       threadMenuDropdown.style.visibility = '';
     }
 
+    function closeThreadSwitcher() {
+      threadSwitcherOpen = false;
+      activeTitleBtn.classList.remove('is-open');
+      activeTitleBtn.setAttribute('aria-expanded', 'false');
+      threadSwitcherDropdown.classList.remove('is-open');
+      threadSwitcherDropdown.hidden = true;
+    }
+
+    function populateThreadSwitcher(activeId) {
+      threadSwitcherDropdown.replaceChildren();
+      for (let i = 0; i < threadsCache.length; i++) {
+        const th = threadsCache[i];
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className =
+          'omibot-thread-switcher-item' + (th.id === activeId ? ' active' : '');
+        item.setAttribute('role', 'option');
+        item.setAttribute('aria-selected', th.id === activeId ? 'true' : 'false');
+        item.textContent = th.title || 'Conversation';
+        item.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          closeThreadSwitcher();
+          if (sending || th.id === getThreadId()) return;
+          selectThread(th.id);
+        });
+        threadSwitcherDropdown.appendChild(item);
+      }
+    }
+
+    function positionThreadSwitcher() {
+      threadSwitcherDropdown.hidden = false;
+      threadSwitcherDropdown.classList.add('is-open');
+      threadSwitcherDropdown.style.visibility = 'hidden';
+      threadSwitcherDropdown.style.top = '0';
+      threadSwitcherDropdown.style.left = '0';
+      const rect = activeTitleBtn.getBoundingClientRect();
+      const ddHeight = threadSwitcherDropdown.offsetHeight;
+      const ddWidth = threadSwitcherDropdown.offsetWidth;
+      let top = rect.bottom + 6;
+      let left = rect.left;
+      if (top + ddHeight > window.innerHeight - 8) {
+        top = rect.top - ddHeight - 6;
+      }
+      if (left + ddWidth > window.innerWidth - 8) {
+        left = window.innerWidth - ddWidth - 8;
+      }
+      if (left < 8) left = 8;
+      threadSwitcherDropdown.style.top = Math.round(top) + 'px';
+      threadSwitcherDropdown.style.left = Math.round(left) + 'px';
+      threadSwitcherDropdown.style.visibility = '';
+    }
+
+    function openThreadSwitcher() {
+      closeAllThreadMenus();
+      const activeId = getThreadId();
+      if (!activeId || threadsCache.length <= 1) return;
+      populateThreadSwitcher(activeId);
+      threadSwitcherOpen = true;
+      activeTitleBtn.classList.add('is-open');
+      activeTitleBtn.setAttribute('aria-expanded', 'true');
+      positionThreadSwitcher();
+    }
+
+    function toggleThreadSwitcher() {
+      if (threadSwitcherOpen) {
+        closeThreadSwitcher();
+        return;
+      }
+      openThreadSwitcher();
+    }
+
+    activeTitleBtn.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      if (sending || threadsCache.length <= 1) return;
+      toggleThreadSwitcher();
+    });
+
     function closeAllThreadMenus() {
+      closeThreadSwitcher();
       if (openMenuRow) {
         openMenuRow.classList.remove('menu-open');
         openMenuRow = null;
@@ -407,10 +520,17 @@
     });
 
     document.addEventListener('click', function (ev) {
-      if (!openMenuRow) return;
-      if (ev.target.closest && ev.target.closest('.omibot-thread-menu-wrap')) return;
-      if (ev.target.closest && ev.target.closest('#omibot-thread-dropdown')) return;
-      closeAllThreadMenus();
+      if (openMenuRow) {
+        if (ev.target.closest && ev.target.closest('.omibot-thread-menu-wrap')) return;
+        if (ev.target.closest && ev.target.closest('#omibot-thread-dropdown')) return;
+        closeAllThreadMenus();
+        return;
+      }
+      if (threadSwitcherOpen) {
+        if (ev.target.closest && ev.target.closest('#omibot-active-title-btn')) return;
+        if (ev.target.closest && ev.target.closest('#omibot-thread-switcher-dropdown')) return;
+        closeThreadSwitcher();
+      }
     });
 
     threadListEl.addEventListener('scroll', closeAllThreadMenus);
@@ -463,7 +583,7 @@
       tierBadgeEl.replaceChildren();
       if (tier === 'paid') {
         tierBadgeEl.className = 'omibot-tier-badge omibot-tier-badge-paid';
-        tierBadgeEl.textContent = 'Paid';
+        tierBadgeEl.textContent = 'PAID';
       } else {
         tierBadgeEl.className = 'omibot-tier-badge';
         const link = document.createElement('a');
@@ -471,7 +591,7 @@
         link.href = upgradeUrl;
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
-        link.textContent = 'Free';
+        link.textContent = 'FREE';
         link.title = 'Upgrade to Omi AI paid';
         tierBadgeEl.appendChild(link);
       }
@@ -485,12 +605,16 @@
     }
 
     function updateActiveToolbar(threadId) {
+      closeThreadSwitcher();
       if (!threadId || !isValidThreadId(threadId)) {
         threadToolbar.hidden = true;
         return;
       }
       const t = getThreadFromCache(threadId);
       activeTitleEl.textContent = (t && t.title) || 'Conversation';
+      const canSwitch = threadsCache.length > 1;
+      activeTitleChevron.hidden = !canSwitch;
+      activeTitleBtn.disabled = !canSwitch;
       threadToolbar.hidden = false;
     }
 
