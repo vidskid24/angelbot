@@ -4,6 +4,19 @@ import { getThreadLimitForTier } from '../lib/tier.js';
 
 const maxTurns = parseInt(process.env.MAX_HISTORY_TURNS || '10', 10) || 10;
 
+const DEFAULT_THREAD_TITLES = new Set([
+  'conversation',
+  'new conversation',
+]);
+
+/**
+ * @param {string} [title]
+ */
+export function isDefaultThreadTitle(title) {
+  const normalized = String(title || '').trim().toLowerCase();
+  return !normalized || DEFAULT_THREAD_TITLES.has(normalized);
+}
+
 /**
  * @param {string} userId
  * @returns {Promise<Array<{ id: string; title: string; created_at: Date; updated_at: Date }>>}

@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=38
+ * OMIBOT_WIDGET_VERSION=39
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -1025,6 +1025,14 @@
         }
         if (result.data.threadId) {
           setThreadId(result.data.threadId);
+          if (result.data.threadTitle) {
+            for (let ti = 0; ti < threadsCache.length; ti++) {
+              if (threadsCache[ti].id === result.data.threadId) {
+                threadsCache[ti].title = result.data.threadTitle;
+                break;
+              }
+            }
+          }
           await fetchThreads(tok);
           renderThreadList(result.data.threadId);
           updateActiveToolbar(result.data.threadId);

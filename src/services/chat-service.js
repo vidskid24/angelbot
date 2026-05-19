@@ -160,8 +160,21 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
     const retrievalQuery = buildRetrievalQuery(message, history);
     const styleExcerpts = await retrieve(retrievalQuery, 2);
     const reply = await getWisdomReply(message, history, styleExcerpts || null, savedContext, userSeemsToBeConcluding);
+    let threadTitle = null;
     if (useDb && threadId) {
       await threadDb.appendThreadTurn(threadId, message, reply);
+      if (history.length === 0) {
+        try {
+          const thread = await threadDb.getThreadForUser(threadId, userId);
+          if (thread && threadDb.isDefaultThreadTitle(thread.title)) {
+            const aiTitle = await generateTitleForContent(message);
+            const updated = await threadDb.updateThreadTitle(threadId, userId, aiTitle);
+            threadTitle = updated?.title || null;
+          }
+        } catch (titleErr) {
+          console.error('Auto thread title error:', titleErr);
+        }
+      }
     } else {
       appendTurn(sessionKey, message, reply);
     }
@@ -172,6 +185,7 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
       assistantReply: reply,
       displayFull: reply,
       chunks: chunkDisplayContent(reply),
+      threadTitle,
     };
   } catch (err) {
     console.error('Wisdom reply error:', err);

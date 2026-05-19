@@ -74,6 +74,7 @@ export function createChatApiRouter() {
         html: formatChatTextHtml(out.assistantReply),
         sessionId: threadId,
         threadId,
+        ...(out.threadTitle ? { threadTitle: out.threadTitle } : {}),
       });
     } catch (e) {
       next(e);
