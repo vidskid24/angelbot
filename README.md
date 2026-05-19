@@ -112,7 +112,7 @@ Paid vs free thread limits are enforced on the server. Configure Thinkific enrol
     }
 
     var s = document.createElement('script');
-    s.src = api + '/omi-chat-widget.js?v=21';
+    s.src = api + '/omi-chat-widget.js?v=22';
     s.defer = true;
     document.head.appendChild(s);
   }
