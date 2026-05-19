@@ -1,18 +1,22 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * ANGELBOT_WIDGET_VERSION=19
+ * OMIBOT_WIDGET_VERSION=21
  *
- * Hosted by the API at GET /angel-chat-widget.js when deployed.
+ * Hosted by the API at GET /omi-chat-widget.js when deployed.
+ * Legacy URL /angel-chat-widget.js serves the same file.
  */
 
 (function () {
-  const API = window.ANGELBOT_API_BASE || '';
+  const API = window.OMIBOT_API_BASE || window.ANGELBOT_API_BASE || '';
   if (!API) {
-    console.error('AngelBot: set window.ANGELBOT_API_BASE to your API origin (no trailing slash)');
+    console.error('Omi Bot: set window.OMIBOT_API_BASE to your API origin (no trailing slash)');
     return;
   }
 
-  const STORAGE_KEY = 'angelbot_access_token';
+  const STORAGE_KEY = 'omibot_access_token';
+  const STORAGE_KEY_LEGACY = 'angelbot_access_token';
+  const THREAD_KEY = 'omibot_thread_id';
+  const THREAD_KEY_LEGACY = 'angelbot_thread_id';
 
   const GREETING_WORDS = [
     'Hello',
@@ -39,6 +43,27 @@
     'Is there a feeling, pattern, or moment you would like to unpack?',
   ];
 
+  function getOmiUser() {
+    return window.OMIBOT_USER || window.ANGELBOT_USER || {};
+  }
+
+  function getOmiRootId() {
+    return window.OMIBOT_ROOT_ID || window.ANGELBOT_ROOT_ID;
+  }
+
+  function getOmiSessionId() {
+    return window.OMIBOT_SESSION_ID || window.ANGELBOT_SESSION_ID;
+  }
+
+  function findChatRoot(rootId) {
+    const preferred = rootId || getOmiRootId() || 'omibot-chat-root';
+    return (
+      document.getElementById(preferred) ||
+      document.getElementById('omibot-chat-root') ||
+      document.getElementById('angelbot-chat-root')
+    );
+  }
+
   function pickRandom(list) {
     return list[Math.floor(Math.random() * list.length)];
   }
@@ -61,14 +86,19 @@
   }
 
   function getDisplayName() {
-    const user = window.ANGELBOT_USER || {};
+    const user = getOmiUser();
     const first = String(user.first_name || '').trim();
     if (!isLiquidPlaceholder(first)) return first;
     return 'friend';
   }
 
   function getToken() {
-    return sessionStorage.getItem(STORAGE_KEY);
+    let tok = sessionStorage.getItem(STORAGE_KEY);
+    if (!tok) {
+      tok = sessionStorage.getItem(STORAGE_KEY_LEGACY);
+      if (tok) sessionStorage.setItem(STORAGE_KEY, tok);
+    }
+    return tok;
   }
 
   function setToken(tok) {
@@ -77,6 +107,20 @@
 
   function clearToken() {
     sessionStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(STORAGE_KEY_LEGACY);
+  }
+
+  function getThreadId() {
+    let id = sessionStorage.getItem(THREAD_KEY);
+    if (!id) {
+      id = sessionStorage.getItem(THREAD_KEY_LEGACY);
+      if (id) sessionStorage.setItem(THREAD_KEY, id);
+    }
+    return id || getOmiSessionId() || undefined;
+  }
+
+  function setThreadId(id) {
+    if (id) sessionStorage.setItem(THREAD_KEY, String(id));
   }
 
   function isTokenExpired(tok) {
@@ -98,9 +142,9 @@
     if (existing && !isTokenExpired(existing)) return existing;
     if (existing) clearToken();
 
-    const user = window.ANGELBOT_USER || {};
+    const user = getOmiUser();
     if (!user.external_id && !user.email) {
-      throw new Error('Missing ANGELBOT_USER.external_id or ANGELBOT_USER.email');
+      throw new Error('Missing OMIBOT_USER.external_id or OMIBOT_USER.email');
     }
 
     const res = await fetch(API.replace(/\/$/, '') + '/auth/bootstrap', {
@@ -138,7 +182,7 @@
         parent.appendChild(document.createTextNode(normalized.slice(lastIndex, match.index)));
       }
       const strong = document.createElement('strong');
-      strong.className = 'angelbot-bold';
+      strong.className = 'omibot-bold';
       strong.textContent = match[1];
       parent.appendChild(strong);
       lastIndex = re.lastIndex;
@@ -149,45 +193,45 @@
   }
 
   function mount(rootId) {
-    const root = document.getElementById(rootId || 'angelbot-chat-root');
+    const root = findChatRoot(rootId);
     if (!root) {
-      console.error('AngelBot: add <div id="angelbot-chat-root"></div> to the page');
+      console.error('Omi Bot: add <div id="omibot-chat-root"></div> to the page');
       return;
     }
 
     root.innerHTML =
       '<style>' +
-      '.angelbot-chat{font-family:system-ui,-apple-system,sans-serif;max-width:600px;width:100%;margin:0 auto;padding:0 16px;box-sizing:border-box;color:#1a1a1a}' +
-      '.angelbot-chat .angelbot-bold{font-weight:700!important}' +
-      '#angelbot-welcome{margin:0 0 12px}' +
-      '.angelbot-hello{font-size:clamp(2rem,6vw,2.75rem);font-weight:400;margin:0 0 8px;line-height:1.15;letter-spacing:-0.02em}' +
-      '.angelbot-welcome-prompt{font-size:1.05rem;line-height:1.55;color:#444;margin:0}' +
-      '#angelbot-status{margin:0 0 8px;color:#666;font-size:0.9rem;text-align:center}' +
-      '#angelbot-log{min-height:0;overflow:visible;padding:0;margin:0 0 12px}' +
-      '.angelbot-msg-user{display:flex;justify-content:flex-end;margin:12px 0}' +
-      '.angelbot-msg-user .angelbot-bubble{background:#e8e4dc;border-radius:14px;padding:12px 16px;max-width:85%;line-height:1.5;white-space:pre-wrap}' +
-      '.angelbot-msg-bot{margin:16px 0;line-height:1.55;white-space:pre-wrap;max-width:100%}' +
-      '.angelbot-msg-system{margin:12px 0;padding:10px 12px;border-radius:8px;background:#f0ebe3;color:#5c5348;font-size:0.9rem;line-height:1.45}' +
-      '.angelbot-thinking{margin:16px 0;color:#666;font-size:0.95rem}' +
-      '.angelbot-thinking-dots{display:inline-block;margin-left:2px}' +
-      '.angelbot-thinking-dots span{display:inline-block;animation:angelbot-dot 1.2s ease-in-out infinite}' +
-      '.angelbot-thinking-dots span:nth-child(2){animation-delay:.15s}' +
-      '.angelbot-thinking-dots span:nth-child(3){animation-delay:.3s}' +
-      '@keyframes angelbot-dot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}' +
-      '#angelbot-input{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid #ddd;background:#fff;font:inherit;font-size:1rem;resize:vertical}' +
-      '#angelbot-input:focus{outline:2px solid #c9c0b5;outline-offset:1px;border-color:#c9c0b5}' +
+      '.omibot-chat{font-family:system-ui,-apple-system,sans-serif;max-width:600px;width:100%;margin:0 auto;padding:0 16px;box-sizing:border-box;color:#1a1a1a}' +
+      '.omibot-chat .omibot-bold{font-weight:700!important}' +
+      '#omibot-welcome{margin:0 0 12px}' +
+      '.omibot-hello{font-size:clamp(2rem,6vw,2.75rem);font-weight:400;margin:0 0 8px;line-height:1.15;letter-spacing:-0.02em}' +
+      '.omibot-welcome-prompt{font-size:1.05rem;line-height:1.55;color:#444;margin:0}' +
+      '#omibot-status{margin:0 0 8px;color:#666;font-size:0.9rem;text-align:center}' +
+      '#omibot-log{min-height:0;overflow:visible;padding:0;margin:0 0 12px}' +
+      '.omibot-msg-user{display:flex;justify-content:flex-end;margin:12px 0}' +
+      '.omibot-msg-user .omibot-bubble{background:#e8e4dc;border-radius:14px;padding:12px 16px;max-width:85%;line-height:1.5;white-space:pre-wrap}' +
+      '.omibot-msg-bot{margin:16px 0;line-height:1.55;white-space:pre-wrap;max-width:100%}' +
+      '.omibot-msg-system{margin:12px 0;padding:10px 12px;border-radius:8px;background:#f0ebe3;color:#5c5348;font-size:0.9rem;line-height:1.45}' +
+      '.omibot-thinking{margin:16px 0;color:#666;font-size:0.95rem}' +
+      '.omibot-thinking-dots{display:inline-block;margin-left:2px}' +
+      '.omibot-thinking-dots span{display:inline-block;animation:omibot-dot 1.2s ease-in-out infinite}' +
+      '.omibot-thinking-dots span:nth-child(2){animation-delay:.15s}' +
+      '.omibot-thinking-dots span:nth-child(3){animation-delay:.3s}' +
+      '@keyframes omibot-dot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}' +
+      '#omibot-input{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid #ddd;background:#fff;font:inherit;font-size:1rem;resize:vertical}' +
+      '#omibot-input:focus{outline:2px solid #c9c0b5;outline-offset:1px;border-color:#c9c0b5}' +
       '</style>' +
-      '<div class="angelbot-chat">' +
-      '<p id="angelbot-status">Preparing chat session...</p>' +
-      '<div id="angelbot-welcome"></div>' +
-      '<div id="angelbot-log"></div>' +
-      '<textarea id="angelbot-input" rows="2" placeholder="Write a message..."></textarea>' +
+      '<div class="omibot-chat">' +
+      '<p id="omibot-status">Preparing chat session...</p>' +
+      '<div id="omibot-welcome"></div>' +
+      '<div id="omibot-log"></div>' +
+      '<textarea id="omibot-input" rows="2" placeholder="Write a message..."></textarea>' +
       '</div>';
 
-    const status = root.querySelector('#angelbot-status');
-    const welcome = root.querySelector('#angelbot-welcome');
-    const log = root.querySelector('#angelbot-log');
-    const input = root.querySelector('#angelbot-input');
+    const status = root.querySelector('#omibot-status');
+    const welcome = root.querySelector('#omibot-welcome');
+    const log = root.querySelector('#omibot-log');
+    const input = root.querySelector('#omibot-input');
     let ready = false;
     let welcomeDismissed = false;
 
@@ -200,10 +244,10 @@
 
     function showWelcome() {
       const hello = document.createElement('p');
-      hello.className = 'angelbot-hello';
+      hello.className = 'omibot-hello';
       hello.textContent = formatWelcomeLine();
       const prompt = document.createElement('p');
-      prompt.className = 'angelbot-welcome-prompt';
+      prompt.className = 'omibot-welcome-prompt';
       prompt.textContent = pickWelcomePrompt();
       welcome.appendChild(hello);
       welcome.appendChild(prompt);
@@ -235,20 +279,20 @@
     function removeThinking() {
       if (thinkingEl && thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
       thinkingEl = null;
-      const stale = log.querySelector('#angelbot-thinking');
+      const stale = log.querySelector('#omibot-thinking');
       if (stale) stale.remove();
     }
 
     function showThinking() {
       removeThinking();
       const d = document.createElement('div');
-      d.id = 'angelbot-thinking';
-      d.className = 'angelbot-thinking angelbot-msg-bot';
+      d.id = 'omibot-thinking';
+      d.className = 'omibot-thinking omibot-msg-bot';
 
       const line = document.createElement('span');
       line.appendChild(document.createTextNode('Reflecting'));
       const dots = document.createElement('span');
-      dots.className = 'angelbot-thinking-dots';
+      dots.className = 'omibot-thinking-dots';
       for (let i = 0; i < 3; i++) {
         const dot = document.createElement('span');
         dot.textContent = '.';
@@ -268,19 +312,19 @@
 
       const row = document.createElement('div');
       row.className = isUser
-        ? 'angelbot-msg-user'
+        ? 'omibot-msg-user'
         : isSystem
-          ? 'angelbot-msg-system'
-          : 'angelbot-msg-bot';
+          ? 'omibot-msg-system'
+          : 'omibot-msg-bot';
 
       if (isUser) {
         const bubble = document.createElement('div');
-        bubble.className = 'angelbot-bubble';
+        bubble.className = 'omibot-bubble';
         bubble.textContent = text;
         row.appendChild(bubble);
       } else {
         const body = document.createElement('div');
-        body.className = 'angelbot-message-body';
+        body.className = 'omibot-message-body';
         if (isSystem) {
           body.textContent = text;
         } else {
@@ -293,9 +337,32 @@
       scrollIntoViewIfNearBottom(row);
     }
 
+    async function loadThreadHistory(token) {
+      const threadId = getThreadId();
+      if (!threadId) return;
+      try {
+        const res = await fetch(
+          API.replace(/\/$/, '') + '/api/threads/' + encodeURIComponent(threadId),
+          { headers: { Authorization: 'Bearer ' + token } }
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        const messages = data.messages || [];
+        if (!messages.length) return;
+        dismissWelcome();
+        for (let i = 0; i < messages.length; i++) {
+          const m = messages[i];
+          append(m.role === 'user' ? 'You' : 'Companion', m.content);
+        }
+      } catch {
+        /* ignore — fresh chat */
+      }
+    }
+
     ensureToken()
-      .then(function () {
+      .then(async function (token) {
         status.textContent = "You're Signed In";
+        await loadThreadHistory(token);
         ready = true;
         setInputEnabled(true);
       })
@@ -307,14 +374,14 @@
     setInputEnabled(false);
 
     async function postChat(message, token) {
-      const sessionId = window.ANGELBOT_SESSION_ID || undefined;
+      const threadId = getThreadId();
       const res = await fetch(API.replace(/\/$/, '') + '/api/chat/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: 'Bearer ' + token,
         },
-        body: JSON.stringify({ message, sessionId }),
+        body: JSON.stringify({ message, threadId }),
       });
       const data = await res.json().catch(() => ({}));
       return { res, data };
@@ -349,6 +416,7 @@
           append('System', result.data.message || result.data.error || 'Request failed');
           return;
         }
+        if (result.data.threadId) setThreadId(result.data.threadId);
         append('Companion', result.data.text || '');
       } catch (e) {
         append('System', String(e && e.message ? e.message : e));
@@ -370,9 +438,9 @@
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
-      mount(window.ANGELBOT_ROOT_ID);
+      mount(getOmiRootId());
     });
   } else {
-    mount(window.ANGELBOT_ROOT_ID);
+    mount(getOmiRootId());
   }
 })();

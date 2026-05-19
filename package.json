@@ -1,14 +1,15 @@
 {
-  "name": "angelbot",
+  "name": "omibot",
   "version": "1.0.0",
-  "description": "Fifth-Dimensional Alchemy Scribe — Web companion API",
+  "description": "Omi Bot — Web companion API",
   "main": "src/index.js",
   "type": "module",
   "scripts": {
     "start": "node src/index.js",
     "ingest": "node src/rag/run-ingest.js",
     "ingest:new": "node src/rag/run-ingest.js --new",
-    "metrics:embed": "node scripts/summarize-embed-metrics.js"
+    "metrics:embed": "node scripts/summarize-embed-metrics.js",
+    "db:migrate": "node -e \"import('dotenv/config'); import('./src/db/migrate.js').then(m => m.runMigrations()).then(() => console.log('Done')).catch(e => { console.error(e); process.exit(1); })\""
   },
   "engines": {
     "node": ">=18"
@@ -27,6 +28,7 @@
     "dotenv": "^16.3.1",
     "express": "^4.21.2",
     "jose": "^5.9.6",
-    "pdf-parse": "^1.1.1"
+    "pdf-parse": "^1.1.1",
+    "pg": "^8.21.0"
   }
 }

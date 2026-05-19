@@ -15,14 +15,15 @@ function getSecret() {
 }
 
 /**
- * @param {{ sub: string; email?: string }} claims
+ * @param {{ sub: string; email?: string; tier?: 'free' | 'paid' }} claims
  * @param {number} [ttlSeconds]
  * @returns {Promise<string>}
  */
 export async function createAppSessionJwt(claims, ttlSeconds = 60 * 60 * 24 * 7) {
   const secret = getSecret();
   const now = Math.floor(Date.now() / 1000);
-  return new SignJWT({ email: claims.email ?? '' })
+  const tier = claims.tier === 'paid' ? 'paid' : 'free';
+  return new SignJWT({ email: claims.email ?? '', tier })
     .setProtectedHeader({ alg: ALG })
     .setSubject(claims.sub)
     .setIssuedAt(now)
@@ -32,12 +33,17 @@ export async function createAppSessionJwt(claims, ttlSeconds = 60 * 60 * 24 * 7)
 
 /**
  * @param {string} token
- * @returns {Promise<{ sub: string; email?: string }>}
+ * @returns {Promise<{ sub: string; email?: string; tier: 'free' | 'paid' }>}
  */
 export async function verifyAppSessionJwt(token) {
   const secret = getSecret();
   const { payload } = await jwtVerify(token, secret, { algorithms: [ALG] });
   const sub = payload.sub;
   if (!sub) throw new Error('Invalid token: missing sub');
-  return { sub, email: typeof payload.email === 'string' ? payload.email : undefined };
+  const tier = payload.tier === 'paid' ? 'paid' : 'free';
+  return {
+    sub,
+    email: typeof payload.email === 'string' ? payload.email : undefined,
+    tier,
+  };
 }

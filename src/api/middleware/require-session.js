@@ -2,7 +2,7 @@ import { verifyAppSessionJwt } from '../../lib/app-session.js';
 
 /**
  * Expect `Authorization: Bearer <app_jwt>`.
- * Sets `req.angelUser = { sub, email? }`.
+ * Sets `req.omiUser = { sub, email?, tier }`.
  */
 export async function requireSession(req, res, next) {
   const hdr = req.headers.authorization || '';
@@ -12,7 +12,7 @@ export async function requireSession(req, res, next) {
     return;
   }
   try {
-    req.angelUser = await verifyAppSessionJwt(m[1].trim());
+    req.omiUser = await verifyAppSessionJwt(m[1].trim());
     next();
   } catch {
     res.status(401).json({ error: 'invalid_token' });

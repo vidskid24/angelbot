@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { createAppSessionJwt } from '../../lib/app-session.js';
+import { ensureUserTier } from '../../lib/tier.js';
 
 function parseAllowedOrigins() {
   const raw = process.env.BOOTSTRAP_ALLOWED_ORIGINS || process.env.CORS_ORIGINS || '';
@@ -58,14 +59,16 @@ export function createAuthBootstrapRouter() {
       }
 
       const email = body.email ? String(body.email).trim().toLowerCase() : undefined;
+      const tier = await ensureUserTier(sub, email);
       const ttl = Math.max(60, Math.min(86400, Number(process.env.APP_BOOTSTRAP_TOKEN_TTL_SECONDS) || 3600));
-      const token = await createAppSessionJwt({ sub, email }, ttl);
+      const token = await createAppSessionJwt({ sub, email, tier }, ttl);
 
       res.json({
         access_token: token,
         token_type: 'Bearer',
         expires_in: ttl,
         sub,
+        tier,
       });
     } catch (e) {
       next(e);

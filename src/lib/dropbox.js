@@ -10,7 +10,7 @@ const DOWNLOAD_URL = 'https://content.dropboxapi.com/2/files/download';
 /**
  * List all files in a Dropbox folder (non-recursive). Handles pagination.
  * @param {string} accessToken - OAuth2 access token
- * @param {string} folderPath - Path in Dropbox, e.g. "" for root or "/AngelBot-StyleGuides"
+ * @param {string} folderPath - Path in Dropbox, e.g. "" for root or "/OmiBot-StyleGuides"
  * @returns {Promise<Array<{ path_display: string, name: string }>>} File entries (files only)
  */
 export async function listFilesInFolder(accessToken, folderPath) {
@@ -68,7 +68,7 @@ export async function listFilesInFolder(accessToken, folderPath) {
 /**
  * Download a file from Dropbox by path and return its UTF-8 text content.
  * @param {string} accessToken - OAuth2 access token
- * @param {string} path - Dropbox path, e.g. "/AngelBot-StyleGuides/guide.txt"
+ * @param {string} path - Dropbox path, e.g. "/OmiBot-StyleGuides/guide.txt"
  * @returns {Promise<string>}
  */
 export async function downloadFileAsText(accessToken, path) {
@@ -98,7 +98,7 @@ export async function downloadFileAsText(accessToken, path) {
 /**
  * Download a file from Dropbox by path and return its raw bytes (e.g. for PDFs).
  * @param {string} accessToken - OAuth2 access token
- * @param {string} path - Dropbox path, e.g. "/AngelBot-StyleGuides/doc.pdf"
+ * @param {string} path - Dropbox path, e.g. "/OmiBot-StyleGuides/doc.pdf"
  * @returns {Promise<Buffer>}
  */
 export async function downloadFileAsBuffer(accessToken, path) {

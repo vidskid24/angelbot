@@ -6,7 +6,7 @@ export function createMemoriesApiRouter() {
 
   r.post('/api/memories', async (req, res, next) => {
     try {
-      const userId = req.angelUser.sub;
+      const userId = req.omiUser.sub;
       const content = String(req.body?.content || '').trim();
       if (!content) {
         res.status(400).json({ error: 'content_required' });
@@ -23,7 +23,7 @@ export function createMemoriesApiRouter() {
 
   r.get('/api/memories', async (req, res, next) => {
     try {
-      const userId = req.angelUser.sub;
+      const userId = req.omiUser.sub;
       const out = await processListMemories(userId);
       res.json({ text: out.text });
     } catch (e) {
@@ -33,7 +33,7 @@ export function createMemoriesApiRouter() {
 
   r.delete('/api/memories', async (req, res, next) => {
     try {
-      const userId = req.angelUser.sub;
+      const userId = req.omiUser.sub;
       const name = String(req.query.name || '').trim();
       if (!name) {
         res.status(400).json({ error: 'name_required' });

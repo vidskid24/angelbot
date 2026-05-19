@@ -4,6 +4,7 @@
 
 import { getWisdomReply } from '../bot/wisdom.js';
 import { getHistory, appendTurn } from '../bot/memory.js';
+import * as threadDb from '../db/threads.js';
 import { getMemories, addMemory, deleteMemoryByName } from '../bot/user-memory.js';
 import { summarizeConversation, generateTitleForContent } from '../lib/gemini.js';
 import { retrieve } from '../rag/retrieve.js';
@@ -107,23 +108,25 @@ export function chunkDisplayContent(fullContent) {
 }
 
 /**
- * @param {{ userId: string; sessionKey: string; message: string }} params
+ * @param {{ userId: string; sessionKey: string; message: string; threadId?: string; useDb?: boolean }} params
  * @returns {Promise<
  *   | { ok: false; code: 'error'; text: string }
  *   | { ok: true; kind: 'memory_saved'; text: string }
  *   | { ok: true; kind: 'reply'; assistantReply: string; displayFull: string; chunks: string[] }
  * >}
  */
-export async function processWisdomMessage({ userId, sessionKey, message }) {
-  const history = getHistory(sessionKey);
+export async function processWisdomMessage({ userId, sessionKey, message, threadId, useDb = false }) {
+  const pendingKey = useDb && threadId ? `thread:${threadId}` : sessionKey;
+  const history =
+    useDb && threadId ? await threadDb.getThreadMessages(threadId) : getHistory(sessionKey);
   const memories = await getMemories(userId);
   const savedContext = memories.length
     ? memories.map((m) => `**${m.name}**\n${m.content}`).join('\n\n---\n\n')
     : null;
   const userSeemsToBeConcluding = isConclusionaryMessage(message);
 
-  if (saveOfferPendingBySession.get(sessionKey) && isAffirmativeMessage(message)) {
-    saveOfferPendingBySession.set(sessionKey, false);
+  if (saveOfferPendingBySession.get(pendingKey) && isAffirmativeMessage(message)) {
+    saveOfferPendingBySession.set(pendingKey, false);
     try {
       const dateLabel = new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
       let content = history.length ? await summarizeConversation(history) : '';
@@ -157,8 +160,12 @@ export async function processWisdomMessage({ userId, sessionKey, message }) {
     const retrievalQuery = buildRetrievalQuery(message, history);
     const styleExcerpts = await retrieve(retrievalQuery, 2);
     const reply = await getWisdomReply(message, history, styleExcerpts || null, savedContext, userSeemsToBeConcluding);
-    appendTurn(sessionKey, message, reply);
-    if (userSeemsToBeConcluding) saveOfferPendingBySession.set(sessionKey, true);
+    if (useDb && threadId) {
+      await threadDb.appendThreadTurn(threadId, message, reply);
+    } else {
+      appendTurn(sessionKey, message, reply);
+    }
+    if (userSeemsToBeConcluding) saveOfferPendingBySession.set(pendingKey, true);
     return {
       ok: true,
       kind: 'reply',
