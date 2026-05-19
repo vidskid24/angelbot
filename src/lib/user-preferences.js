@@ -2,7 +2,7 @@
  * User-facing preference enums and system-prompt instructions.
  */
 
-export const TONE_VALUES = ['warm', 'professional', 'concise'];
+export const TONE_VALUES = ['warm', 'playful', 'concise'];
 export const MA_EXPERIENCE_VALUES = ['new', 'some_experience', 'long_time'];
 
 export const DEFAULT_TONE = 'warm';
@@ -29,8 +29,10 @@ export function isValidMaExperience(value) {
  * @returns {{ tone: string; maExperience: string }}
  */
 export function normalizePreferences(raw = {}) {
+  let tone = raw.tone;
+  if (tone === 'professional') tone = 'warm';
   return {
-    tone: isValidTone(raw.tone) ? raw.tone : DEFAULT_TONE,
+    tone: isValidTone(tone) ? tone : DEFAULT_TONE,
     maExperience: isValidMaExperience(raw.maExperience) ? raw.maExperience : DEFAULT_MA_EXPERIENCE,
   };
 }
@@ -38,8 +40,8 @@ export function normalizePreferences(raw = {}) {
 const TONE_INSTRUCTIONS = {
   warm:
     'Warm and companionable — conversational, gentle, and inviting. Lead with presence and curiosity; wisdom follows naturally.',
-  professional:
-    'Professional and clear — respectful, structured, and precise. Minimize casual phrasing; stay warm without being chatty.',
+  playful:
+    'Playful and lighthearted — warm, curious, and gently humorous when it fits; keep wisdom grounded and never flippant about their experience.',
   concise:
     'Concise and direct — shorter paragraphs, fewer repetitions, get to the point while staying kind and grounded.',
 };

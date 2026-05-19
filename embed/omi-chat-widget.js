@@ -227,7 +227,7 @@
       '.omibot-layout{display:flex;align-items:flex-start;gap:0;margin-top:8px}' +
       '.omibot-sidebar{width:11.5rem;flex-shrink:0;border-right:1px solid #e0dcd4;padding:4px 12px 16px 0;box-sizing:border-box}' +
       '.omibot-sidebar .omibot-new-btn,.omibot-sidebar .omibot-thread-list,.omibot-sidebar .omibot-thread-row{width:100%}' +
-      '.omibot-tier-row{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px;margin:0 0 8px;line-height:1.35}' +
+      '.omibot-tier-row{display:flex;align-items:center;justify-content:space-between;width:100%;flex-wrap:wrap;gap:10px;margin:0 0 8px;line-height:1.35;box-sizing:border-box}' +
       '.omibot-thread-meta-footer{font-size:0.75rem;color:#666;margin:8px 0 2px;padding:6px 0 0;line-height:1.35}' +
       '.omibot-tier-badge{font-size:0.7rem;font-weight:600;letter-spacing:0.04em;flex-shrink:0;text-transform:uppercase;white-space:nowrap}' +
       '.omibot-tier-badge-paid{color:#5c5348}' +
@@ -313,7 +313,7 @@
       '<p id="omibot-status" hidden></p>' +
       '<div class="omibot-layout">' +
       '<aside class="omibot-sidebar">' +
-      '<div class="omibot-tier-row"><span id="omibot-tier-badge"></span><button type="button" class="omibot-prefs-btn" id="omibot-prefs-open">Preferences</button></div>' +
+      '<div class="omibot-tier-row"><button type="button" class="omibot-prefs-btn" id="omibot-prefs-open">Preferences</button><span id="omibot-tier-badge"></span></div>' +
       '<button type="button" class="omibot-new-btn" id="omibot-new-thread">+ New conversation</button>' +
       '<p class="omibot-recents-label">Recents</p>' +
       '<div class="omibot-thread-list" id="omibot-thread-list"></div>' +
@@ -431,13 +431,13 @@
     prefsOverlay.setAttribute('role', 'presentation');
     prefsOverlay.innerHTML =
       '<div class="omibot-prefs-dialog" role="dialog" aria-modal="true" aria-labelledby="omibot-prefs-title">' +
-      '<h2 id="omibot-prefs-title">Personalize Omi</h2>' +
+      '<h2 id="omibot-prefs-title">Preferences</h2>' +
       '<p id="omibot-prefs-desc">Choose how you would like Omi to speak with you. You can change these anytime.</p>' +
       '<div class="omibot-prefs-field">' +
       '<label for="omibot-pref-tone">Tone</label>' +
       '<select id="omibot-pref-tone">' +
       '<option value="warm">Warm and companionable</option>' +
-      '<option value="professional">Professional and clear</option>' +
+      '<option value="playful">Playful and lighthearted</option>' +
       '<option value="concise">Concise and direct</option>' +
       '</select></div>' +
       '<div class="omibot-prefs-field">' +
@@ -482,7 +482,7 @@
     function openPrefsModal(mode) {
       const isOnboarding = mode === 'onboarding';
       if (prefsTitleEl) {
-        prefsTitleEl.textContent = isOnboarding ? 'Welcome — personalize Omi' : 'Your preferences';
+        prefsTitleEl.textContent = isOnboarding ? 'Welcome — Preferences' : 'Preferences';
       }
       if (prefsDescEl) {
         prefsDescEl.textContent = isOnboarding
