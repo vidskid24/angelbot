@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=28
+ * OMIBOT_WIDGET_VERSION=29
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -249,8 +249,8 @@
       '.omibot-thread-row:hover .omibot-thread-menu-wrap,.omibot-thread-row.active .omibot-thread-menu-wrap,.omibot-thread-row.menu-open .omibot-thread-menu-wrap{opacity:1;pointer-events:auto}' +
       '.omibot-thread-menu-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:none;border-radius:6px;background:transparent;cursor:pointer;color:#666;font-size:1.1rem;line-height:1}' +
       '.omibot-thread-menu-btn:hover,.omibot-thread-row.menu-open .omibot-thread-menu-btn{background:#e0dcd4;color:#1a1a1a}' +
-      '.omibot-thread-dropdown{display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:200;min-width:9.5rem;background:#fff;border:1px solid #e0dcd4;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);padding:4px 0;overflow:hidden}' +
-      '.omibot-thread-row.menu-open .omibot-thread-dropdown{display:block}' +
+      '.omibot-thread-dropdown{position:fixed;z-index:100000;display:none;min-width:9.5rem;background:#fff;border:1px solid #e0dcd4;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);padding:4px 0;overflow:hidden}' +
+      '.omibot-thread-dropdown.is-open{display:block}' +
       '.omibot-thread-menu-item{display:block;width:100%;text-align:left;padding:9px 14px;border:none;background:transparent;cursor:pointer;font:inherit;font-size:0.85rem;color:#1a1a1a}' +
       '.omibot-thread-menu-item:hover{background:#f7f4ef}' +
       '.omibot-thread-menu-item-danger{color:#8b3a34}' +
@@ -319,29 +319,102 @@
     mainEl.insertBefore(threadToolbar, welcome);
 
     let openMenuRow = null;
+    let openMenuThreadId = null;
+
+    const threadMenuDropdown = document.createElement('div');
+    threadMenuDropdown.className = 'omibot-thread-dropdown';
+    threadMenuDropdown.id = 'omibot-thread-dropdown';
+    threadMenuDropdown.setAttribute('role', 'menu');
+    threadMenuDropdown.hidden = true;
+
+    const threadMenuRename = document.createElement('button');
+    threadMenuRename.type = 'button';
+    threadMenuRename.className = 'omibot-thread-menu-item';
+    threadMenuRename.setAttribute('role', 'menuitem');
+    threadMenuRename.textContent = 'Rename';
+
+    const threadMenuDelete = document.createElement('button');
+    threadMenuDelete.type = 'button';
+    threadMenuDelete.className = 'omibot-thread-menu-item omibot-thread-menu-item-danger';
+    threadMenuDelete.setAttribute('role', 'menuitem');
+    threadMenuDelete.textContent = 'Delete';
+
+    threadMenuDropdown.appendChild(threadMenuRename);
+    threadMenuDropdown.appendChild(threadMenuDelete);
+    document.body.appendChild(threadMenuDropdown);
+
+    function positionThreadDropdown(menuBtn) {
+      threadMenuDropdown.hidden = false;
+      threadMenuDropdown.classList.add('is-open');
+      threadMenuDropdown.style.visibility = 'hidden';
+      threadMenuDropdown.style.top = '0';
+      threadMenuDropdown.style.left = '0';
+      const rect = menuBtn.getBoundingClientRect();
+      const ddHeight = threadMenuDropdown.offsetHeight;
+      const ddWidth = threadMenuDropdown.offsetWidth;
+      let top = rect.bottom + 4;
+      let left = rect.right - ddWidth;
+      if (top + ddHeight > window.innerHeight - 8) {
+        top = rect.top - ddHeight - 4;
+      }
+      if (left < 8) left = 8;
+      if (left + ddWidth > window.innerWidth - 8) {
+        left = window.innerWidth - ddWidth - 8;
+      }
+      threadMenuDropdown.style.top = Math.round(top) + 'px';
+      threadMenuDropdown.style.left = Math.round(left) + 'px';
+      threadMenuDropdown.style.visibility = '';
+    }
 
     function closeAllThreadMenus() {
       if (openMenuRow) {
         openMenuRow.classList.remove('menu-open');
         openMenuRow = null;
       }
+      openMenuThreadId = null;
+      threadMenuDropdown.classList.remove('is-open');
+      threadMenuDropdown.hidden = true;
     }
 
-    function toggleThreadMenu(row) {
-      if (openMenuRow === row) {
+    function openThreadMenu(row, menuBtn, threadId) {
+      openMenuRow = row;
+      openMenuThreadId = threadId;
+      row.classList.add('menu-open');
+      positionThreadDropdown(menuBtn);
+    }
+
+    function toggleThreadMenu(row, menuBtn, threadId) {
+      if (openMenuRow === row && threadMenuDropdown.classList.contains('is-open')) {
         closeAllThreadMenus();
         return;
       }
       closeAllThreadMenus();
-      row.classList.add('menu-open');
-      openMenuRow = row;
+      openThreadMenu(row, menuBtn, threadId);
     }
+
+    threadMenuRename.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      const id = openMenuThreadId;
+      closeAllThreadMenus();
+      if (id) renameThread(id);
+    });
+
+    threadMenuDelete.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      const id = openMenuThreadId;
+      closeAllThreadMenus();
+      if (id) deleteThread(id);
+    });
 
     document.addEventListener('click', function (ev) {
       if (!openMenuRow) return;
       if (ev.target.closest && ev.target.closest('.omibot-thread-menu-wrap')) return;
+      if (ev.target.closest && ev.target.closest('#omibot-thread-dropdown')) return;
       closeAllThreadMenus();
     });
+
+    threadListEl.addEventListener('scroll', closeAllThreadMenus);
+    window.addEventListener('resize', closeAllThreadMenus);
 
     let ready = false;
     let welcomeDismissed = false;
@@ -616,39 +689,10 @@
         menuBtn.addEventListener('click', function (ev) {
           ev.stopPropagation();
           ev.preventDefault();
-          toggleThreadMenu(row);
+          toggleThreadMenu(row, menuBtn, t.id);
         });
 
-        const dropdown = document.createElement('div');
-        dropdown.className = 'omibot-thread-dropdown';
-        dropdown.setAttribute('role', 'menu');
-
-        const renameItem = document.createElement('button');
-        renameItem.type = 'button';
-        renameItem.className = 'omibot-thread-menu-item';
-        renameItem.setAttribute('role', 'menuitem');
-        renameItem.textContent = 'Rename';
-        renameItem.addEventListener('click', function (ev) {
-          ev.stopPropagation();
-          closeAllThreadMenus();
-          renameThread(t.id);
-        });
-
-        const deleteItem = document.createElement('button');
-        deleteItem.type = 'button';
-        deleteItem.className = 'omibot-thread-menu-item omibot-thread-menu-item-danger';
-        deleteItem.setAttribute('role', 'menuitem');
-        deleteItem.textContent = 'Delete';
-        deleteItem.addEventListener('click', function (ev) {
-          ev.stopPropagation();
-          closeAllThreadMenus();
-          deleteThread(t.id);
-        });
-
-        dropdown.appendChild(renameItem);
-        dropdown.appendChild(deleteItem);
         menuWrap.appendChild(menuBtn);
-        menuWrap.appendChild(dropdown);
         row.appendChild(selectBtn);
         row.appendChild(menuWrap);
         item.appendChild(row);
