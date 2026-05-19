@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * ANGELBOT_WIDGET_VERSION=17
+ * ANGELBOT_WIDGET_VERSION=18
  *
  * Hosted by the API at GET /angel-chat-widget.js when deployed.
  */
@@ -163,7 +163,7 @@
       '.angelbot-hello{font-size:clamp(2rem,6vw,2.75rem);font-weight:400;margin:0 0 8px;line-height:1.15;letter-spacing:-0.02em}' +
       '.angelbot-welcome-prompt{font-size:1.05rem;line-height:1.55;color:#444;margin:0}' +
       '#angelbot-status{margin:0 0 8px;color:#666;font-size:0.9rem;text-align:center}' +
-      '#angelbot-log{min-height:0;max-height:28rem;overflow:auto;padding:0;margin:0 0 12px}' +
+      '#angelbot-log{min-height:0;overflow:visible;padding:0;margin:0 0 12px}' +
       '.angelbot-msg-user{display:flex;justify-content:flex-end;margin:12px 0}' +
       '.angelbot-msg-user .angelbot-bubble{background:#e8e4dc;border-radius:14px;padding:12px 16px;max-width:85%;line-height:1.5;white-space:pre-wrap}' +
       '.angelbot-msg-bot{margin:16px 0;line-height:1.55;white-space:pre-wrap;max-width:100%}' +
@@ -244,7 +244,7 @@
 
       thinkingEl = d;
       log.appendChild(d);
-      log.scrollTop = log.scrollHeight;
+      d.scrollIntoView({ block: 'end' });
     }
 
     function append(role, text) {
@@ -275,7 +275,7 @@
       }
 
       log.appendChild(row);
-      log.scrollTop = log.scrollHeight;
+      row.scrollIntoView({ block: 'end' });
     }
 
     ensureToken()
