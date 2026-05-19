@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=36
+ * OMIBOT_WIDGET_VERSION=38
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -228,7 +228,7 @@
       '.omibot-sidebar{width:11.5rem;flex-shrink:0;border-right:1px solid #e0dcd4;padding:4px 12px 16px 0;box-sizing:border-box}' +
       '.omibot-sidebar .omibot-new-btn,.omibot-sidebar .omibot-thread-list,.omibot-sidebar .omibot-thread-row{width:100%}' +
       '.omibot-tier-row{margin:0 0 8px;text-align:right;line-height:1.35}' +
-      '.omibot-thread-meta-count{display:block;font-size:0.75rem;color:#666;margin:0 0 10px;line-height:1.35}' +
+      '.omibot-thread-meta-footer{font-size:0.75rem;color:#666;margin:8px 0 2px;padding:6px 0 0;line-height:1.35}' +
       '.omibot-tier-badge{font-size:0.7rem;font-weight:600;letter-spacing:0.04em;flex-shrink:0;text-transform:uppercase;white-space:nowrap}' +
       '.omibot-tier-badge-paid{color:#5c5348}' +
       '.omibot-tier-link{color:#7a5c1e;text-decoration:none;border-bottom:1px solid rgba(122,92,30,.45);cursor:pointer;text-transform:none}' +
@@ -236,6 +236,7 @@
       '.omibot-new-btn{width:100%;padding:8px 10px;margin:0 0 8px;border:1px solid #c9c0b5;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:0.85rem}' +
       '.omibot-new-btn:hover:not(:disabled){background:#f7f4ef}' +
       '.omibot-new-btn:disabled{opacity:0.45;cursor:not-allowed}' +
+      '.omibot-recents-label{font-size:0.75rem;color:#666;margin:0 0 6px;line-height:1.35}' +
       '.omibot-thread-list{margin:0;padding:0;max-height:16rem;overflow-y:auto}' +
       '.omibot-thread-list-item{margin:0;padding:0;list-style:none}' +
       '.omibot-thread-row{display:flex;align-items:center;gap:2px;width:100%;box-sizing:border-box;margin:0 0 6px;border-radius:8px;position:relative}' +
@@ -295,7 +296,7 @@
       '<aside class="omibot-sidebar">' +
       '<div class="omibot-tier-row"><span id="omibot-tier-badge"></span></div>' +
       '<button type="button" class="omibot-new-btn" id="omibot-new-thread">+ New conversation</button>' +
-      '<span class="omibot-thread-meta-count" id="omibot-thread-meta">Conversations</span>' +
+      '<p class="omibot-recents-label">Recents</p>' +
       '<div class="omibot-thread-list" id="omibot-thread-list"></div>' +
       '</aside>' +
       '<div class="omibot-main">' +
@@ -309,7 +310,6 @@
     const log = root.querySelector('#omibot-log');
     const input = root.querySelector('#omibot-input');
     const threadListEl = root.querySelector('#omibot-thread-list');
-    const threadMetaEl = root.querySelector('#omibot-thread-meta');
     const tierBadgeEl = root.querySelector('#omibot-tier-badge');
     const upgradeUrl =
       window.OMIBOT_UPGRADE_URL ||
@@ -572,12 +572,8 @@
       input.disabled = !on;
     }
 
-    function updateThreadMeta() {
-      const n = threadsMeta.threadCount;
-      const cap = threadsMeta.threadLimit;
+    function updateTierBadge() {
       const tier = threadsMeta.tier === 'paid' ? 'paid' : 'free';
-      threadMetaEl.textContent = n + ' of ' + cap + ' conversations';
-      newThreadBtn.disabled = n >= cap;
       tierBadgeEl.replaceChildren();
       if (tier === 'paid') {
         tierBadgeEl.className = 'omibot-tier-badge omibot-tier-badge-paid';
@@ -594,6 +590,43 @@
         link.title = 'Upgrade to Omi AI paid';
         tierBadgeEl.appendChild(link);
       }
+    }
+
+    function appendThreadMetaFooter() {
+      const existing = threadListEl.querySelector('#omibot-thread-meta-footer');
+      if (existing) existing.remove();
+
+      const n = threadsMeta.threadCount;
+      const cap = threadsMeta.threadLimit;
+      if (n < cap - 1) return;
+
+      const footer = document.createElement('div');
+      footer.id = 'omibot-thread-meta-footer';
+      footer.className = 'omibot-thread-meta-footer';
+      footer.appendChild(document.createTextNode(n + ' of ' + cap + ' conversations'));
+
+      const tier = threadsMeta.tier === 'paid' ? 'paid' : 'free';
+      if (tier !== 'paid' && n >= cap) {
+        footer.appendChild(document.createTextNode(' '));
+        const link = document.createElement('a');
+        link.className = 'omibot-tier-link';
+        link.href = upgradeUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = 'Upgrade';
+        link.title = 'Upgrade to Omi AI paid';
+        footer.appendChild(link);
+      }
+
+      threadListEl.appendChild(footer);
+    }
+
+    function updateThreadMeta() {
+      const n = threadsMeta.threadCount;
+      const cap = threadsMeta.threadLimit;
+      newThreadBtn.disabled = n >= cap;
+      updateTierBadge();
+      appendThreadMetaFooter();
     }
 
     function getThreadFromCache(threadId) {
@@ -778,6 +811,7 @@
         empty.style.cssText = 'font-size:0.8rem;color:#888;padding:4px 0';
         empty.textContent = 'No saved chats yet';
         threadListEl.appendChild(empty);
+        appendThreadMetaFooter();
         return;
       }
       for (let i = 0; i < threadsCache.length; i++) {
@@ -821,6 +855,7 @@
         item.appendChild(row);
         threadListEl.appendChild(item);
       }
+      appendThreadMetaFooter();
     }
 
     async function fetchThreads(token) {
