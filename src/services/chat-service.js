@@ -6,7 +6,11 @@ import { getWisdomReply } from '../bot/wisdom.js';
 import { getHistory, appendTurn } from '../bot/memory.js';
 import * as threadDb from '../db/threads.js';
 import { getMemories, addMemory, deleteMemoryByName } from '../bot/user-memory.js';
-import { summarizeConversation, generateTitleForContent } from '../lib/gemini.js';
+import {
+  summarizeConversation,
+  generateTitleForContent,
+  generateThreadTitleFromMessage,
+} from '../lib/gemini.js';
 import { retrieve } from '../rag/retrieve.js';
 
 /** Per-session flag: last reply was a save offer, so next "yes" triggers save. */
@@ -167,7 +171,7 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
         try {
           const thread = await threadDb.getThreadForUser(threadId, userId);
           if (thread && threadDb.isDefaultThreadTitle(thread.title)) {
-            const aiTitle = await generateTitleForContent(message);
+            const aiTitle = await generateThreadTitleFromMessage(message);
             const updated = await threadDb.updateThreadTitle(threadId, userId, aiTitle);
             threadTitle = updated?.title || null;
           }

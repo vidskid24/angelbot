@@ -639,6 +639,65 @@ export async function chat(messages) {
 export const chatWithGemini = chat;
 
 /**
+ * @param {string} message
+ * @returns {string}
+ */
+function fallbackThreadTitleFromMessage(message) {
+  const cleaned = String(message || '').trim().replace(/\s+/g, ' ');
+  if (!cleaned) return 'Conversation';
+  const line = cleaned.split('\n')[0].trim();
+  const sentence = (line.split(/[.!?]/)[0] || line).trim() || line;
+  if (sentence.length <= 60) return sentence;
+  const cut = sentence.slice(0, 60);
+  const lastSpace = cut.lastIndexOf(' ');
+  return (lastSpace > 16 ? cut.slice(0, lastSpace) : cut).trim() + '\u2026';
+}
+
+/**
+ * @param {string} raw
+ * @returns {string | null}
+ */
+function normalizeGeneratedThreadTitle(raw) {
+  let title = String(raw || '').trim();
+  if (!title) return null;
+  title = title.replace(/^(title:\s*)/i, '').replace(/^["']|["']$/g, '').trim();
+  title = title.split('\n')[0].trim();
+  if (!title || title.length > 80) return null;
+  if (/^saved\s+space$/i.test(title)) return null;
+  return title;
+}
+
+/**
+ * Generate a short conversation title from the user's first message.
+ * @param {string} message
+ * @returns {Promise<string>}
+ */
+export async function generateThreadTitleFromMessage(message) {
+  const text = String(message).trim().slice(0, 2000);
+  const fallback = fallbackThreadTitleFromMessage(text);
+  if (!text) return fallback;
+
+  try {
+    const genAI = getGeminiClient();
+    const model = genAI.getGenerativeModel({
+      model: getGeminiFallbackChatModel(),
+      generationConfig: { maxOutputTokens: 64, temperature: 0.2 },
+    });
+    const prompt =
+      'The user started a new chat with the message below. Write a very short conversation title ' +
+      '(3 to 8 words) that names their main topic or question. Use title case. ' +
+      'No quotes, no trailing punctuation, no prefix like "Title:". Reply with only the title.\n\n' +
+      `User message:\n${text}`;
+    const res = await model.generateContent(prompt);
+    const normalized = normalizeGeneratedThreadTitle(extractText(res.response));
+    if (normalized) return normalized;
+  } catch (err) {
+    console.error('generateThreadTitleFromMessage error:', err);
+  }
+  return fallback;
+}
+
+/**
  * Generate a short title (3-6 words) for content.
  * @param {string} content
  * @returns {Promise<string>}
