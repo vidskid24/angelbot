@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=54
+ * OMIBOT_WIDGET_VERSION=55
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -389,9 +389,9 @@
       'Memory across conversations is available on the paid plan. <a class="omibot-tier-link" id="omibot-prefs-memory-upgrade-link" href="#" target="_blank" rel="noopener noreferrer">Upgrade</a></p>' +
       '<div class="omibot-prefs-field">' +
       '<label for="omibot-pref-memory-instructions">What I would like Omi to know about me <span class="omibot-prefs-paid-only">paid plans only</span></label>' +
-      '<textarea id="omibot-pref-memory-instructions" rows="4" placeholder="Optional — preferences, context, or how you like to work together."></textarea>' +
+      '<textarea id="omibot-pref-memory-instructions" rows="4" placeholder="Optional — Tell Omi a little about you. Your interests, learning style, or the way you like to work together. This helps to shape responses to feel more aligned and easier to understand."></textarea>' +
       '</div>' +
-      '<div class="omibot-prefs-field">' +
+      '<div class="omibot-prefs-field" id="omibot-prefs-memory-summary-field">' +
       '<label for="omibot-pref-memory-summary">What Omi remembers <span class="omibot-prefs-paid-only">paid plans only</span></label>' +
       '<p class="omibot-prefs-memory-note" id="omibot-prefs-memory-note">Here\u2019s what Omi remembers about you. This summary is regenerated each night based off your conversations.</p>' +
       '<textarea id="omibot-pref-memory-summary" class="omibot-memory-summary" rows="10" placeholder="Work context, personal context, how to work with you, top of mind, and brief history will appear here."></textarea>' +
@@ -526,6 +526,8 @@
     const prefsMemoryUpgrade = prefsViewEl.querySelector('#omibot-prefs-memory-upgrade');
     const prefsMemoryUpgradeLink = prefsViewEl.querySelector('#omibot-prefs-memory-upgrade-link');
     const prefsMemoryNote = prefsViewEl.querySelector('#omibot-prefs-memory-note');
+    const prefsMemorySummaryField = prefsViewEl.querySelector('#omibot-prefs-memory-summary-field');
+    let prefsViewMode = null;
 
     function isPaidTier() {
       return userPrefs.tier === 'paid' || threadsMeta.tier === 'paid';
@@ -533,7 +535,9 @@
 
     function applyMemoryFieldsUi() {
       const paid = isPaidTier();
-      if (prefsMemoryUpgrade) prefsMemoryUpgrade.hidden = paid;
+      const isOnboarding = prefsViewMode === 'onboarding';
+      if (prefsMemorySummaryField) prefsMemorySummaryField.hidden = isOnboarding;
+      if (prefsMemoryUpgrade) prefsMemoryUpgrade.hidden = paid || isOnboarding;
       if (prefsMemoryInstructions) {
         prefsMemoryInstructions.disabled = !paid;
         prefsMemoryInstructions.value = userPrefs.memoryInstructions || '';
@@ -565,12 +569,13 @@
 
     function showPrefsView(mode) {
       const isOnboarding = mode === 'onboarding';
+      prefsViewMode = mode || 'edit';
       if (prefsTitleEl) {
-        prefsTitleEl.textContent = isOnboarding ? 'Welcome — Preferences' : 'Preferences';
+        prefsTitleEl.textContent = isOnboarding ? 'Before you begin...' : 'Preferences';
       }
       if (prefsDescEl) {
         prefsDescEl.textContent = isOnboarding
-          ? 'Before you begin, share how you\u2019d like Omi to hold the space with you and your experience with Mastering Alchemy.'
+          ? 'Choose what feels aligned for you today. You can change these anytime.'
           : 'You can change these anytime.';
       }
       if (prefsBackBtn) prefsBackBtn.hidden = isOnboarding;
@@ -592,6 +597,7 @@
     }
 
     function showChatView() {
+      prefsViewMode = null;
       prefsViewEl.hidden = true;
       chatViewEl.hidden = false;
       if (layoutEl) layoutEl.classList.remove('is-prefs-mode');
@@ -615,8 +621,10 @@
           maExperience: prefsMaSelect ? prefsMaSelect.value : 'some_experience',
         };
         if (isPaidTier()) {
-          body.memoryInstructions = prefsMemoryInstructions ? prefsMemoryInstructions.value : '';
-          body.memorySummary = prefsMemorySummary ? prefsMemorySummary.value : '';
+          if (prefsMemoryInstructions) body.memoryInstructions = prefsMemoryInstructions.value;
+          if (prefsViewMode !== 'onboarding' && prefsMemorySummary) {
+            body.memorySummary = prefsMemorySummary.value;
+          }
         }
         const res = await fetch(API_BASE + '/api/user/preferences', {
           method: 'PATCH',
