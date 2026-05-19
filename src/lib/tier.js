@@ -26,8 +26,9 @@ export function getThreadLimitForTier(tier) {
  */
 export function getThreadLimitMessage(limit, tier = 'free') {
   const cap = Number(limit) || FREE_THREAD_LIMIT;
+  const planLabel = tier === 'paid' ? 'plan' : 'free plan';
   const base =
-    `You can save up to ${cap} conversations on your plan. ` +
+    `You can save up to ${cap} conversations on your ${planLabel}. ` +
     'Please delete one to continue or ask your question in one of your other saved conversations. ';
   if (tier === 'paid') {
     return (

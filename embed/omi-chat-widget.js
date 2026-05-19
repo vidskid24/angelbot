@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=42
+ * OMIBOT_WIDGET_VERSION=43
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -328,7 +328,9 @@
         document.createTextNode(
           'You can save up to ' +
             cap +
-            ' conversations on your plan. Please delete one to continue or ask your question in one of your other saved conversations. '
+            ' conversations on your ' +
+            (isPaid ? 'plan' : 'free plan') +
+            '. Please delete one to continue or ask your question in one of your other saved conversations. '
         )
       );
       if (isPaid) {
