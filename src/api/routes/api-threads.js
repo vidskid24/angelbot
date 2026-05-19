@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { isDbEnabled } from '../../db/pool.js';
 import * as threadDb from '../../db/threads.js';
-import { ensureUserTier, getThreadLimitForTier } from '../../lib/tier.js';
+import { ensureUserTier, getThreadLimitForTier, getThreadLimitMessage } from '../../lib/tier.js';
 
 export function createThreadsApiRouter() {
   const r = Router();
@@ -44,7 +44,7 @@ export function createThreadsApiRouter() {
       if (!result.ok) {
         res.status(403).json({
           error: 'thread_limit',
-          message: `You can save up to ${result.limit} conversations on your plan.`,
+          message: getThreadLimitMessage(result.limit),
           limit: result.limit,
           tier,
         });

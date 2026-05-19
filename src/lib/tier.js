@@ -19,6 +19,20 @@ export function getThreadLimitForTier(tier) {
 }
 
 /**
+ * User-facing message when the saved-conversation limit is reached.
+ * @param {number} limit
+ * @returns {string}
+ */
+export function getThreadLimitMessage(limit) {
+  const cap = Number(limit) || FREE_THREAD_LIMIT;
+  return (
+    `You can save up to ${cap} conversations on your plan. ` +
+    'Please delete one to continue or ask your question in one of your other saved conversations. ' +
+    'If you would like a larger plan, please email and let us know, service@masteringalchemy.com'
+  );
+}
+
+/**
  * Resolve tier for a user (Thinkific enrollment when configured, else free).
  * @param {string} userId
  * @param {string} [email]

@@ -4,7 +4,7 @@ import { formatChatTextHtml } from '../../lib/format-chat-text.js';
 import { processWisdomMessage } from '../../services/chat-service.js';
 import { isDbEnabled } from '../../db/pool.js';
 import * as threadDb from '../../db/threads.js';
-import { ensureUserTier } from '../../lib/tier.js';
+import { ensureUserTier, getThreadLimitMessage } from '../../lib/tier.js';
 
 export function createChatApiRouter() {
   const r = Router();
@@ -35,7 +35,7 @@ export function createChatApiRouter() {
         if (!resolved.ok) {
           res.status(403).json({
             error: 'thread_limit',
-            message: `You can save up to ${resolved.limit} conversations on your plan.`,
+            message: getThreadLimitMessage(resolved.limit),
             limit: resolved.limit,
             tier,
           });

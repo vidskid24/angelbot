@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=40
+ * OMIBOT_WIDGET_VERSION=41
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -315,6 +315,16 @@
       window.OMIBOT_UPGRADE_URL ||
       window.ANGELBOT_UPGRADE_URL ||
       'https://courses.masteringalchemy.com/pages/omi-ai';
+
+    function threadLimitMessage(limit) {
+      return (
+        'You can save up to ' +
+        limit +
+        ' conversations on your plan. Please delete one to continue or ask your question in one of your other saved conversations. ' +
+        'If you would like a larger plan, please email and let us know, service@masteringalchemy.com'
+      );
+    }
+
     const newThreadBtn = root.querySelector('#omibot-new-thread');
     const mainEl = root.querySelector('.omibot-main');
 
@@ -916,7 +926,7 @@
         return;
       }
       if (threadsMeta.threadCount >= threadsMeta.threadLimit) {
-        append('System', 'You have reached the limit of ' + threadsMeta.threadLimit + ' saved conversations.');
+        append('System', threadLimitMessage(threadsMeta.threadLimit));
         return;
       }
       let tok;
