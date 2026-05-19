@@ -116,7 +116,7 @@ Paid vs free thread and daily message limits are enforced on the server. Configu
     }
 
     var s = document.createElement('script');
-    s.src = api + '/omi-chat-widget.js?v=45';
+    s.src = api + '/omi-chat-widget.js?v=46';
     s.defer = true;
     document.head.appendChild(s);
   }

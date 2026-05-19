@@ -227,7 +227,7 @@
       '.omibot-layout{display:flex;align-items:flex-start;gap:0;margin-top:8px}' +
       '.omibot-sidebar{width:11.5rem;flex-shrink:0;border-right:1px solid #e0dcd4;padding:4px 12px 16px 0;box-sizing:border-box}' +
       '.omibot-sidebar .omibot-new-btn,.omibot-sidebar .omibot-thread-list,.omibot-sidebar .omibot-thread-row{width:100%}' +
-      '.omibot-tier-row{margin:0 0 8px;text-align:right;line-height:1.35}' +
+      '.omibot-tier-row{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px;margin:0 0 8px;line-height:1.35}' +
       '.omibot-thread-meta-footer{font-size:0.75rem;color:#666;margin:8px 0 2px;padding:6px 0 0;line-height:1.35}' +
       '.omibot-tier-badge{font-size:0.7rem;font-weight:600;letter-spacing:0.04em;flex-shrink:0;text-transform:uppercase;white-space:nowrap}' +
       '.omibot-tier-badge-paid{color:#5c5348}' +
@@ -290,7 +290,7 @@
       '@keyframes omibot-dot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}' +
       '#omibot-input{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid #ddd;background:#fff;font:inherit;font-size:1rem;resize:vertical}' +
       '#omibot-input:focus{outline:2px solid #c9c0b5;outline-offset:1px;border-color:#c9c0b5}' +
-      '.omibot-prefs-btn{display:block;width:100%;margin:10px 0 0;padding:0;border:none;background:transparent;font:inherit;font-size:0.88rem;color:#7a5c1e;text-align:left;cursor:pointer;text-decoration:underline;text-underline-offset:2px}' +
+      '.omibot-prefs-btn{margin:0;padding:0;border:none;background:transparent;font:inherit;font-size:0.7rem;font-weight:600;letter-spacing:0.04em;color:#7a5c1e;cursor:pointer;text-decoration:underline;text-underline-offset:2px;white-space:nowrap;flex-shrink:0}' +
       '.omibot-prefs-btn:hover{color:#1a1a1a}' +
       '.omibot-prefs-overlay{position:fixed;inset:0;z-index:100001;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(26,26,26,.45)}' +
       '.omibot-prefs-overlay[hidden]{display:none!important}' +
@@ -313,8 +313,7 @@
       '<p id="omibot-status" hidden></p>' +
       '<div class="omibot-layout">' +
       '<aside class="omibot-sidebar">' +
-      '<div class="omibot-tier-row"><span id="omibot-tier-badge"></span></div>' +
-      '<button type="button" class="omibot-prefs-btn" id="omibot-prefs-open">Your preferences</button>' +
+      '<div class="omibot-tier-row"><span id="omibot-tier-badge"></span><button type="button" class="omibot-prefs-btn" id="omibot-prefs-open">Preferences</button></div>' +
       '<button type="button" class="omibot-new-btn" id="omibot-new-thread">+ New conversation</button>' +
       '<p class="omibot-recents-label">Recents</p>' +
       '<div class="omibot-thread-list" id="omibot-thread-list"></div>' +
