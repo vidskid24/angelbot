@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * ANGELBOT_WIDGET_VERSION=16
+ * ANGELBOT_WIDGET_VERSION=17
  *
  * Hosted by the API at GET /angel-chat-widget.js when deployed.
  */
@@ -189,6 +189,14 @@
     const log = root.querySelector('#angelbot-log');
     const input = root.querySelector('#angelbot-input');
     let ready = false;
+    let welcomeDismissed = false;
+
+    function dismissWelcome() {
+      if (welcomeDismissed) return;
+      welcomeDismissed = true;
+      welcome.replaceChildren();
+      welcome.hidden = true;
+    }
 
     function showWelcome() {
       const hello = document.createElement('p');
@@ -303,6 +311,7 @@
       if (!message) return;
       sending = true;
       setInputEnabled(false);
+      dismissWelcome();
       append('You', message);
       input.value = '';
       showThinking();
