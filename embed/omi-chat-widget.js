@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=53
+ * OMIBOT_WIDGET_VERSION=54
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -324,11 +324,16 @@
       '#omibot-input:focus{outline:2px solid #c9c0b5;outline-offset:1px;border-color:#c9c0b5}' +
       '.omibot-prefs-btn{margin:0;padding:0;border:none;background:transparent;font:inherit;font-size:0.7rem;font-weight:600;letter-spacing:0.04em;color:#7a5c1e;cursor:pointer;text-decoration:underline;text-underline-offset:2px;white-space:nowrap;flex-shrink:0}' +
       '.omibot-prefs-btn:hover{color:#1a1a1a}' +
-      '.omibot-prefs-overlay{position:fixed;inset:0;z-index:100001;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(26,26,26,.45)}' +
-      '.omibot-prefs-overlay[hidden]{display:none!important}' +
-      '.omibot-prefs-dialog{width:100%;max-width:32rem;max-height:min(90vh,720px);overflow-y:auto;background:#fff;border-radius:14px;padding:22px 20px;box-shadow:0 12px 40px rgba(0,0,0,.18)}' +
-      '.omibot-prefs-dialog h2{margin:0 0 8px;font-size:1.35rem;font-weight:500}' +
-      '.omibot-prefs-dialog p{margin:0 0 18px;font-size:0.92rem;line-height:1.5;color:#555}' +
+      '.omibot-chat-view[hidden],.omibot-prefs-view[hidden]{display:none!important}' +
+      '.omibot-layout.is-prefs-mode .omibot-sidebar{display:none}' +
+      '.omibot-layout.is-prefs-mode .omibot-main{width:100%;padding-left:0}' +
+      '.omibot-prefs-view{padding:0 0 12px}' +
+      '.omibot-prefs-back{display:inline-flex;align-items:center;margin:0 0 14px;padding:0;border:none;background:transparent;font:inherit;font-size:0.9rem;color:#7a5c1e;cursor:pointer;text-decoration:underline;text-underline-offset:2px}' +
+      '.omibot-prefs-back:hover{color:#1a1a1a}' +
+      '.omibot-prefs-back[hidden]{display:none!important}' +
+      '.omibot-prefs-view h2{margin:0 0 8px;font-size:1.35rem;font-weight:500}' +
+      '.omibot-prefs-desc{margin:0 0 18px;font-size:0.92rem;line-height:1.5;color:#555}' +
+      '.omibot-prefs-footer{position:sticky;bottom:0;z-index:2;margin-top:20px;padding:12px 0;padding-bottom:max(12px,env(safe-area-inset-bottom));background:linear-gradient(to top,#fff 85%,rgba(255,255,255,0))}' +
       '.omibot-prefs-field{margin:0 0 14px}' +
       '.omibot-prefs-field label{display:block;font-size:0.85rem;font-weight:600;color:#444;margin-bottom:6px}' +
       '.omibot-prefs-field select{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid #ddd;font:inherit;font-size:0.95rem;background:#fff}' +
@@ -343,9 +348,8 @@
       '.omibot-prefs-save{padding:10px 18px;border-radius:10px;border:none;background:#7a5c1e;color:#fff;font:inherit;font-size:0.95rem;cursor:pointer}' +
       '.omibot-prefs-save:hover{background:#5c4616}' +
       '.omibot-prefs-save:disabled{opacity:.55;cursor:not-allowed}' +
-      '.omibot-prefs-cancel{padding:10px 14px;border-radius:10px;border:1px solid #ddd;background:#fff;font:inherit;font-size:0.95rem;cursor:pointer;color:#444}' +
-      '.omibot-prefs-cancel:hover{background:#f7f4ef}' +
-      '.omibot-prefs-error{margin:10px 0 0;font-size:0.85rem;color:#8b3a3a}' +
+      '.omibot-prefs-footer .omibot-prefs-error{margin:0 0 10px}' +
+      '.omibot-prefs-error{font-size:0.85rem;color:#8b3a3a}' +
       '@media(max-width:640px){.omibot-layout{flex-direction:column}.omibot-sidebar{width:100%;border-right:none;border-bottom:1px solid #e0dcd4;padding:0 0 12px;margin-bottom:12px}.omibot-main{padding-left:0}}' +
       '</style>' +
       '<div class="omibot-shell">' +
@@ -358,10 +362,45 @@
       '<div class="omibot-thread-list" id="omibot-thread-list"></div>' +
       '</aside>' +
       '<div class="omibot-main">' +
+      '<div class="omibot-chat-view" id="omibot-chat-view">' +
       '<div id="omibot-welcome"></div>' +
       '<div id="omibot-log"></div>' +
       '<textarea id="omibot-input" rows="2" placeholder="Write a message..."></textarea>' +
-      '</div></div></div>';
+      '</div>' +
+      '<section class="omibot-prefs-view" id="omibot-prefs-view" hidden aria-labelledby="omibot-prefs-title">' +
+      '<button type="button" class="omibot-prefs-back" id="omibot-prefs-back">\u2190 Back to chat</button>' +
+      '<h2 id="omibot-prefs-title">Preferences</h2>' +
+      '<p class="omibot-prefs-desc" id="omibot-prefs-desc">You can change these anytime.</p>' +
+      '<div class="omibot-prefs-field">' +
+      '<label for="omibot-pref-tone">How would you like Omi to hold the space with you?</label>' +
+      '<select id="omibot-pref-tone">' +
+      '<option value="warm">Warm and companionable</option>' +
+      '<option value="playful">Playful and lighthearted</option>' +
+      '<option value="concise">Concise and direct</option>' +
+      '</select></div>' +
+      '<div class="omibot-prefs-field">' +
+      '<label for="omibot-pref-ma">Your experience with Mastering Alchemy</label>' +
+      '<select id="omibot-pref-ma">' +
+      '<option value="new">Just getting started</option>' +
+      '<option value="some_experience">Some experience</option>' +
+      '<option value="long_time">Long-time participant</option>' +
+      '</select></div>' +
+      '<p class="omibot-prefs-memory-upgrade" id="omibot-prefs-memory-upgrade" hidden>' +
+      'Memory across conversations is available on the paid plan. <a class="omibot-tier-link" id="omibot-prefs-memory-upgrade-link" href="#" target="_blank" rel="noopener noreferrer">Upgrade</a></p>' +
+      '<div class="omibot-prefs-field">' +
+      '<label for="omibot-pref-memory-instructions">What I would like Omi to know about me <span class="omibot-prefs-paid-only">paid plans only</span></label>' +
+      '<textarea id="omibot-pref-memory-instructions" rows="4" placeholder="Optional — preferences, context, or how you like to work together."></textarea>' +
+      '</div>' +
+      '<div class="omibot-prefs-field">' +
+      '<label for="omibot-pref-memory-summary">What Omi remembers <span class="omibot-prefs-paid-only">paid plans only</span></label>' +
+      '<p class="omibot-prefs-memory-note" id="omibot-prefs-memory-note">Here\u2019s what Omi remembers about you. This summary is regenerated each night based off your conversations.</p>' +
+      '<textarea id="omibot-pref-memory-summary" class="omibot-memory-summary" rows="10" placeholder="Work context, personal context, how to work with you, top of mind, and brief history will appear here."></textarea>' +
+      '</div>' +
+      '<div class="omibot-prefs-footer">' +
+      '<p class="omibot-prefs-error" id="omibot-prefs-error" hidden></p>' +
+      '<div class="omibot-prefs-actions">' +
+      '<button type="button" class="omibot-prefs-save" id="omibot-prefs-save">Save preferences</button>' +
+      '</div></div></section></div></div></div>';
 
     const status = root.querySelector('#omibot-status');
     const welcome = root.querySelector('#omibot-welcome');
@@ -471,60 +510,22 @@
       memoryAvailable: false,
     };
 
-    const prefsOverlay = document.createElement('div');
-    prefsOverlay.className = 'omibot-prefs-overlay';
-    prefsOverlay.id = 'omibot-prefs-overlay';
-    prefsOverlay.hidden = true;
-    prefsOverlay.setAttribute('role', 'presentation');
-    prefsOverlay.innerHTML =
-      '<div class="omibot-prefs-dialog" role="dialog" aria-modal="true" aria-labelledby="omibot-prefs-title">' +
-      '<h2 id="omibot-prefs-title">Preferences</h2>' +
-      '<p id="omibot-prefs-desc">You can change these anytime.</p>' +
-      '<div class="omibot-prefs-field">' +
-      '<label for="omibot-pref-tone">How would you like Omi to hold the space with you?</label>' +
-      '<select id="omibot-pref-tone">' +
-      '<option value="warm">Warm and companionable</option>' +
-      '<option value="playful">Playful and lighthearted</option>' +
-      '<option value="concise">Concise and direct</option>' +
-      '</select></div>' +
-      '<div class="omibot-prefs-field">' +
-      '<label for="omibot-pref-ma">Your experience with Mastering Alchemy</label>' +
-      '<select id="omibot-pref-ma">' +
-      '<option value="new">Just getting started</option>' +
-      '<option value="some_experience">Some experience</option>' +
-      '<option value="long_time">Long-time participant</option>' +
-      '</select></div>' +
-      '<p class="omibot-prefs-memory-upgrade" id="omibot-prefs-memory-upgrade" hidden>' +
-      'Memory across conversations is available on the paid plan. <a class="omibot-tier-link" id="omibot-prefs-memory-upgrade-link" href="#" target="_blank" rel="noopener noreferrer">Upgrade</a></p>' +
-      '<div class="omibot-prefs-field">' +
-      '<label for="omibot-pref-memory-instructions">What I would like Omi to know about me <span class="omibot-prefs-paid-only">paid plans only</span></label>' +
-      '<textarea id="omibot-pref-memory-instructions" rows="4" placeholder="Optional — preferences, context, or how you like to work together."></textarea>' +
-      '</div>' +
-      '<div class="omibot-prefs-field">' +
-      '<label for="omibot-pref-memory-summary">What Omi remembers <span class="omibot-prefs-paid-only">paid plans only</span></label>' +
-      '<p class="omibot-prefs-memory-note" id="omibot-prefs-memory-note">Here\u2019s what Omi remembers about you. This summary is regenerated each night based off your conversations.</p>' +
-      '<textarea id="omibot-pref-memory-summary" class="omibot-memory-summary" rows="10" placeholder="Work context, personal context, how to work with you, top of mind, and brief history will appear here."></textarea>' +
-      '</div>' +
-      '<p class="omibot-prefs-error" id="omibot-prefs-error" hidden></p>' +
-      '<div class="omibot-prefs-actions">' +
-      '<button type="button" class="omibot-prefs-save" id="omibot-prefs-save">Save preferences</button>' +
-      '<button type="button" class="omibot-prefs-cancel" id="omibot-prefs-cancel" hidden>Cancel</button>' +
-      '</div></div>';
-    root.appendChild(prefsOverlay);
+    const layoutEl = root.querySelector('.omibot-layout');
+    const chatViewEl = root.querySelector('#omibot-chat-view');
+    const prefsViewEl = root.querySelector('#omibot-prefs-view');
 
-    const prefsDialog = prefsOverlay.querySelector('.omibot-prefs-dialog');
-    const prefsTitleEl = prefsOverlay.querySelector('#omibot-prefs-title');
-    const prefsDescEl = prefsOverlay.querySelector('#omibot-prefs-desc');
-    const prefsToneSelect = prefsOverlay.querySelector('#omibot-pref-tone');
-    const prefsMaSelect = prefsOverlay.querySelector('#omibot-pref-ma');
-    const prefsSaveBtn = prefsOverlay.querySelector('#omibot-prefs-save');
-    const prefsCancelBtn = prefsOverlay.querySelector('#omibot-prefs-cancel');
-    const prefsErrorEl = prefsOverlay.querySelector('#omibot-prefs-error');
-    const prefsMemoryInstructions = prefsOverlay.querySelector('#omibot-pref-memory-instructions');
-    const prefsMemorySummary = prefsOverlay.querySelector('#omibot-pref-memory-summary');
-    const prefsMemoryUpgrade = prefsOverlay.querySelector('#omibot-prefs-memory-upgrade');
-    const prefsMemoryUpgradeLink = prefsOverlay.querySelector('#omibot-prefs-memory-upgrade-link');
-    const prefsMemoryNote = prefsOverlay.querySelector('#omibot-prefs-memory-note');
+    const prefsTitleEl = prefsViewEl.querySelector('#omibot-prefs-title');
+    const prefsDescEl = prefsViewEl.querySelector('#omibot-prefs-desc');
+    const prefsToneSelect = prefsViewEl.querySelector('#omibot-pref-tone');
+    const prefsMaSelect = prefsViewEl.querySelector('#omibot-pref-ma');
+    const prefsSaveBtn = prefsViewEl.querySelector('#omibot-prefs-save');
+    const prefsBackBtn = prefsViewEl.querySelector('#omibot-prefs-back');
+    const prefsErrorEl = prefsViewEl.querySelector('#omibot-prefs-error');
+    const prefsMemoryInstructions = prefsViewEl.querySelector('#omibot-pref-memory-instructions');
+    const prefsMemorySummary = prefsViewEl.querySelector('#omibot-pref-memory-summary');
+    const prefsMemoryUpgrade = prefsViewEl.querySelector('#omibot-prefs-memory-upgrade');
+    const prefsMemoryUpgradeLink = prefsViewEl.querySelector('#omibot-prefs-memory-upgrade-link');
+    const prefsMemoryNote = prefsViewEl.querySelector('#omibot-prefs-memory-note');
 
     function isPaidTier() {
       return userPrefs.tier === 'paid' || threadsMeta.tier === 'paid';
@@ -562,7 +563,7 @@
       }
     }
 
-    function openPrefsModal(mode) {
+    function showPrefsView(mode) {
       const isOnboarding = mode === 'onboarding';
       if (prefsTitleEl) {
         prefsTitleEl.textContent = isOnboarding ? 'Welcome — Preferences' : 'Preferences';
@@ -572,20 +573,29 @@
           ? 'Before you begin, share how you\u2019d like Omi to hold the space with you and your experience with Mastering Alchemy.'
           : 'You can change these anytime.';
       }
-      if (prefsCancelBtn) prefsCancelBtn.hidden = isOnboarding;
+      if (prefsBackBtn) prefsBackBtn.hidden = isOnboarding;
       syncPrefsFormFromState();
       setPrefsError('');
-      prefsOverlay.hidden = false;
+      chatViewEl.hidden = true;
+      prefsViewEl.hidden = false;
+      if (layoutEl) layoutEl.classList.add('is-prefs-mode');
       if (prefsSaveBtn) prefsSaveBtn.disabled = false;
       if (isOnboarding) {
         ready = false;
         setInputEnabled(false);
       }
-      if (prefsToneSelect) prefsToneSelect.focus();
+      try {
+        root.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      } catch (e) {
+        root.scrollIntoView(true);
+      }
     }
 
-    function closePrefsModal() {
-      prefsOverlay.hidden = true;
+    function showChatView() {
+      prefsViewEl.hidden = true;
+      chatViewEl.hidden = false;
+      if (layoutEl) layoutEl.classList.remove('is-prefs-mode');
+      syncPrefsFormFromState();
       setPrefsError('');
     }
 
@@ -629,7 +639,7 @@
         };
         if (data.tier) threadsMeta.tier = data.tier;
         updateTierBadge();
-        closePrefsModal();
+        showChatView();
         if (!ready) {
           ready = true;
           refreshInputEnabled();
@@ -645,7 +655,7 @@
 
     if (prefsOpenBtn) {
       prefsOpenBtn.addEventListener('click', function () {
-        openPrefsModal('edit');
+        showPrefsView('edit');
       });
     }
 
@@ -659,18 +669,12 @@
         });
     });
 
-    prefsCancelBtn.addEventListener('click', function () {
-      closePrefsModal();
-    });
-
-    prefsOverlay.addEventListener('click', function (ev) {
-      if (ev.target !== prefsOverlay) return;
-      if (prefsCancelBtn && !prefsCancelBtn.hidden) closePrefsModal();
-    });
-
-    prefsDialog.addEventListener('click', function (ev) {
-      ev.stopPropagation();
-    });
+    if (prefsBackBtn) {
+      prefsBackBtn.addEventListener('click', function () {
+        syncPrefsFormFromState();
+        showChatView();
+      });
+    }
 
     const mainEl = root.querySelector('.omibot-main');
 
@@ -696,7 +700,8 @@
     activeTitleBtn.appendChild(activeTitleEl);
     activeTitleBtn.appendChild(activeTitleChevron);
     threadToolbar.appendChild(activeTitleBtn);
-    mainEl.insertBefore(threadToolbar, welcome);
+    if (chatViewEl) chatViewEl.insertBefore(threadToolbar, welcome);
+    else mainEl.insertBefore(threadToolbar, welcome);
 
     let threadSwitcherOpen = false;
 
@@ -1376,7 +1381,7 @@
       await fetchThreads(token);
       beginNewConversation();
       if (prefs && !userPrefs.preferencesCompleted) {
-        openPrefsModal('onboarding');
+        showPrefsView('onboarding');
       } else {
         ready = true;
         refreshInputEnabled();
