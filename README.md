@@ -119,7 +119,7 @@ Set `OMIBOT_CRON_SECRET` and schedule a daily cron (e.g. Render Cron Job) to `PO
     }
 
     var s = document.createElement('script');
-    s.src = api + '/omi-chat-widget.js?v=52';
+    s.src = api + '/omi-chat-widget.js?v=53';
     s.defer = true;
     document.head.appendChild(s);
   }

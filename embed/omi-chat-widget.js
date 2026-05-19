@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=52
+ * OMIBOT_WIDGET_VERSION=53
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -479,16 +479,16 @@
     prefsOverlay.innerHTML =
       '<div class="omibot-prefs-dialog" role="dialog" aria-modal="true" aria-labelledby="omibot-prefs-title">' +
       '<h2 id="omibot-prefs-title">Preferences</h2>' +
-      '<p id="omibot-prefs-desc">Choose how you would like Omi to speak with you. You can change these anytime.</p>' +
+      '<p id="omibot-prefs-desc">You can change these anytime.</p>' +
       '<div class="omibot-prefs-field">' +
-      '<label for="omibot-pref-tone">Tone</label>' +
+      '<label for="omibot-pref-tone">How would you like Omi to hold the space with you?</label>' +
       '<select id="omibot-pref-tone">' +
       '<option value="warm">Warm and companionable</option>' +
       '<option value="playful">Playful and lighthearted</option>' +
       '<option value="concise">Concise and direct</option>' +
       '</select></div>' +
       '<div class="omibot-prefs-field">' +
-      '<label for="omibot-pref-ma">Experience with Mastering Alchemy</label>' +
+      '<label for="omibot-pref-ma">Your experience with Mastering Alchemy</label>' +
       '<select id="omibot-pref-ma">' +
       '<option value="new">Just getting started</option>' +
       '<option value="some_experience">Some experience</option>' +
@@ -569,8 +569,8 @@
       }
       if (prefsDescEl) {
         prefsDescEl.textContent = isOnboarding
-          ? 'Before you begin, choose how you would like Omi to speak with you and how familiar you are with Mastering Alchemy.'
-          : 'Choose how you would like Omi to speak with you. You can change these anytime.';
+          ? 'Before you begin, share how you\u2019d like Omi to hold the space with you and your experience with Mastering Alchemy.'
+          : 'You can change these anytime.';
       }
       if (prefsCancelBtn) prefsCancelBtn.hidden = isOnboarding;
       syncPrefsFormFromState();
