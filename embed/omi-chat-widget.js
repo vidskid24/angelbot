@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=31
+ * OMIBOT_WIDGET_VERSION=36
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -227,13 +227,13 @@
       '.omibot-layout{display:flex;align-items:flex-start;gap:0;margin-top:8px}' +
       '.omibot-sidebar{width:11.5rem;flex-shrink:0;border-right:1px solid #e0dcd4;padding:4px 12px 16px 0;box-sizing:border-box}' +
       '.omibot-sidebar .omibot-new-btn,.omibot-sidebar .omibot-thread-list,.omibot-sidebar .omibot-thread-row{width:100%}' +
-      '.omibot-sidebar-head-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;line-height:1.35}' +
-      '.omibot-thread-meta-count{font-size:0.75rem;color:#666;min-width:0}' +
-      '.omibot-tier-badge{font-size:0.7rem;font-weight:600;letter-spacing:0.04em;flex-shrink:0;text-transform:uppercase}' +
+      '.omibot-tier-row{margin:0 0 8px;text-align:right;line-height:1.35}' +
+      '.omibot-thread-meta-count{display:block;font-size:0.75rem;color:#666;margin:0 0 10px;line-height:1.35}' +
+      '.omibot-tier-badge{font-size:0.7rem;font-weight:600;letter-spacing:0.04em;flex-shrink:0;text-transform:uppercase;white-space:nowrap}' +
       '.omibot-tier-badge-paid{color:#5c5348}' +
-      '.omibot-tier-link{color:#7a5c1e;text-decoration:none;border-bottom:1px solid rgba(122,92,30,.45);cursor:pointer}' +
+      '.omibot-tier-link{color:#7a5c1e;text-decoration:none;border-bottom:1px solid rgba(122,92,30,.45);cursor:pointer;text-transform:none}' +
       '.omibot-tier-link:hover{color:#1a1a1a;border-bottom-color:#1a1a1a}' +
-      '.omibot-new-btn{width:100%;padding:8px 10px;margin:0 0 10px;border:1px solid #c9c0b5;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:0.85rem}' +
+      '.omibot-new-btn{width:100%;padding:8px 10px;margin:0 0 8px;border:1px solid #c9c0b5;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:0.85rem}' +
       '.omibot-new-btn:hover:not(:disabled){background:#f7f4ef}' +
       '.omibot-new-btn:disabled{opacity:0.45;cursor:not-allowed}' +
       '.omibot-thread-list{margin:0;padding:0;max-height:16rem;overflow-y:auto}' +
@@ -293,11 +293,9 @@
       '<p id="omibot-status" hidden></p>' +
       '<div class="omibot-layout">' +
       '<aside class="omibot-sidebar">' +
-      '<div class="omibot-sidebar-head-row">' +
-      '<span class="omibot-thread-meta-count" id="omibot-thread-meta">Conversations</span>' +
-      '<span id="omibot-tier-badge"></span>' +
-      '</div>' +
+      '<div class="omibot-tier-row"><span id="omibot-tier-badge"></span></div>' +
       '<button type="button" class="omibot-new-btn" id="omibot-new-thread">+ New conversation</button>' +
+      '<span class="omibot-thread-meta-count" id="omibot-thread-meta">Conversations</span>' +
       '<div class="omibot-thread-list" id="omibot-thread-list"></div>' +
       '</aside>' +
       '<div class="omibot-main">' +
@@ -586,12 +584,13 @@
         tierBadgeEl.textContent = 'PAID';
       } else {
         tierBadgeEl.className = 'omibot-tier-badge';
+        tierBadgeEl.appendChild(document.createTextNode('FREE - '));
         const link = document.createElement('a');
         link.className = 'omibot-tier-link';
         link.href = upgradeUrl;
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
-        link.textContent = 'FREE';
+        link.textContent = 'Upgrade';
         link.title = 'Upgrade to Omi AI paid';
         tierBadgeEl.appendChild(link);
       }
@@ -866,8 +865,21 @@
       updateActiveToolbar(threadId);
     }
 
+    function beginNewConversation() {
+      closeAllThreadMenus();
+      clearThreadId();
+      clearLog();
+      restoreWelcome();
+      threadToolbar.hidden = true;
+      renderThreadList(null);
+    }
+
     async function createNewThread() {
       if (!ready || sending) return;
+      if (!getThreadId()) {
+        beginNewConversation();
+        return;
+      }
       if (threadsMeta.threadCount >= threadsMeta.threadLimit) {
         append('System', 'You have reached the limit of ' + threadsMeta.threadLimit + ' saved conversations.');
         return;
@@ -879,15 +891,13 @@
         append('System', String(e && e.message ? e.message : e));
         return;
       }
-      const title = promptThreadTitle('New conversation');
-      if (title === null) return;
 
       newThreadBtn.disabled = true;
       try {
         const res = await fetch(API_BASE + '/api/threads', {
           method: 'POST',
           headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders(tok)),
-          body: JSON.stringify({ title: title }),
+          body: JSON.stringify({ title: 'Conversation' }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -900,9 +910,8 @@
         await fetchThreads(tok);
         const id = data.thread && data.thread.id;
         if (id) {
-          clearLog();
+          beginNewConversation();
           setThreadId(id);
-          restoreWelcome();
           renderThreadList(id);
           updateActiveToolbar(id);
         }
@@ -921,25 +930,7 @@
       status.textContent = '';
       status.hidden = true;
       await fetchThreads(token);
-
-      let activeId = getThreadId();
-      if (activeId && !threadsCache.some(function (t) { return t.id === activeId; })) {
-        clearThreadId();
-        activeId = undefined;
-      }
-      if (!activeId && threadsCache.length) {
-        activeId = threadsCache[0].id;
-        setThreadId(activeId);
-      }
-
-      if (activeId) {
-        await selectThread(activeId, token);
-      } else {
-        renderThreadList(null);
-        restoreWelcome();
-        threadToolbar.hidden = true;
-      }
-
+      beginNewConversation();
       ready = true;
       setInputEnabled(true);
     }

@@ -155,11 +155,6 @@ export async function resolveThreadForChat(userId, tier, preferredThreadId) {
     }
   }
 
-  const threads = await listThreads(userId);
-  if (threads.length) {
-    return { ok: true, threadId: threads[0].id, created: false };
-  }
-
   const created = await createThread(userId, tier, 'Conversation');
   if (!created.ok) return created;
   return { ok: true, threadId: created.thread.id, created: true };
