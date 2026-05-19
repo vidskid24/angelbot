@@ -1,7 +1,13 @@
 import { Router } from 'express';
 import { isDbEnabled } from '../../db/pool.js';
 import * as threadDb from '../../db/threads.js';
-import { ensureUserTier, getThreadLimitForTier, getThreadLimitMessage } from '../../lib/tier.js';
+import * as dailyMessages from '../../db/daily-messages.js';
+import {
+  ensureUserTier,
+  getDailyMessageLimitForTier,
+  getThreadLimitForTier,
+  getThreadLimitMessage,
+} from '../../lib/tier.js';
 
 export function createThreadsApiRouter() {
   const r = Router();
@@ -15,6 +21,8 @@ export function createThreadsApiRouter() {
       const userId = req.omiUser.sub;
       const tier = req.omiUser.tier || (await ensureUserTier(userId, req.omiUser.email));
       const threads = await threadDb.listThreads(userId);
+      const dailyMessageLimit = getDailyMessageLimitForTier(tier);
+      const dailyMessageCount = await dailyMessages.getDailyMessageCount(userId);
       res.json({
         threads: threads.map((t) => ({
           id: t.id,
@@ -25,6 +33,8 @@ export function createThreadsApiRouter() {
         tier,
         threadLimit: getThreadLimitForTier(tier),
         threadCount: threads.length,
+        dailyMessageLimit,
+        dailyMessageCount,
       });
     } catch (e) {
       next(e);

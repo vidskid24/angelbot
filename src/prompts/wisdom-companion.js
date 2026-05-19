@@ -182,25 +182,16 @@ Your reply is shown in a web chat page. Emphasize 2 to 5 key terms per response 
 Base every response only on the text above and the style reference (if present). If the user's question goes beyond what is provided, acknowledge that;`;
 
 /**
- * Builds the full system message, optionally appending RAG style excerpts, saved user context, and conclusion-offer guidance.
+ * Builds the full system message, optionally appending RAG style excerpts.
  * @param {string} [styleExcerpts] - Optional text from style-guide retrieval to append.
- * @param {string} [savedContext] - Optional saved context for this user (memories / "hold this space").
- * @param {boolean} [userSeemsToBeConcluding] - If true, instruct the model to offer to save/hold this space.
  * @returns {string}
  */
-export function buildSystemPrompt(styleExcerpts = null, savedContext = null, userSeemsToBeConcluding = false) {
+export function buildSystemPrompt(styleExcerpts = null) {
   let prompt = ALCHEMY_SCRIBE_SYSTEM_PROMPT;
 
   if (styleExcerpts && styleExcerpts.trim()) {
     prompt += `\n\n## MA framework and content (style reference)\nThe following material is MA framework and content. Use it for tone and content. You may quote directly from this material and offer techniques or practices when applicable. Where the user's question touches on it, include relevant ideas, quotes, or techniques, then invite them to explore or try them.\n\n${styleExcerpts.trim()}`;
   }
 
-  if (savedContext && savedContext.trim()) {
-    prompt += `\n\n## Saved context for this user\nThis user has asked you to hold or remember the following. Reference it when relevant; do not repeat it verbatim unless they ask. Use it to personalize your response and to continue threads they have named (e.g. a "space" or sequence).\n\n${savedContext.trim()}`;
-  }
-
-  if (userSeemsToBeConcluding) {
-    prompt += `\n\n## User seems to be concluding\nTheir message suggests they are wrapping up (e.g. thank you, that's all). In your reply, warmly acknowledge them, then offer to save this space or a summary for next time. Use your own words; you may say something like: "Would you like me to hold this space exactly as it is until your next arrival?" or "Would you like me to save a summary of what we've created so we can reference this next time you return?" If you offer to save, tell them they can reply **yes** to save it. Keep the offer to one or two sentences plus the yes-to-save mention.`;
-  }
   return prompt;
 }

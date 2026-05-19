@@ -1,6 +1,6 @@
 # Omi Bot - Web Companion API
 
-Omi Bot runs as a web API for an embedded chat experience on Thinkific site pages. It uses short-lived app bearer tokens from a bootstrap endpoint, preserving per-user memory/history isolation when a stable user ID is supplied.
+Omi Bot runs as a web API for an embedded chat experience on Thinkific site pages. It uses short-lived app bearer tokens from a bootstrap endpoint, preserving per-user conversation history when a stable user ID is supplied.
 
 ## Requirements
 
@@ -38,6 +38,9 @@ Optional:
 - `APP_BOOTSTRAP_TOKEN_TTL_SECONDS` (default `3600`)
 - `OMIBOT_FREE_THREAD_LIMIT` (default `2`)
 - `OMIBOT_PAID_THREAD_LIMIT` (default `10`)
+- `OMIBOT_FREE_DAILY_MESSAGE_LIMIT` (default `11`)
+- `OMIBOT_PAID_DAILY_MESSAGE_LIMIT` (default `80`)
+- `OMIBOT_DAILY_LIMIT_TIMEZONE` (default `America/Los_Angeles`; calendar day boundary for daily counts)
 - `OMIBOT_TIER_CACHE_MINUTES` (default `60`)
 - `THINKIFIC_API_KEY`, `THINKIFIC_SUBDOMAIN`, `THINKIFIC_PAID_PRODUCT_IDS` (comma-separated) and/or `THINKIFIC_PAID_PRODUCT_ID` — paid tier if enrolled in any listed product
 - `OMIBOT_PAID_USER_IDS` — comma-separated Thinkific user ids treated as paid (testing)
@@ -72,9 +75,6 @@ Authenticated routes (Bearer app session JWT):
 - `PATCH /api/threads/:threadId` — rename (`{ title }`)
 - `DELETE /api/threads/:threadId` — delete conversation
 - `GET /api/threads/:threadId` — thread + messages
-- `POST /api/memories`
-- `GET /api/memories`
-- `DELETE /api/memories?name=...`
 
 ## Render PostgreSQL
 
@@ -83,7 +83,7 @@ Authenticated routes (Bearer app session JWT):
 3. Deploy — migrations run on startup (`src/db/migrations/`).
 4. Health check: `GET /healthz` returns `database: "configured"` and `databaseOk: true` when connected.
 
-Paid vs free thread limits are enforced on the server. Configure Thinkific enrollment vars or `OMIBOT_PAID_USER_IDS` for testing.
+Paid vs free thread and daily message limits are enforced on the server. Configure Thinkific enrollment vars or `OMIBOT_PAID_USER_IDS` for testing.
 
 ## Thinkific embed
 
@@ -114,7 +114,7 @@ Paid vs free thread limits are enforced on the server. Configure Thinkific enrol
     }
 
     var s = document.createElement('script');
-    s.src = api + '/omi-chat-widget.js?v=43';
+    s.src = api + '/omi-chat-widget.js?v=44';
     s.defer = true;
     document.head.appendChild(s);
   }

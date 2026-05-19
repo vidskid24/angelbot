@@ -9,6 +9,12 @@ const FREE_THREAD_LIMIT =
   parseInt(process.env.OMIBOT_FREE_THREAD_LIMIT || process.env.ANGELBOT_FREE_THREAD_LIMIT || '2', 10) || 2;
 const PAID_THREAD_LIMIT =
   parseInt(process.env.OMIBOT_PAID_THREAD_LIMIT || process.env.ANGELBOT_PAID_THREAD_LIMIT || '10', 10) || 10;
+const FREE_DAILY_MESSAGE_LIMIT =
+  parseInt(process.env.OMIBOT_FREE_DAILY_MESSAGE_LIMIT || process.env.ANGELBOT_FREE_DAILY_MESSAGE_LIMIT || '11', 10) ||
+  11;
+const PAID_DAILY_MESSAGE_LIMIT =
+  parseInt(process.env.OMIBOT_PAID_DAILY_MESSAGE_LIMIT || process.env.ANGELBOT_PAID_DAILY_MESSAGE_LIMIT || '80', 10) ||
+  80;
 
 /**
  * @param {'free' | 'paid'} tier
@@ -16,6 +22,34 @@ const PAID_THREAD_LIMIT =
  */
 export function getThreadLimitForTier(tier) {
   return tier === 'paid' ? PAID_THREAD_LIMIT : FREE_THREAD_LIMIT;
+}
+
+/**
+ * @param {'free' | 'paid'} tier
+ * @returns {number}
+ */
+export function getDailyMessageLimitForTier(tier) {
+  return tier === 'paid' ? PAID_DAILY_MESSAGE_LIMIT : FREE_DAILY_MESSAGE_LIMIT;
+}
+
+/**
+ * User-facing message when the daily message limit is reached.
+ * @param {number} limit
+ * @param {'free' | 'paid'} [tier]
+ * @returns {string}
+ */
+export function getDailyMessageLimitMessage(limit, tier = 'free') {
+  const cap = Number(limit) || FREE_DAILY_MESSAGE_LIMIT;
+  if (tier === 'paid') {
+    return (
+      `You have reached today's limit of ${cap} messages on your plan. ` +
+      'Please try again tomorrow, or email service@masteringalchemy.com if you need assistance.'
+    );
+  }
+  return (
+    `You have reached today's limit of ${cap} messages on your free plan. ` +
+    'Please try again tomorrow, or upgrade to a paid plan for a higher daily limit.'
+  );
 }
 
 /**

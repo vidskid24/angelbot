@@ -8,7 +8,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createAuthBootstrapRouter } from './routes/auth-bootstrap.js';
 import { createChatApiRouter } from './routes/api-chat.js';
-import { createMemoriesApiRouter } from './routes/api-memories.js';
 import { createThreadsApiRouter } from './routes/api-threads.js';
 import { requireSession } from './middleware/require-session.js';
 import { isDbEnabled, pingDb } from '../db/pool.js';
@@ -66,7 +65,6 @@ export function startWebServer() {
   api.use(requireSession);
   api.use(createChatApiRouter());
   api.use(createThreadsApiRouter());
-  api.use(createMemoriesApiRouter());
   app.use(api);
 
   app.use((err, _req, res, _next) => {

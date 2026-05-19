@@ -4,7 +4,13 @@ import { formatChatTextHtml } from '../../lib/format-chat-text.js';
 import { processWisdomMessage } from '../../services/chat-service.js';
 import { isDbEnabled } from '../../db/pool.js';
 import * as threadDb from '../../db/threads.js';
-import { ensureUserTier, getThreadLimitMessage } from '../../lib/tier.js';
+import * as dailyMessages from '../../db/daily-messages.js';
+import {
+  ensureUserTier,
+  getDailyMessageLimitForTier,
+  getDailyMessageLimitMessage,
+  getThreadLimitMessage,
+} from '../../lib/tier.js';
 
 export function createChatApiRouter() {
   const r = Router();
@@ -31,6 +37,18 @@ export function createChatApiRouter() {
 
       if (isDbEnabled()) {
         const tier = req.omiUser.tier || (await ensureUserTier(userId, req.omiUser.email));
+        const dailyLimit = getDailyMessageLimitForTier(tier);
+        const dailyCount = await dailyMessages.getDailyMessageCount(userId);
+        if (dailyCount >= dailyLimit) {
+          res.status(403).json({
+            error: 'daily_message_limit',
+            message: getDailyMessageLimitMessage(dailyLimit, tier),
+            dailyMessageLimit: dailyLimit,
+            dailyMessageCount: dailyCount,
+            tier,
+          });
+          return;
+        }
         const resolved = await threadDb.resolveThreadForChat(userId, tier, threadId);
         if (!resolved.ok) {
           res.status(403).json({
@@ -59,14 +77,13 @@ export function createChatApiRouter() {
         res.status(500).json({ error: out.code || 'error', message: out.text });
         return;
       }
-      if (out.kind === 'memory_saved') {
-        res.json({
-          kind: 'memory_saved',
-          text: out.text,
-          html: formatChatTextHtml(out.text),
-          threadId,
-        });
-        return;
+      let dailyMessageCount;
+      let dailyMessageLimit;
+      if (useDb) {
+        const tier = req.omiUser.tier || (await ensureUserTier(userId, req.omiUser.email));
+        dailyMessageLimit = getDailyMessageLimitForTier(tier);
+        await dailyMessages.incrementDailyMessageCount(userId);
+        dailyMessageCount = await dailyMessages.getDailyMessageCount(userId);
       }
       res.json({
         kind: 'reply',
@@ -75,6 +92,7 @@ export function createChatApiRouter() {
         sessionId: threadId,
         threadId,
         ...(out.threadTitle ? { threadTitle: out.threadTitle } : {}),
+        ...(useDb ? { dailyMessageLimit, dailyMessageCount } : {}),
       });
     } catch (e) {
       next(e);

@@ -355,6 +355,53 @@
       scrollIntoViewIfNearBottom(row);
     }
 
+    function appendDailyLimitMessage(limit, tier) {
+      const cap = limit || threadsMeta.dailyMessageLimit || 11;
+      const isPaid = tier === 'paid';
+      const row = document.createElement('div');
+      row.className = 'omibot-msg-system';
+      const body = document.createElement('div');
+      if (isPaid) {
+        body.appendChild(
+          document.createTextNode(
+            "You have reached today's limit of " +
+              cap +
+              ' messages on your plan. Please try again tomorrow, or email service@masteringalchemy.com if you need assistance.'
+          )
+        );
+      } else {
+        body.appendChild(
+          document.createTextNode(
+            "You have reached today's limit of " +
+              cap +
+              ' messages on your free plan. Please try again tomorrow, or '
+          )
+        );
+        const link = document.createElement('a');
+        link.className = 'omibot-tier-link';
+        link.href = upgradeUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = 'upgrade';
+        body.appendChild(link);
+        body.appendChild(document.createTextNode(' to a paid plan for a higher daily limit.'));
+      }
+      row.appendChild(body);
+      log.appendChild(row);
+      scrollIntoViewIfNearBottom(row);
+    }
+
+    function isAtDailyMessageLimit() {
+      const n = threadsMeta.dailyMessageCount != null ? threadsMeta.dailyMessageCount : 0;
+      const cap = threadsMeta.dailyMessageLimit != null ? threadsMeta.dailyMessageLimit : 11;
+      return n >= cap;
+    }
+
+    function refreshInputEnabled() {
+      if (!ready || sending) return;
+      setInputEnabled(!isAtDailyMessageLimit());
+    }
+
     const newThreadBtn = root.querySelector('#omibot-new-thread');
     const mainEl = root.querySelector('.omibot-main');
 
@@ -578,7 +625,13 @@
     let welcomeDismissed = false;
     let sending = false;
     let thinkingEl = null;
-    let threadsMeta = { threadLimit: 2, threadCount: 0, tier: 'free' };
+    let threadsMeta = {
+      threadLimit: 2,
+      threadCount: 0,
+      tier: 'free',
+      dailyMessageLimit: 11,
+      dailyMessageCount: 0,
+    };
     let threadsCache = [];
 
     function dismissWelcome() {
@@ -661,12 +714,43 @@
       threadListEl.appendChild(footer);
     }
 
+    function appendDailyMetaFooter() {
+      const existing = threadListEl.querySelector('#omibot-daily-meta-footer');
+      if (existing) existing.remove();
+
+      const n = threadsMeta.dailyMessageCount != null ? threadsMeta.dailyMessageCount : 0;
+      const cap = threadsMeta.dailyMessageLimit != null ? threadsMeta.dailyMessageLimit : 11;
+      if (n < cap - 1) return;
+
+      const footer = document.createElement('div');
+      footer.id = 'omibot-daily-meta-footer';
+      footer.className = 'omibot-thread-meta-footer';
+      footer.appendChild(document.createTextNode(n + ' of ' + cap + ' messages today'));
+
+      const tier = threadsMeta.tier === 'paid' ? 'paid' : 'free';
+      if (tier !== 'paid' && n >= cap) {
+        footer.appendChild(document.createTextNode(' '));
+        const link = document.createElement('a');
+        link.className = 'omibot-tier-link';
+        link.href = upgradeUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = 'Upgrade';
+        link.title = 'Upgrade to Omi AI paid';
+        footer.appendChild(link);
+      }
+
+      threadListEl.appendChild(footer);
+    }
+
     function updateThreadMeta() {
       const n = threadsMeta.threadCount;
       const cap = threadsMeta.threadLimit;
       newThreadBtn.disabled = n >= cap;
       updateTierBadge();
       appendThreadMetaFooter();
+      appendDailyMetaFooter();
+      refreshInputEnabled();
     }
 
     function getThreadFromCache(threadId) {
@@ -907,6 +991,8 @@
         threadLimit: data.threadLimit || 2,
         threadCount: data.threadCount != null ? data.threadCount : threadsCache.length,
         tier: data.tier || 'free',
+        dailyMessageLimit: data.dailyMessageLimit != null ? data.dailyMessageLimit : 11,
+        dailyMessageCount: data.dailyMessageCount != null ? data.dailyMessageCount : 0,
       };
       updateThreadMeta();
       return data;
@@ -1008,7 +1094,7 @@
       await fetchThreads(token);
       beginNewConversation();
       ready = true;
-      setInputEnabled(true);
+      refreshInputEnabled();
     }
 
     ensureToken()
@@ -1036,6 +1122,10 @@
 
     async function send() {
       if (!ready || sending) return;
+      if (isAtDailyMessageLimit()) {
+        appendDailyLimitMessage(threadsMeta.dailyMessageLimit, threadsMeta.tier);
+        return;
+      }
       const message = (input.value || '').trim();
       if (!message) return;
       sending = true;
@@ -1068,6 +1158,20 @@
             );
             return;
           }
+          if (result.data.error === 'daily_message_limit') {
+            if (result.data.dailyMessageCount != null) {
+              threadsMeta.dailyMessageCount = result.data.dailyMessageCount;
+            }
+            if (result.data.dailyMessageLimit != null) {
+              threadsMeta.dailyMessageLimit = result.data.dailyMessageLimit;
+            }
+            appendDailyLimitMessage(
+              result.data.dailyMessageLimit || threadsMeta.dailyMessageLimit,
+              result.data.tier || threadsMeta.tier
+            );
+            updateThreadMeta();
+            return;
+          }
           append('System', result.data.message || result.data.error || 'Request failed');
           return;
         }
@@ -1085,13 +1189,20 @@
           renderThreadList(result.data.threadId);
           updateActiveToolbar(result.data.threadId);
         }
+        if (result.data.dailyMessageCount != null) {
+          threadsMeta.dailyMessageCount = result.data.dailyMessageCount;
+        }
+        if (result.data.dailyMessageLimit != null) {
+          threadsMeta.dailyMessageLimit = result.data.dailyMessageLimit;
+        }
         append('Companion', result.data.text || '');
+        updateThreadMeta();
       } catch (e) {
         append('System', String(e && e.message ? e.message : e));
       } finally {
         removeThinking();
         sending = false;
-        setInputEnabled(true);
+        refreshInputEnabled();
         input.focus({ preventScroll: true });
       }
     }
