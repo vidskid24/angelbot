@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=51
+ * OMIBOT_WIDGET_VERSION=52
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -338,7 +338,7 @@
       '.omibot-prefs-memory-note{font-size:0.82rem;color:#666;margin:4px 0 8px;line-height:1.4}' +
       '.omibot-prefs-memory-upgrade{font-size:0.82rem;color:#666;margin:0 0 10px;line-height:1.4}' +
       '.omibot-prefs-memory-upgrade a.omibot-tier-link{color:#7a5c1e}' +
-      '.omibot-prefs-section-label{font-size:0.75rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#888;margin:18px 0 10px}' +
+      '.omibot-prefs-paid-only{font-style:italic;font-weight:400;color:#999;margin-left:6px;font-size:0.88em;letter-spacing:0;text-transform:none}' +
       '.omibot-prefs-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}' +
       '.omibot-prefs-save{padding:10px 18px;border-radius:10px;border:none;background:#7a5c1e;color:#fff;font:inherit;font-size:0.95rem;cursor:pointer}' +
       '.omibot-prefs-save:hover{background:#5c4616}' +
@@ -494,16 +494,15 @@
       '<option value="some_experience">Some experience</option>' +
       '<option value="long_time">Long-time participant</option>' +
       '</select></div>' +
-      '<p class="omibot-prefs-section-label">Memory (paid plan)</p>' +
       '<p class="omibot-prefs-memory-upgrade" id="omibot-prefs-memory-upgrade" hidden>' +
       'Memory across conversations is available on the paid plan. <a class="omibot-tier-link" id="omibot-prefs-memory-upgrade-link" href="#" target="_blank" rel="noopener noreferrer">Upgrade</a></p>' +
       '<div class="omibot-prefs-field">' +
-      '<label for="omibot-pref-memory-instructions">What I would like Omi to know about me</label>' +
+      '<label for="omibot-pref-memory-instructions">What I would like Omi to know about me <span class="omibot-prefs-paid-only">paid plans only</span></label>' +
       '<textarea id="omibot-pref-memory-instructions" rows="4" placeholder="Optional — preferences, context, or how you like to work together."></textarea>' +
       '</div>' +
       '<div class="omibot-prefs-field">' +
-      '<label for="omibot-pref-memory-summary">What Omi remembers</label>' +
-      '<p class="omibot-prefs-memory-note" id="omibot-prefs-memory-note">Updated automatically each evening when you chat that day (Pacific time). You can edit anytime.</p>' +
+      '<label for="omibot-pref-memory-summary">What Omi remembers <span class="omibot-prefs-paid-only">paid plans only</span></label>' +
+      '<p class="omibot-prefs-memory-note" id="omibot-prefs-memory-note">Here\u2019s what Omi remembers about you. This summary is regenerated each night based off your conversations.</p>' +
       '<textarea id="omibot-pref-memory-summary" class="omibot-memory-summary" rows="10" placeholder="Work context, personal context, how to work with you, top of mind, and brief history will appear here."></textarea>' +
       '</div>' +
       '<p class="omibot-prefs-error" id="omibot-prefs-error" hidden></p>' +
