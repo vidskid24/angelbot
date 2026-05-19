@@ -10,6 +10,7 @@ import { createAuthBootstrapRouter } from './routes/auth-bootstrap.js';
 import { createChatApiRouter } from './routes/api-chat.js';
 import { createThreadsApiRouter } from './routes/api-threads.js';
 import { createUserPreferencesApiRouter } from './routes/api-user-preferences.js';
+import { createInternalJobsRouter } from './routes/internal-jobs.js';
 import { requireSession } from './middleware/require-session.js';
 import { isDbEnabled, pingDb } from '../db/pool.js';
 
@@ -61,6 +62,7 @@ export function startWebServer() {
   app.get('/angel-chat-widget.js', serveWidget);
 
   app.use(createAuthBootstrapRouter());
+  app.use(createInternalJobsRouter());
 
   const api = express.Router();
   api.use(requireSession);

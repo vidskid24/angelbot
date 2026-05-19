@@ -70,8 +70,9 @@ Public/auth routes:
 Authenticated routes (Bearer app session JWT):
 
 - `POST /api/chat/send` — body: `{ message, threadId? }`; returns `threadId`
-- `GET /api/user/preferences` — tone and MA experience settings
-- `PATCH /api/user/preferences` — save preferences (`{ tone?, maExperience? }`)
+- `GET /api/user/preferences` — tone, MA experience, and (paid) memory fields
+- `PATCH /api/user/preferences` — save settings (`{ tone?, maExperience?, memoryInstructions?, memorySummary? }`)
+- `POST /internal/jobs/regenerate-memory` — nightly memory synthesis (header `x-cron-secret`; paid users with chat activity that day in `OMIBOT_MEMORY_TIMEZONE`)
 - `GET /api/threads` — list conversations (limit by tier)
 - `POST /api/threads` — create conversation (`{ title? }`)
 - `PATCH /api/threads/:threadId` — rename (`{ title }`)
@@ -85,7 +86,9 @@ Authenticated routes (Bearer app session JWT):
 3. Deploy — migrations run on startup (`src/db/migrations/`).
 4. Health check: `GET /healthz` returns `database: "configured"` and `databaseOk: true` when connected.
 
-Paid vs free thread and daily message limits are enforced on the server. Configure Thinkific enrollment vars or `OMIBOT_PAID_USER_IDS` for testing.
+Paid vs free thread and daily message limits are enforced on the server. **Paid memory** (user instructions + auto-generated summary across conversations) is injected into the system prompt for paid users. Configure Thinkific enrollment vars or `OMIBOT_PAID_USER_IDS` for testing.
+
+Set `OMIBOT_CRON_SECRET` and schedule a daily cron (e.g. Render Cron Job) to `POST /internal/jobs/regenerate-memory` with header `x-cron-secret`. Default timezone is `America/Los_Angeles`.
 
 ## Thinkific embed
 
@@ -116,7 +119,7 @@ Paid vs free thread and daily message limits are enforced on the server. Configu
     }
 
     var s = document.createElement('script');
-    s.src = api + '/omi-chat-widget.js?v=49';
+    s.src = api + '/omi-chat-widget.js?v=50';
     s.defer = true;
     document.head.appendChild(s);
   }

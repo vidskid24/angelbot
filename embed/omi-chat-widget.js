@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=49
+ * OMIBOT_WIDGET_VERSION=50
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -302,12 +302,19 @@
       '.omibot-prefs-btn:hover{color:#1a1a1a}' +
       '.omibot-prefs-overlay{position:fixed;inset:0;z-index:100001;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(26,26,26,.45)}' +
       '.omibot-prefs-overlay[hidden]{display:none!important}' +
-      '.omibot-prefs-dialog{width:100%;max-width:26rem;background:#fff;border-radius:14px;padding:22px 20px;box-shadow:0 12px 40px rgba(0,0,0,.18)}' +
+      '.omibot-prefs-dialog{width:100%;max-width:32rem;max-height:min(90vh,720px);overflow-y:auto;background:#fff;border-radius:14px;padding:22px 20px;box-shadow:0 12px 40px rgba(0,0,0,.18)}' +
       '.omibot-prefs-dialog h2{margin:0 0 8px;font-size:1.35rem;font-weight:500}' +
       '.omibot-prefs-dialog p{margin:0 0 18px;font-size:0.92rem;line-height:1.5;color:#555}' +
       '.omibot-prefs-field{margin:0 0 14px}' +
       '.omibot-prefs-field label{display:block;font-size:0.85rem;font-weight:600;color:#444;margin-bottom:6px}' +
       '.omibot-prefs-field select{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid #ddd;font:inherit;font-size:0.95rem;background:#fff}' +
+      '.omibot-prefs-field textarea{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid #ddd;font:inherit;font-size:0.9rem;line-height:1.45;background:#fff;resize:vertical;min-height:5rem}' +
+      '.omibot-prefs-field textarea.omibot-memory-summary{min-height:11rem;font-family:Georgia,serif}' +
+      '.omibot-prefs-field textarea:disabled{background:#f5f3ef;color:#888;cursor:not-allowed}' +
+      '.omibot-prefs-memory-note{font-size:0.82rem;color:#666;margin:4px 0 8px;line-height:1.4}' +
+      '.omibot-prefs-memory-upgrade{font-size:0.82rem;color:#666;margin:0 0 10px;line-height:1.4}' +
+      '.omibot-prefs-memory-upgrade a.omibot-tier-link{color:#7a5c1e}' +
+      '.omibot-prefs-section-label{font-size:0.75rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#888;margin:18px 0 10px}' +
       '.omibot-prefs-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}' +
       '.omibot-prefs-save{padding:10px 18px;border-radius:10px;border:none;background:#7a5c1e;color:#fff;font:inherit;font-size:0.95rem;cursor:pointer}' +
       '.omibot-prefs-save:hover{background:#5c4616}' +
@@ -430,7 +437,15 @@
     const newThreadBtn = root.querySelector('#omibot-new-thread');
     const prefsOpenBtn = root.querySelector('#omibot-prefs-open');
 
-    let userPrefs = { tone: 'warm', maExperience: 'some_experience', preferencesCompleted: false };
+    let userPrefs = {
+      tone: 'warm',
+      maExperience: 'some_experience',
+      preferencesCompleted: false,
+      tier: 'free',
+      memoryInstructions: '',
+      memorySummary: '',
+      memoryAvailable: false,
+    };
 
     const prefsOverlay = document.createElement('div');
     prefsOverlay.className = 'omibot-prefs-overlay';
@@ -455,6 +470,18 @@
       '<option value="some_experience">Some experience</option>' +
       '<option value="long_time">Long-time participant</option>' +
       '</select></div>' +
+      '<p class="omibot-prefs-section-label">Memory (paid plan)</p>' +
+      '<p class="omibot-prefs-memory-upgrade" id="omibot-prefs-memory-upgrade" hidden>' +
+      'Memory across conversations is available on the paid plan. <a class="omibot-tier-link" id="omibot-prefs-memory-upgrade-link" href="#" target="_blank" rel="noopener noreferrer">Upgrade</a></p>' +
+      '<div class="omibot-prefs-field">' +
+      '<label for="omibot-pref-memory-instructions">What I would like Omi to know about me</label>' +
+      '<textarea id="omibot-pref-memory-instructions" rows="4" placeholder="Optional — preferences, context, or how you like to work together."></textarea>' +
+      '</div>' +
+      '<div class="omibot-prefs-field">' +
+      '<label for="omibot-pref-memory-summary">What Omi remembers</label>' +
+      '<p class="omibot-prefs-memory-note" id="omibot-prefs-memory-note">Updated automatically each evening when you chat that day (Pacific time). You can edit anytime.</p>' +
+      '<textarea id="omibot-pref-memory-summary" class="omibot-memory-summary" rows="10" placeholder="Work context, personal context, how to work with you, top of mind, and brief history will appear here."></textarea>' +
+      '</div>' +
       '<p class="omibot-prefs-error" id="omibot-prefs-error" hidden></p>' +
       '<div class="omibot-prefs-actions">' +
       '<button type="button" class="omibot-prefs-save" id="omibot-prefs-save">Save preferences</button>' +
@@ -470,10 +497,35 @@
     const prefsSaveBtn = prefsOverlay.querySelector('#omibot-prefs-save');
     const prefsCancelBtn = prefsOverlay.querySelector('#omibot-prefs-cancel');
     const prefsErrorEl = prefsOverlay.querySelector('#omibot-prefs-error');
+    const prefsMemoryInstructions = prefsOverlay.querySelector('#omibot-pref-memory-instructions');
+    const prefsMemorySummary = prefsOverlay.querySelector('#omibot-pref-memory-summary');
+    const prefsMemoryUpgrade = prefsOverlay.querySelector('#omibot-prefs-memory-upgrade');
+    const prefsMemoryUpgradeLink = prefsOverlay.querySelector('#omibot-prefs-memory-upgrade-link');
+    const prefsMemoryNote = prefsOverlay.querySelector('#omibot-prefs-memory-note');
+
+    function isPaidTier() {
+      return userPrefs.tier === 'paid' || threadsMeta.tier === 'paid';
+    }
+
+    function applyMemoryFieldsUi() {
+      const paid = isPaidTier();
+      if (prefsMemoryUpgrade) prefsMemoryUpgrade.hidden = paid;
+      if (prefsMemoryInstructions) {
+        prefsMemoryInstructions.disabled = !paid;
+        prefsMemoryInstructions.value = userPrefs.memoryInstructions || '';
+      }
+      if (prefsMemorySummary) {
+        prefsMemorySummary.disabled = !paid;
+        prefsMemorySummary.value = userPrefs.memorySummary || '';
+      }
+      if (prefsMemoryNote) prefsMemoryNote.hidden = !paid;
+      if (prefsMemoryUpgradeLink) prefsMemoryUpgradeLink.href = upgradeUrl;
+    }
 
     function syncPrefsFormFromState() {
       if (prefsToneSelect) prefsToneSelect.value = userPrefs.tone || 'warm';
       if (prefsMaSelect) prefsMaSelect.value = userPrefs.maExperience || 'some_experience';
+      applyMemoryFieldsUi();
     }
 
     function setPrefsError(msg) {
@@ -525,13 +577,18 @@
       setPrefsError('');
       if (prefsSaveBtn) prefsSaveBtn.disabled = true;
       try {
+        const body = {
+          tone: prefsToneSelect ? prefsToneSelect.value : 'warm',
+          maExperience: prefsMaSelect ? prefsMaSelect.value : 'some_experience',
+        };
+        if (isPaidTier()) {
+          body.memoryInstructions = prefsMemoryInstructions ? prefsMemoryInstructions.value : '';
+          body.memorySummary = prefsMemorySummary ? prefsMemorySummary.value : '';
+        }
         const res = await fetch(API_BASE + '/api/user/preferences', {
           method: 'PATCH',
           headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders(token)),
-          body: JSON.stringify({
-            tone: prefsToneSelect ? prefsToneSelect.value : 'warm',
-            maExperience: prefsMaSelect ? prefsMaSelect.value : 'some_experience',
-          }),
+          body: JSON.stringify(body),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -542,7 +599,13 @@
           tone: data.tone || 'warm',
           maExperience: data.maExperience || 'some_experience',
           preferencesCompleted: Boolean(data.preferencesCompleted),
+          tier: data.tier || userPrefs.tier || 'free',
+          memoryInstructions: data.memoryInstructions || '',
+          memorySummary: data.memorySummary || '',
+          memoryAvailable: Boolean(data.memoryAvailable),
         };
+        if (data.tier) threadsMeta.tier = data.tier;
+        updateTierBadge();
         closePrefsModal();
         if (!ready) {
           ready = true;
@@ -1280,7 +1343,12 @@
           tone: prefs.tone || 'warm',
           maExperience: prefs.maExperience || 'some_experience',
           preferencesCompleted: Boolean(prefs.preferencesCompleted),
+          tier: prefs.tier || 'free',
+          memoryInstructions: prefs.memoryInstructions || '',
+          memorySummary: prefs.memorySummary || '',
+          memoryAvailable: Boolean(prefs.memoryAvailable),
         };
+        if (prefs.tier) threadsMeta.tier = prefs.tier;
       }
       await fetchThreads(token);
       beginNewConversation();

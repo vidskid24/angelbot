@@ -185,21 +185,28 @@ Base every response only on the text above and the style reference (if present).
  * Builds the full system message, optionally appending user prefs and RAG style excerpts.
  * @param {string} [styleExcerpts] - Optional text from style-guide retrieval to append.
  * @param {string} [userPreferencesBlock] - Optional per-user tone and experience instructions.
+ * @param {string} [userMemoryBlock] - Optional paid-tier cross-conversation memory.
  * @returns {string}
  */
-export function buildSystemPrompt(styleExcerpts = null, userPreferencesBlock = null) {
+export function buildSystemPrompt(styleExcerpts = null, userPreferencesBlock = null, userMemoryBlock = null) {
   let prompt = ALCHEMY_SCRIBE_SYSTEM_PROMPT;
   const hasUserTone = Boolean(userPreferencesBlock && userPreferencesBlock.trim());
+  const hasUserMemory = Boolean(userMemoryBlock && userMemoryBlock.trim());
+  const hasUserContext = hasUserTone || hasUserMemory;
 
   if (styleExcerpts && styleExcerpts.trim()) {
-    const toneNote = hasUserTone
-      ? 'Use the following for **content and facts** only — do not copy its tone; follow the user tone section at the end of this prompt.'
+    const toneNote = hasUserContext
+      ? 'Use the following for **content and facts** only — do not copy its tone; follow the user preference and memory sections at the end of this prompt.'
       : 'Use it for tone and content.';
     prompt += `\n\n## MA framework and content (style reference)\nThe following material is MA framework and content. ${toneNote} You may quote directly from this material and offer techniques or practices when applicable. Where the user's question touches on it, include relevant ideas, quotes, or techniques, then invite them to explore or try them.\n\n${styleExcerpts.trim()}`;
   }
 
   if (hasUserTone) {
     prompt += `\n\n${userPreferencesBlock.trim()}`;
+  }
+
+  if (hasUserMemory) {
+    prompt += `\n\n${userMemoryBlock.trim()}`;
   }
 
   return prompt;

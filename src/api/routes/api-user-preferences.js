@@ -14,9 +14,9 @@ export function createUserPreferencesApiRouter() {
         return;
       }
       const userId = req.omiUser.sub;
-      await ensureUserTier(userId, req.omiUser.email);
-      const prefs = await users.getUserPreferences(userId);
-      res.json(prefs);
+      const tier = await ensureUserTier(userId, req.omiUser.email);
+      const settings = await users.getUserSettings(userId);
+      res.json({ ...settings, tier });
     } catch (e) {
       next(e);
     }
@@ -29,7 +29,7 @@ export function createUserPreferencesApiRouter() {
         return;
       }
       const userId = req.omiUser.sub;
-      await ensureUserTier(userId, req.omiUser.email);
+      const tier = await ensureUserTier(userId, req.omiUser.email);
 
       const tone = req.body?.tone;
       const maExperience = req.body?.maExperience;
@@ -42,14 +42,29 @@ export function createUserPreferencesApiRouter() {
         return;
       }
 
-      const existing = await users.getUserPreferences(userId);
-      await users.updateUserPreferences(userId, {
+      const existing = await users.getUserSettings(userId);
+      const patch = {
         tone: tone != null ? tone : existing.tone,
         maExperience: maExperience != null ? maExperience : existing.maExperience,
         markCompleted: true,
-      });
-      const prefs = await users.getUserPreferences(userId);
-      res.json(prefs);
+      };
+
+      if (tier === 'paid') {
+        if (req.body?.memoryInstructions !== undefined) {
+          patch.memoryInstructions = req.body.memoryInstructions;
+        }
+        if (req.body?.memorySummary !== undefined) {
+          patch.memorySummary = req.body.memorySummary;
+          patch.memorySummaryEdited = true;
+        }
+        if (req.body?.memoryAutoUpdateEnabled !== undefined) {
+          patch.memoryAutoUpdateEnabled = Boolean(req.body.memoryAutoUpdateEnabled);
+        }
+      }
+
+      await users.updateUserSettings(userId, patch);
+      const settings = await users.getUserSettings(userId);
+      res.json({ ...settings, tier });
     } catch (e) {
       next(e);
     }

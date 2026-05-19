@@ -8,6 +8,7 @@ import * as threadDb from '../db/threads.js';
 import * as users from '../db/users.js';
 import { generateThreadTitleFromMessage } from '../lib/gemini.js';
 import { buildUserPreferencesPromptBlock } from '../lib/user-preferences.js';
+import { buildUserMemoryPromptBlock } from '../lib/user-memory.js';
 import { retrieve } from '../rag/retrieve.js';
 
 function isContextDependentFollowup(message) {
@@ -59,14 +60,25 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
     const retrievalQuery = buildRetrievalQuery(message, history);
     const styleExcerpts = await retrieve(retrievalQuery, 2);
     let userPreferencesBlock = null;
+    let userMemoryBlock = null;
     if (useDb) {
-      const prefs = await users.getUserPreferences(userId);
-      userPreferencesBlock = buildUserPreferencesPromptBlock(prefs);
+      const settings = await users.getUserSettings(userId);
+      userPreferencesBlock = buildUserPreferencesPromptBlock(settings);
+      if (settings.tier === 'paid') {
+        userMemoryBlock = buildUserMemoryPromptBlock(settings);
+      }
     }
-    const reply = await getWisdomReply(message, history, styleExcerpts || null, userPreferencesBlock);
+    const reply = await getWisdomReply(
+      message,
+      history,
+      styleExcerpts || null,
+      userPreferencesBlock,
+      userMemoryBlock
+    );
     let threadTitle = null;
     if (useDb && threadId) {
       await threadDb.appendThreadTurn(threadId, message, reply);
+      await users.touchUserChatActivity(userId);
       if (history.length === 0) {
         try {
           const thread = await threadDb.getThreadForUser(threadId, userId);
