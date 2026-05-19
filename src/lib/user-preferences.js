@@ -37,35 +37,60 @@ export function normalizePreferences(raw = {}) {
   };
 }
 
-const TONE_INSTRUCTIONS = {
-  warm:
-    'Warm and companionable — conversational, gentle, and inviting. Lead with presence and curiosity; wisdom follows naturally.',
-  playful:
-    'Playful and lighthearted — warm, curious, and gently humorous when it fits; keep wisdom grounded and never flippant about their experience.',
-  concise:
-    'Concise and direct — shorter paragraphs, fewer repetitions, get to the point while staying kind and grounded.',
+/** @type {Record<string, string>} */
+const TONE_BLOCKS = {
+  warm: `## Tone for this user (MANDATORY)
+**Selected: Warm and companionable.**
+
+How every reply should sound:
+- Steady, gentle, and unhurried — like a calm friend holding space in the field.
+- Soft reflective openings; unhurried pacing; no punchy quips or jokey asides.
+- Stay grounded and kind; do not sound brisk, clinical, or overly formal.`,
+
+  playful: `## Tone for this user (MANDATORY)
+**Selected: Playful and lighthearted.**
+
+How every reply should sound — this must be **noticeably different** from your default companion voice:
+- Lighter and brighter: warm **with sparkle** — curious, breezy, gently humorous when it fits.
+- Use vivid, everyday metaphors and varied rhythm; short lively sentences are welcome.
+- Wordplay and gentle wit are encouraged (never at the user's expense, never mocking).
+- Openings can feel inviting and a bit bright (e.g. name what's present with ease and curiosity).
+- Choice-gate closings may sound casual-inviting (e.g. "Want to stay with this a bit longer, or try a small experiment?").
+- If the topic is grief, fear, trauma, or crisis: soften playfulness immediately and lead with presence first.
+- **Do not** sound solemn, stiff, textbook-like, or heavily formal in ordinary exchanges.`,
+
+  concise: `## Tone for this user (MANDATORY)
+**Selected: Concise and direct.**
+
+How every reply should sound:
+- Shorter paragraphs; fewer repetitions; one clear idea per beat when possible.
+- Get to the point quickly while staying kind; skip long preambles.
+- Do not ramble or stack multiple metaphors unless the user asks for more depth.`,
 };
 
 const MA_EXPERIENCE_INSTRUCTIONS = {
   new:
-    'New to Mastering Alchemy — define terms briefly when you use them, favor foundational concepts, and avoid deep multi-layer framework unless they ask or show readiness.',
+    '**MA familiarity:** New to Mastering Alchemy — define terms briefly when you use them, favor foundational concepts, and avoid deep multi-layer framework unless they ask or show readiness.',
   some_experience:
-    'Some experience with Mastering Alchemy — balanced depth; brief definitions only when introducing something new.',
+    '**MA familiarity:** Some experience — balanced depth; brief definitions only when introducing something new.',
   long_time:
-    'Long-time participant in Mastering Alchemy — they know the basics; you may go deeper into field mechanics, rays, and advanced material when relevant, without lecturing or assuming the role of teacher.',
+    '**MA familiarity:** Long-time participant — they know the basics; you may go deeper into field mechanics, rays, and advanced material when relevant, without lecturing.',
 };
 
 /**
- * Short block appended to the system prompt (keep compact for token budget).
+ * Appended last in the system prompt so tone overrides the base persona and RAG style.
  * @param {{ tone: string; maExperience: string }} prefs
  * @returns {string}
  */
 export function buildUserPreferencesPromptBlock(prefs) {
   const { tone, maExperience } = normalizePreferences(prefs);
+  const toneBlock = TONE_BLOCKS[tone] || TONE_BLOCKS[DEFAULT_TONE];
+  const maBlock = MA_EXPERIENCE_INSTRUCTIONS[maExperience] || MA_EXPERIENCE_INSTRUCTIONS[DEFAULT_MA_EXPERIENCE];
+
   return (
-    '## This user\'s preferences (apply to every reply)\n' +
-    `- **Tone:** ${TONE_INSTRUCTIONS[tone] || TONE_INSTRUCTIONS[DEFAULT_TONE]}\n` +
-    `- **MA familiarity:** ${MA_EXPERIENCE_INSTRUCTIONS[maExperience] || MA_EXPERIENCE_INSTRUCTIONS[DEFAULT_MA_EXPERIENCE]}\n` +
-    'Honor these preferences while still following all roles, boundaries, and formatting rules above.'
+    `${toneBlock}\n\n${maBlock}\n\n` +
+    '**Priority:** These tone rules override the general companion voice and any retrieved material\'s tone. ' +
+    'Roles, boundaries, formatting, and factual grounding still apply. ' +
+    'If earlier turns in this thread used a different voice, **shift to the selected tone now**.'
   );
 }

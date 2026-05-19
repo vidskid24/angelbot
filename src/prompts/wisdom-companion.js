@@ -189,13 +189,17 @@ Base every response only on the text above and the style reference (if present).
  */
 export function buildSystemPrompt(styleExcerpts = null, userPreferencesBlock = null) {
   let prompt = ALCHEMY_SCRIBE_SYSTEM_PROMPT;
-
-  if (userPreferencesBlock && userPreferencesBlock.trim()) {
-    prompt += `\n\n${userPreferencesBlock.trim()}`;
-  }
+  const hasUserTone = Boolean(userPreferencesBlock && userPreferencesBlock.trim());
 
   if (styleExcerpts && styleExcerpts.trim()) {
-    prompt += `\n\n## MA framework and content (style reference)\nThe following material is MA framework and content. Use it for tone and content. You may quote directly from this material and offer techniques or practices when applicable. Where the user's question touches on it, include relevant ideas, quotes, or techniques, then invite them to explore or try them.\n\n${styleExcerpts.trim()}`;
+    const toneNote = hasUserTone
+      ? 'Use the following for **content and facts** only — do not copy its tone; follow the user tone section at the end of this prompt.'
+      : 'Use it for tone and content.';
+    prompt += `\n\n## MA framework and content (style reference)\nThe following material is MA framework and content. ${toneNote} You may quote directly from this material and offer techniques or practices when applicable. Where the user's question touches on it, include relevant ideas, quotes, or techniques, then invite them to explore or try them.\n\n${styleExcerpts.trim()}`;
+  }
+
+  if (hasUserTone) {
+    prompt += `\n\n${userPreferencesBlock.trim()}`;
   }
 
   return prompt;
