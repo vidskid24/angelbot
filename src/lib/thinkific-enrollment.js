@@ -1,9 +1,40 @@
 /**
- * Check Thinkific active enrollment for a paid product (option B).
- * Requires THINKIFIC_API_KEY, THINKIFIC_SUBDOMAIN, THINKIFIC_PAID_PRODUCT_ID.
+ * Check Thinkific active enrollment for paid product(s) (option B).
+ * Requires THINKIFIC_API_KEY, THINKIFIC_SUBDOMAIN, and at least one paid product id:
+ *   THINKIFIC_PAID_PRODUCT_IDS (comma-separated) and/or THINKIFIC_PAID_PRODUCT_ID (single).
  */
 
 const API_BASE = 'https://api.thinkific.com/api/public/v1';
+
+/**
+ * @returns {Set<number>}
+ */
+export function parsePaidProductIds() {
+  const ids = new Set();
+  const multi = String(process.env.THINKIFIC_PAID_PRODUCT_IDS || '').trim();
+  const single = String(process.env.THINKIFIC_PAID_PRODUCT_ID || '').trim();
+
+  for (const raw of [multi, single]) {
+    if (!raw) continue;
+    for (const part of raw.split(',')) {
+      const n = Number(part.trim());
+      if (!Number.isNaN(n) && n > 0) ids.add(n);
+    }
+  }
+  return ids;
+}
+
+function isActiveEnrollment(enrollment, paidProductIds) {
+  const pid = enrollment.product_id ?? enrollment.course_id;
+  const productNum = Number(pid);
+  if (!paidProductIds.has(productNum)) return false;
+  if (enrollment.expired === true) return false;
+  if (enrollment.expiry_date) {
+    const exp = new Date(enrollment.expiry_date);
+    if (!Number.isNaN(exp.getTime()) && exp.getTime() < Date.now()) return false;
+  }
+  return true;
+}
 
 /**
  * @param {string} userId Thinkific user id (numeric string)
@@ -13,8 +44,8 @@ const API_BASE = 'https://api.thinkific.com/api/public/v1';
 export async function hasActivePaidEnrollment(userId, email) {
   const apiKey = process.env.THINKIFIC_API_KEY?.trim();
   const subdomain = process.env.THINKIFIC_SUBDOMAIN?.trim();
-  const productId = process.env.THINKIFIC_PAID_PRODUCT_ID?.trim();
-  if (!apiKey || !subdomain || !productId) return false;
+  const paidProductIds = parsePaidProductIds();
+  if (!apiKey || !subdomain || paidProductIds.size === 0) return false;
 
   const headers = {
     'X-Auth-API-Key': apiKey,
@@ -36,18 +67,8 @@ export async function hasActivePaidEnrollment(userId, email) {
 
     const data = await res.json();
     const items = Array.isArray(data.items) ? data.items : [];
-    const targetProductId = Number(productId);
 
-    return items.some((enrollment) => {
-      const pid = enrollment.product_id ?? enrollment.course_id;
-      if (Number(pid) !== targetProductId) return false;
-      if (enrollment.expired === true) return false;
-      if (enrollment.expiry_date) {
-        const exp = new Date(enrollment.expiry_date);
-        if (!Number.isNaN(exp.getTime()) && exp.getTime() < Date.now()) return false;
-      }
-      return true;
-    });
+    return items.some((enrollment) => isActiveEnrollment(enrollment, paidProductIds));
   } catch (err) {
     console.warn('Thinkific enrollment check failed:', err?.message || err);
     return false;

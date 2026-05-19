@@ -39,7 +39,7 @@ Optional:
 - `OMIBOT_FREE_THREAD_LIMIT` (default `2`)
 - `OMIBOT_PAID_THREAD_LIMIT` (default `10`)
 - `OMIBOT_TIER_CACHE_MINUTES` (default `60`)
-- `THINKIFIC_API_KEY`, `THINKIFIC_SUBDOMAIN`, `THINKIFIC_PAID_PRODUCT_ID` — paid tier via active enrollment
+- `THINKIFIC_API_KEY`, `THINKIFIC_SUBDOMAIN`, `THINKIFIC_PAID_PRODUCT_IDS` (comma-separated) and/or `THINKIFIC_PAID_PRODUCT_ID` — paid tier if enrolled in any listed product
 - `OMIBOT_PAID_USER_IDS` — comma-separated Thinkific user ids treated as paid (testing)
 - `OMIBOT_FORCE_TIER` — `free` or `paid` (dev override)
 
