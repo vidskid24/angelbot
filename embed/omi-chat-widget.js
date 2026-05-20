@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=58
+ * OMIBOT_WIDGET_VERSION=59
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -446,7 +446,7 @@
       'https://courses.masteringalchemy.com/pages/omi-ai';
 
     function appendThreadLimitMessage(limit, tier) {
-      const cap = limit || 2;
+      const cap = limit || 3;
       const isPaid = tier === 'paid';
       const row = document.createElement('div');
       row.className = 'omibot-msg-system';
@@ -963,7 +963,7 @@
     let sending = false;
     let thinkingEl = null;
     let threadsMeta = {
-      threadLimit: 2,
+      threadLimit: 3,
       threadCount: 0,
       tier: 'free',
       dailyMessageLimit: 11,
@@ -1358,7 +1358,7 @@
       if (!res.ok) return null;
       threadsCache = data.threads || [];
       threadsMeta = {
-        threadLimit: data.threadLimit || 2,
+        threadLimit: data.threadLimit || 3,
         threadCount: data.threadCount != null ? data.threadCount : threadsCache.length,
         tier: data.tier || 'free',
         dailyMessageLimit: data.dailyMessageLimit != null ? data.dailyMessageLimit : 11,

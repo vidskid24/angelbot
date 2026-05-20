@@ -6,7 +6,7 @@ import { isDbEnabled } from '../db/pool.js';
 import * as users from '../db/users.js';
 
 const FREE_THREAD_LIMIT =
-  parseInt(process.env.OMIBOT_FREE_THREAD_LIMIT || process.env.ANGELBOT_FREE_THREAD_LIMIT || '2', 10) || 2;
+  parseInt(process.env.OMIBOT_FREE_THREAD_LIMIT || process.env.ANGELBOT_FREE_THREAD_LIMIT || '3', 10) || 3;
 const PAID_THREAD_LIMIT =
   parseInt(process.env.OMIBOT_PAID_THREAD_LIMIT || process.env.ANGELBOT_PAID_THREAD_LIMIT || '10', 10) || 10;
 const FREE_DAILY_MESSAGE_LIMIT =
