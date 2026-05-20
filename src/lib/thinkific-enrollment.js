@@ -1,7 +1,6 @@
 /**
  * Check Thinkific active enrollment for paid product(s) (option B).
- * Requires THINKIFIC_API_KEY, THINKIFIC_SUBDOMAIN, and at least one paid product id:
- *   THINKIFIC_PAID_PRODUCT_IDS (comma-separated) and/or THINKIFIC_PAID_PRODUCT_ID (single).
+ * Requires THINKIFIC_API_KEY, THINKIFIC_SUBDOMAIN, and THINKIFIC_PAID_PRODUCT_IDS (comma-separated).
  */
 
 const API_BASE = 'https://api.thinkific.com/api/public/v1';
@@ -11,15 +10,11 @@ const API_BASE = 'https://api.thinkific.com/api/public/v1';
  */
 export function parsePaidProductIds() {
   const ids = new Set();
-  const multi = String(process.env.THINKIFIC_PAID_PRODUCT_IDS || '').trim();
-  const single = String(process.env.THINKIFIC_PAID_PRODUCT_ID || '').trim();
-
-  for (const raw of [multi, single]) {
-    if (!raw) continue;
-    for (const part of raw.split(',')) {
-      const n = Number(part.trim());
-      if (!Number.isNaN(n) && n > 0) ids.add(n);
-    }
+  const raw = String(process.env.THINKIFIC_PAID_PRODUCT_IDS || '').trim();
+  if (!raw) return ids;
+  for (const part of raw.split(',')) {
+    const n = Number(part.trim());
+    if (!Number.isNaN(n) && n > 0) ids.add(n);
   }
   return ids;
 }

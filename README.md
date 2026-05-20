@@ -42,7 +42,7 @@ Optional:
 - `OMIBOT_PAID_DAILY_MESSAGE_LIMIT` (default `80`)
 - `OMIBOT_DAILY_LIMIT_TIMEZONE` (default `America/Los_Angeles`; calendar day boundary for daily counts)
 - `OMIBOT_TIER_CACHE_MINUTES` (default `60`)
-- `THINKIFIC_API_KEY`, `THINKIFIC_SUBDOMAIN`, `THINKIFIC_PAID_PRODUCT_IDS` (comma-separated) and/or `THINKIFIC_PAID_PRODUCT_ID` — paid tier if enrolled in any listed product
+- `THINKIFIC_API_KEY`, `THINKIFIC_SUBDOMAIN`, `THINKIFIC_PAID_PRODUCT_IDS` (comma-separated) — paid tier if enrolled in any listed product
 - `OMIBOT_PAID_USER_IDS` — comma-separated Thinkific user ids treated as paid (testing)
 - `OMIBOT_FORCE_TIER` — `free` or `paid` (dev override)
 
