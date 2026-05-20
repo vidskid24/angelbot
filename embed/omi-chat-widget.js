@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=62
+ * OMIBOT_WIDGET_VERSION=63
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -344,8 +344,8 @@
       '#omibot-input{width:100%;box-sizing:border-box;padding:12px 48px 12px 14px;border-radius:12px;border:1px solid #ddd;background:#fff;font:inherit;font-size:1rem;line-height:1.45;resize:vertical;min-height:3.25rem;display:block}' +
       '#omibot-input:focus{outline:2px solid #c9c0b5;outline-offset:1px;border-color:#c9c0b5}' +
       '#omibot-input:disabled{background:#f5f3ef;color:#888}' +
-      '.omibot-send-btn{position:absolute;right:10px;bottom:10px;width:36px;height:36px;border:none;border-radius:10px;background:#b86a52;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}' +
-      '.omibot-send-btn:hover:not(:disabled){background:#9d5844}' +
+      '.omibot-send-btn{position:absolute;right:10px;bottom:10px;width:36px;height:36px;border:none;border-radius:10px;background:#722668;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}' +
+      '.omibot-send-btn:hover:not(:disabled){background:#5e1f55}' +
       '.omibot-send-btn:focus-visible{outline:2px solid #c9c0b5;outline-offset:2px}' +
       '.omibot-send-btn:disabled{opacity:.4;cursor:not-allowed}' +
       '.omibot-send-icon{display:block;width:18px;height:18px}' +
