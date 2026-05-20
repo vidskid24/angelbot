@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { isDbEnabled } from '../../db/pool.js';
 import * as users from '../../db/users.js';
 import { diagnoseThinkificTier } from '../../lib/thinkific-enrollment.js';
-import { ensureUserTier, resolveUserTier } from '../../lib/tier.js';
+import { ensureUserTier, getEnvTierOverride, resolveUserTier } from '../../lib/tier.js';
 
 function getCronSecret() {
   return String(process.env.OMIBOT_CRON_SECRET || process.env.ANGELBOT_CRON_SECRET || '').trim();
@@ -38,9 +38,11 @@ export function createInternalTierDebugRouter() {
         return;
       }
 
+      const envTierOverride = getEnvTierOverride(userId, email);
       const thinkific = await diagnoseThinkificTier(userId, email);
       const resolvedTier = await resolveUserTier(userId, email);
       const forcedTier = await ensureUserTier(userId, email, { force: true });
+      const cachedTier = await ensureUserTier(userId, email);
 
       let dbTier = null;
       let dbTierCheckedAt = null;
@@ -53,12 +55,14 @@ export function createInternalTierDebugRouter() {
       res.json({
         userId,
         email: email || null,
+        envTierOverride,
         resolvedTier,
         forcedTierAfterRefresh: forcedTier,
+        tierReturnedByApi: cachedTier,
         dbTier,
         dbTierCheckedAt,
         thinkific,
-        nextSteps: buildNextSteps({ thinkific, resolvedTier, forcedTier, userId }),
+        nextSteps: buildNextSteps({ thinkific, resolvedTier, forcedTier, userId, envTierOverride }),
       });
     } catch (e) {
       next(e);
@@ -73,7 +77,13 @@ export function createInternalTierDebugRouter() {
  */
 function buildNextSteps(ctx) {
   const steps = [];
-  const { thinkific, resolvedTier, forcedTier, userId } = ctx;
+  const { thinkific, resolvedTier, forcedTier, userId, envTierOverride } = ctx;
+
+  if (envTierOverride === 'paid') {
+    steps.push('OMIBOT_PAID_USER_IDS or OMIBOT_FORCE_TIER is active — user should be paid after redeploy and refresh.');
+  } else if (envTierOverride === 'free') {
+    steps.push('OMIBOT_FORCE_TIER=free is forcing free — remove it on Render.');
+  }
 
   if (!thinkific.thinkificConfigured) {
     steps.push('Add THINKIFIC_API_KEY, THINKIFIC_SUBDOMAIN, and THINKIFIC_PAID_PRODUCT_IDS on Render, then redeploy.');

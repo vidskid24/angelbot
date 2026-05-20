@@ -43,7 +43,7 @@ Optional:
 - `OMIBOT_DAILY_LIMIT_TIMEZONE` (default `America/Los_Angeles`; calendar day boundary for daily counts)
 - `OMIBOT_TIER_CACHE_MINUTES` (default `60`)
 - `THINKIFIC_API_KEY`, `THINKIFIC_SUBDOMAIN`, `THINKIFIC_PAID_PRODUCT_IDS` (comma-separated numeric ids and/or exact product/course names) — paid tier if enrolled in any listed product
-- `OMIBOT_PAID_USER_IDS` — comma-separated Thinkific user ids treated as paid (testing)
+- `OMIBOT_PAID_USER_IDS` — comma-separated Thinkific user ids and/or emails treated as paid (testing; bypasses tier cache)
 - `OMIBOT_FORCE_TIER` — `free` or `paid` (dev override)
 
 Legacy env names `ANGELBOT_*` are still read as fallbacks.
@@ -140,7 +140,7 @@ Check `thinkific.enrollments` for `course_name` / `product_name`, `matchedPaidEn
     }
 
     var s = document.createElement('script');
-    s.src = api + '/omi-chat-widget.js?v=63';
+    s.src = api + '/omi-chat-widget.js?v=64';
     s.defer = true;
     document.head.appendChild(s);
   }

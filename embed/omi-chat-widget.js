@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=63
+ * OMIBOT_WIDGET_VERSION=64
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -16,6 +16,7 @@
   const API_BASE = API.replace(/\/$/, '');
   const STORAGE_KEY = 'omibot_access_token';
   const STORAGE_KEY_LEGACY = 'angelbot_access_token';
+  const TIER_STORAGE_KEY = 'omibot_tier';
   const THREAD_KEY = 'omibot_thread_id';
   const THREAD_KEY_LEGACY = 'angelbot_thread_id';
   const UUID_RE =
@@ -199,7 +200,15 @@
       throw new Error(data.error || data.message || 'bootstrap_failed');
     }
     setToken(data.access_token);
+    if (data.tier === 'paid' || data.tier === 'free') {
+      sessionStorage.setItem(TIER_STORAGE_KEY, data.tier);
+    }
     return data.access_token;
+  }
+
+  function getStoredTier() {
+    const t = sessionStorage.getItem(TIER_STORAGE_KEY);
+    return t === 'paid' || t === 'free' ? t : null;
   }
 
   function authHeaders(token) {
@@ -1481,6 +1490,8 @@
 
     async function initSession() {
       const token = await ensureToken();
+      const storedTier = getStoredTier();
+      if (storedTier) threadsMeta.tier = storedTier;
       status.textContent = '';
       status.hidden = true;
       const prefs = await fetchPreferences(token);

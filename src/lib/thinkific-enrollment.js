@@ -140,6 +140,16 @@ export async function fetchThinkificEnrollments(userId, email) {
   const seen = new Set();
   const merged = [];
 
+  async function appendFromEnrollmentList(items) {
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const key = String(item.id ?? `${item.user_id}-${item.course_id}-${item.product_id}`);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push(item);
+    }
+  }
+
   for (let q = 0; q < queries.length; q++) {
     for (let page = 1; page <= 10; page++) {
       const url = new URL(`${API_BASE}/enrollments`);
@@ -155,13 +165,28 @@ export async function fetchThinkificEnrollments(userId, email) {
       }
       const data = await res.json();
       const items = Array.isArray(data.items) ? data.items : [];
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        const key = String(item.id ?? `${item.user_id}-${item.course_id}-${item.product_id}`);
-        if (seen.has(key)) continue;
-        seen.add(key);
-        merged.push(item);
+      await appendFromEnrollmentList(items);
+      const pagination = data.meta?.pagination;
+      if (!pagination || page >= (pagination.total_pages || page)) break;
+      if (!items.length) break;
+    }
+  }
+
+  if (!merged.length && thinkificUserId && !thinkificUserId.startsWith('email:')) {
+    for (let page = 1; page <= 10; page++) {
+      const url = new URL(`${API_BASE}/users/${encodeURIComponent(thinkificUserId)}/enrollments`);
+      url.searchParams.set('page', String(page));
+      url.searchParams.set('limit', '100');
+      const res = await fetch(url.toString(), { headers });
+      if (!res.ok) {
+        if (page === 1) {
+          console.warn('Thinkific user enrollments API:', res.status, await res.text().catch(() => ''));
+        }
+        break;
       }
+      const data = await res.json();
+      const items = Array.isArray(data.items) ? data.items : [];
+      await appendFromEnrollmentList(items);
       const pagination = data.meta?.pagination;
       if (!pagination || page >= (pagination.total_pages || page)) break;
       if (!items.length) break;

@@ -74,22 +74,46 @@ export function getThreadLimitMessage(limit, tier = 'free') {
 }
 
 /**
+ * Env-based tier override (sync). Paid user list may include Thinkific user ids or emails.
+ * @param {string} userId
+ * @param {string} [email]
+ * @returns {'free' | 'paid' | null} null = no override, use Thinkific / cache
+ */
+export function getEnvTierOverride(userId, email) {
+  const forced = String(process.env.OMIBOT_FORCE_TIER || process.env.ANGELBOT_FORCE_TIER || '')
+    .trim()
+    .toLowerCase();
+  if (forced === 'paid' || forced === 'free') return forced;
+
+  const paidList = String(process.env.OMIBOT_PAID_USER_IDS || process.env.ANGELBOT_PAID_USER_IDS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (!paidList.length) return null;
+
+  const id = String(userId || '').trim();
+  if (id && paidList.includes(id)) return 'paid';
+
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (normalizedEmail && paidList.includes(normalizedEmail)) return 'paid';
+
+  if (id.startsWith('email:')) {
+    const fromSub = id.slice(6).trim().toLowerCase();
+    if (fromSub && paidList.includes(fromSub)) return 'paid';
+  }
+
+  return null;
+}
+
+/**
  * Resolve tier for a user (Thinkific enrollment when configured, else free).
  * @param {string} userId
  * @param {string} [email]
  * @returns {Promise<'free' | 'paid'>}
  */
 export async function resolveUserTier(userId, email) {
-  const forced = String(process.env.OMIBOT_FORCE_TIER || process.env.ANGELBOT_FORCE_TIER || '')
-    .trim()
-    .toLowerCase();
-  if (forced === 'paid' || forced === 'free') return forced;
-
-  const paidIds = String(process.env.OMIBOT_PAID_USER_IDS || process.env.ANGELBOT_PAID_USER_IDS || '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (paidIds.includes(userId)) return 'paid';
+  const envOverride = getEnvTierOverride(userId, email);
+  if (envOverride) return envOverride;
 
   const { hasActivePaidEnrollment } = await import('./thinkific-enrollment.js');
   if (await hasActivePaidEnrollment(userId, email)) return 'paid';
@@ -109,6 +133,12 @@ export async function ensureUserTier(userId, email, options = {}) {
 
   if (!isDbEnabled()) {
     return resolveUserTier(userId, email);
+  }
+
+  const envOverride = getEnvTierOverride(userId, email);
+  if (envOverride) {
+    await users.upsertUserProfile(userId, email, envOverride);
+    return envOverride;
   }
 
   const cacheMinutes =
