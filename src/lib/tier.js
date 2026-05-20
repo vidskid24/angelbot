@@ -101,9 +101,12 @@ export async function resolveUserTier(userId, email) {
  * Ensure user row exists and refresh tier when stale.
  * @param {string} userId
  * @param {string} [email]
+ * @param {{ force?: boolean }} [options] - force=true skips DB tier cache (e.g. on bootstrap)
  * @returns {Promise<'free' | 'paid'>}
  */
-export async function ensureUserTier(userId, email) {
+export async function ensureUserTier(userId, email, options = {}) {
+  const force = options.force === true;
+
   if (!isDbEnabled()) {
     return resolveUserTier(userId, email);
   }
@@ -111,7 +114,7 @@ export async function ensureUserTier(userId, email) {
   const cacheMinutes =
     parseInt(process.env.OMIBOT_TIER_CACHE_MINUTES || process.env.ANGELBOT_TIER_CACHE_MINUTES || '60', 10) || 60;
   const existing = await users.getUserProfile(userId);
-  if (existing?.tier_checked_at) {
+  if (!force && existing?.tier_checked_at) {
     const ageMs = Date.now() - new Date(existing.tier_checked_at).getTime();
     if (ageMs < cacheMinutes * 60 * 1000) {
       return existing.tier === 'paid' ? 'paid' : 'free';

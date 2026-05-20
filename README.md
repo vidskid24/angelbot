@@ -73,6 +73,7 @@ Authenticated routes (Bearer app session JWT):
 - `GET /api/user/preferences` — tone, MA experience, and (paid) memory fields
 - `PATCH /api/user/preferences` — save settings (`{ tone?, maExperience?, memoryInstructions?, memorySummary? }`)
 - `POST /internal/jobs/regenerate-memory` — nightly memory synthesis (header `x-cron-secret`; paid users with chat activity that day in `OMIBOT_MEMORY_TIMEZONE`)
+- `GET /internal/tier-debug?user_id=...&email=...` — tier troubleshooting (header `x-cron-secret`; same secret as cron)
 - `GET /api/threads` — list conversations (limit by tier)
 - `POST /api/threads` — create conversation (`{ title? }`)
 - `PATCH /api/threads/:threadId` — rename (`{ title }`)
@@ -89,6 +90,26 @@ Authenticated routes (Bearer app session JWT):
 Paid vs free thread and daily message limits are enforced on the server. **Paid memory** (user instructions + auto-generated summary across conversations) is injected into the system prompt for paid users. Configure Thinkific enrollment vars or `OMIBOT_PAID_USER_IDS` for testing.
 
 Set `OMIBOT_CRON_SECRET` and schedule a daily cron (e.g. Render Cron Job) to `POST /internal/jobs/regenerate-memory` with header `x-cron-secret`. Default timezone is `America/Los_Angeles`.
+
+### Paid tier troubleshooting
+
+If a paying Thinkific user still shows **FREE**:
+
+1. **Redeploy** the API after env changes.
+2. **Hard-refresh** the chat page (or close the tab) so bootstrap runs again — the session token stores tier from login.
+3. Confirm Thinkific footer sets `external_id: String(Thinkific.current_user.id)` (numeric id), not email-only.
+4. Set `THINKIFIC_PAID_PRODUCT_IDS` to comma-separated **numeric ids** and/or **exact** product/course names as shown in Thinkific admin/API.
+5. Run tier debug (replace values):
+
+```bash
+curl -s "https://your-app.onrender.com/internal/tier-debug?user_id=THINKIFIC_USER_ID&email=user@example.com" \
+  -H "x-cron-secret: YOUR_OMIBOT_CRON_SECRET"
+```
+
+Check `thinkific.enrollments` for `course_name` / `product_name`, `matchedPaidEnrollment`, and `nextSteps`.
+
+6. Quick isolation: set `OMIBOT_PAID_USER_IDS` to that user id — if they become PAID, the widget path works and Thinkific matching/env is the issue.
+7. Ensure `OMIBOT_FORCE_TIER` is not set to `free`.
 
 ## Thinkific embed
 

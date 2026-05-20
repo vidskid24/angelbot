@@ -19,7 +19,7 @@ export function createThreadsApiRouter() {
         return;
       }
       const userId = req.omiUser.sub;
-      const tier = req.omiUser.tier || (await ensureUserTier(userId, req.omiUser.email));
+      const tier = await ensureUserTier(userId, req.omiUser.email);
       const threads = await threadDb.listThreads(userId);
       const dailyMessageLimit = getDailyMessageLimitForTier(tier);
       const dailyMessageCount = await dailyMessages.getDailyMessageCount(userId);

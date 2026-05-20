@@ -36,7 +36,7 @@ export function createChatApiRouter() {
       let useDb = false;
 
       if (isDbEnabled()) {
-        const tier = req.omiUser.tier || (await ensureUserTier(userId, req.omiUser.email));
+        const tier = await ensureUserTier(userId, req.omiUser.email);
         const dailyLimit = getDailyMessageLimitForTier(tier);
         const dailyCount = await dailyMessages.getDailyMessageCount(userId);
         if (dailyCount >= dailyLimit) {
@@ -80,7 +80,7 @@ export function createChatApiRouter() {
       let dailyMessageCount;
       let dailyMessageLimit;
       if (useDb) {
-        const tier = req.omiUser.tier || (await ensureUserTier(userId, req.omiUser.email));
+        const tier = await ensureUserTier(userId, req.omiUser.email);
         dailyMessageLimit = getDailyMessageLimitForTier(tier);
         await dailyMessages.incrementDailyMessageCount(userId);
         dailyMessageCount = await dailyMessages.getDailyMessageCount(userId);

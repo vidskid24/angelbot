@@ -59,7 +59,7 @@ export function createAuthBootstrapRouter() {
       }
 
       const email = body.email ? String(body.email).trim().toLowerCase() : undefined;
-      const tier = await ensureUserTier(sub, email);
+      const tier = await ensureUserTier(sub, email, { force: true });
       const ttl = Math.max(60, Math.min(86400, Number(process.env.APP_BOOTSTRAP_TOKEN_TTL_SECONDS) || 3600));
       const token = await createAppSessionJwt({ sub, email, tier }, ttl);
 

@@ -1,0 +1,101 @@
+import { Router } from 'express';
+import { isDbEnabled } from '../../db/pool.js';
+import * as users from '../../db/users.js';
+import { diagnoseThinkificTier } from '../../lib/thinkific-enrollment.js';
+import { ensureUserTier, resolveUserTier } from '../../lib/tier.js';
+
+function getCronSecret() {
+  return String(process.env.OMIBOT_CRON_SECRET || process.env.ANGELBOT_CRON_SECRET || '').trim();
+}
+
+export function createInternalTierDebugRouter() {
+  const r = Router();
+
+  /**
+   * Tier troubleshooting for a Thinkific user (requires x-cron-secret).
+   * GET /internal/tier-debug?user_id=123&email=user@example.com
+   */
+  r.get('/internal/tier-debug', async (req, res, next) => {
+    try {
+      const secret = getCronSecret();
+      if (!secret) {
+        res.status(503).json({ error: 'cron_not_configured' });
+        return;
+      }
+      const provided =
+        String(req.headers['x-cron-secret'] || req.headers['authorization'] || '')
+          .replace(/^Bearer\s+/i, '')
+          .trim() || String(req.query?.secret || '').trim();
+      if (provided !== secret) {
+        res.status(401).json({ error: 'unauthorized' });
+        return;
+      }
+
+      const userId = String(req.query?.user_id || req.query?.userId || '').trim();
+      const email = req.query?.email ? String(req.query.email).trim().toLowerCase() : undefined;
+      if (!userId) {
+        res.status(400).json({ error: 'user_id_required' });
+        return;
+      }
+
+      const thinkific = await diagnoseThinkificTier(userId, email);
+      const resolvedTier = await resolveUserTier(userId, email);
+      const forcedTier = await ensureUserTier(userId, email, { force: true });
+
+      let dbTier = null;
+      let dbTierCheckedAt = null;
+      if (isDbEnabled()) {
+        const profile = await users.getUserProfile(userId);
+        dbTier = profile?.tier || null;
+        dbTierCheckedAt = profile?.tier_checked_at || null;
+      }
+
+      res.json({
+        userId,
+        email: email || null,
+        resolvedTier,
+        forcedTierAfterRefresh: forcedTier,
+        dbTier,
+        dbTierCheckedAt,
+        thinkific,
+        nextSteps: buildNextSteps({ thinkific, resolvedTier, forcedTier, userId }),
+      });
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  return r;
+}
+
+/**
+ * @param {{ thinkific: object; resolvedTier: string; forcedTier: string; userId: string }} ctx
+ */
+function buildNextSteps(ctx) {
+  const steps = [];
+  const { thinkific, resolvedTier, forcedTier, userId } = ctx;
+
+  if (!thinkific.thinkificConfigured) {
+    steps.push('Add THINKIFIC_API_KEY, THINKIFIC_SUBDOMAIN, and THINKIFIC_PAID_PRODUCT_IDS on Render, then redeploy.');
+  }
+  if (!thinkific.userIdUsableForThinkific) {
+    steps.push(
+      'Ensure Thinkific footer sets OMIBOT_USER.external_id to String(Thinkific.current_user.id), not email-only.'
+    );
+  }
+  if (thinkific.matchedPaidEnrollment && resolvedTier !== 'paid') {
+    steps.push('Thinkific match works but tier is still free — check OMIBOT_FORCE_TIER=free or OMIBOT_PAID_USER_IDS overrides.');
+  }
+  if (!thinkific.matchedPaidEnrollment && thinkific.enrollmentCount > 0) {
+    steps.push('Update THINKIFIC_PAID_PRODUCT_IDS to match course_name/product_name from enrollments in this response.');
+  }
+  if (!thinkific.matchedPaidEnrollment && thinkific.enrollmentCount === 0) {
+    steps.push('Confirm the user has an active enrollment in Thinkific for a paid product.');
+  }
+  if (resolvedTier === 'paid' || forcedTier === 'paid') {
+    steps.push('Server tier is paid — hard-refresh the chat page (clears session token) so bootstrap issues a new JWT.');
+  } else {
+    steps.push(`Temporary test: set OMIBOT_PAID_USER_IDS=${userId} on Render to confirm the rest of the stack shows PAID.`);
+  }
+  return steps;
+}
