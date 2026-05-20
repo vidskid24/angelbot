@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=55
+ * OMIBOT_WIDGET_VERSION=56
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -389,7 +389,7 @@
       'Memory across conversations is available on the paid plan. <a class="omibot-tier-link" id="omibot-prefs-memory-upgrade-link" href="#" target="_blank" rel="noopener noreferrer">Upgrade</a></p>' +
       '<div class="omibot-prefs-field">' +
       '<label for="omibot-pref-memory-instructions">What I would like Omi to know about me <span class="omibot-prefs-paid-only">paid plans only</span></label>' +
-      '<textarea id="omibot-pref-memory-instructions" rows="4" placeholder="Optional — Tell Omi a little about you. Your interests, learning style, or the way you like to work together. This helps to shape responses to feel more aligned and easier to understand."></textarea>' +
+      '<textarea id="omibot-pref-memory-instructions" rows="4" placeholder="Optional — Tell Omi a little about you. Sharing your interests or learning style help customize responses to feel more aligned and clear."></textarea>' +
       '</div>' +
       '<div class="omibot-prefs-field" id="omibot-prefs-memory-summary-field">' +
       '<label for="omibot-pref-memory-summary">What Omi remembers <span class="omibot-prefs-paid-only">paid plans only</span></label>' +
