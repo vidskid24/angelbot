@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=61
+ * OMIBOT_WIDGET_VERSION=62
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -340,8 +340,15 @@
       '.omibot-thinking-dots span:nth-child(2){animation-delay:.15s}' +
       '.omibot-thinking-dots span:nth-child(3){animation-delay:.3s}' +
       '@keyframes omibot-dot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}' +
-      '#omibot-input{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid #ddd;background:#fff;font:inherit;font-size:1rem;resize:vertical}' +
+      '.omibot-compose{position:relative;margin:0}' +
+      '#omibot-input{width:100%;box-sizing:border-box;padding:12px 48px 12px 14px;border-radius:12px;border:1px solid #ddd;background:#fff;font:inherit;font-size:1rem;line-height:1.45;resize:vertical;min-height:3.25rem;display:block}' +
       '#omibot-input:focus{outline:2px solid #c9c0b5;outline-offset:1px;border-color:#c9c0b5}' +
+      '#omibot-input:disabled{background:#f5f3ef;color:#888}' +
+      '.omibot-send-btn{position:absolute;right:10px;bottom:10px;width:36px;height:36px;border:none;border-radius:10px;background:#b86a52;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}' +
+      '.omibot-send-btn:hover:not(:disabled){background:#9d5844}' +
+      '.omibot-send-btn:focus-visible{outline:2px solid #c9c0b5;outline-offset:2px}' +
+      '.omibot-send-btn:disabled{opacity:.4;cursor:not-allowed}' +
+      '.omibot-send-icon{display:block;width:18px;height:18px}' +
       '.omibot-suggestions{margin:12px 0 0}' +
       '.omibot-suggestions[hidden]{display:none!important}' +
       '.omibot-suggestions-label{margin:0 0 8px;font-size:0.8rem;font-weight:600;color:#666;letter-spacing:0.02em}' +
@@ -392,7 +399,10 @@
       '<div class="omibot-chat-view" id="omibot-chat-view">' +
       '<div id="omibot-welcome"></div>' +
       '<div id="omibot-log"></div>' +
+      '<div class="omibot-compose" id="omibot-compose">' +
       '<textarea id="omibot-input" rows="2" placeholder="Write a message..."></textarea>' +
+      '<button type="button" class="omibot-send-btn" id="omibot-send" aria-label="Send message" disabled>' +
+      '<svg class="omibot-send-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg></button></div>' +
       '<div class="omibot-suggestions" id="omibot-suggestions" hidden>' +
       '<p class="omibot-suggestions-label">Suggestions to try</p>' +
       '<div class="omibot-suggestions-chips" id="omibot-suggestions-chips"></div>' +
@@ -437,6 +447,7 @@
     const welcome = root.querySelector('#omibot-welcome');
     const log = root.querySelector('#omibot-log');
     const input = root.querySelector('#omibot-input');
+    const sendBtn = root.querySelector('#omibot-send');
     const suggestionsEl = root.querySelector('#omibot-suggestions');
     const suggestionsChipsEl = root.querySelector('#omibot-suggestions-chips');
     const threadListEl = root.querySelector('#omibot-thread-list');
@@ -991,6 +1002,7 @@
         btn.addEventListener('click', function () {
           if (!input || input.disabled) return;
           input.value = chip.text;
+          updateSendButtonState();
           input.focus();
         });
         suggestionsChipsEl.appendChild(btn);
@@ -1027,12 +1039,19 @@
 
     showWelcome();
 
+    function updateSendButtonState() {
+      if (!sendBtn || !input) return;
+      const hasText = Boolean((input.value || '').trim());
+      sendBtn.disabled = !hasText || input.disabled || sending;
+    }
+
     function setInputEnabled(on) {
       input.disabled = !on;
       if (suggestionsChipsEl) {
         const chips = suggestionsChipsEl.querySelectorAll('.omibot-suggestion-chip');
         for (let i = 0; i < chips.length; i++) chips[i].disabled = !on;
       }
+      updateSendButtonState();
     }
 
     function updateTierBadge() {
@@ -1519,10 +1538,12 @@
       const message = (input.value || '').trim();
       if (!message) return;
       sending = true;
+      updateSendButtonState();
       setInputEnabled(false);
       dismissWelcome();
       append('You', message);
       input.value = '';
+      updateSendButtonState();
       showThinking();
       try {
         let tok = await ensureToken();
@@ -1593,6 +1614,7 @@
         removeThinking();
         sending = false;
         refreshInputEnabled();
+        updateSendButtonState();
         input.focus({ preventScroll: true });
       }
     }
@@ -1603,6 +1625,14 @@
         send();
       }
     });
+
+    input.addEventListener('input', updateSendButtonState);
+
+    if (sendBtn) {
+      sendBtn.addEventListener('click', function () {
+        send();
+      });
+    }
   }
 
   if (document.readyState === 'loading') {
