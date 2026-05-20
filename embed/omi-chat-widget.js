@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=60
+ * OMIBOT_WIDGET_VERSION=61
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -396,6 +396,7 @@
       '<div class="omibot-suggestions" id="omibot-suggestions" hidden>' +
       '<p class="omibot-suggestions-label">Suggestions to try</p>' +
       '<div class="omibot-suggestions-chips" id="omibot-suggestions-chips"></div>' +
+      '</div>' +
       '</div>' +
       '<section class="omibot-prefs-view" id="omibot-prefs-view" hidden aria-labelledby="omibot-prefs-title">' +
       '<button type="button" class="omibot-prefs-back" id="omibot-prefs-back">\u2190 Back to chat</button>' +
