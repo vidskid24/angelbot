@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=57
+ * OMIBOT_WIDGET_VERSION=58
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -483,9 +483,11 @@
     }
 
     function appendDailyLimitMessage(limit, tier) {
+      if (log.querySelector('#omibot-daily-limit-notice')) return;
       const cap = limit || threadsMeta.dailyMessageLimit || 11;
       const isPaid = tier === 'paid';
       const row = document.createElement('div');
+      row.id = 'omibot-daily-limit-notice';
       row.className = 'omibot-msg-system';
       const body = document.createElement('div');
       if (isPaid) {
@@ -524,9 +526,30 @@
       return n >= cap;
     }
 
+
+    function removeDailyLimitNotice() {
+      const el = log.querySelector('#omibot-daily-limit-notice');
+      if (el) el.remove();
+    }
+
+    function syncDailyLimitUi() {
+      appendDailyMetaFooter();
+      if (!ready) return;
+      if (isAtDailyMessageLimit()) {
+        appendDailyLimitMessage(threadsMeta.dailyMessageLimit, threadsMeta.tier);
+      } else {
+        removeDailyLimitNotice();
+      }
+      refreshInputEnabled();
+    }
+
     function refreshInputEnabled() {
       if (!ready || sending) return;
-      setInputEnabled(!isAtDailyMessageLimit());
+      const atLimit = isAtDailyMessageLimit();
+      setInputEnabled(!atLimit);
+      input.placeholder = atLimit
+        ? "You've reached today's message limit. Try again tomorrow."
+        : 'Write a message...';
     }
 
     const newThreadBtn = root.querySelector('#omibot-new-thread');
@@ -682,7 +705,7 @@
         showChatView();
         if (!ready) {
           ready = true;
-          refreshInputEnabled();
+          syncDailyLimitUi();
         }
         return true;
       } catch (e) {
@@ -1095,8 +1118,7 @@
       newThreadBtn.disabled = n >= cap;
       updateTierBadge();
       appendThreadMetaFooter();
-      appendDailyMetaFooter();
-      refreshInputEnabled();
+      syncDailyLimitUi();
     }
 
     function getThreadFromCache(threadId) {
@@ -1282,6 +1304,7 @@
         empty.textContent = 'No saved chats yet';
         threadListEl.appendChild(empty);
         appendThreadMetaFooter();
+        appendDailyMetaFooter();
         return;
       }
       for (let i = 0; i < threadsCache.length; i++) {
@@ -1326,6 +1349,7 @@
         threadListEl.appendChild(item);
       }
       appendThreadMetaFooter();
+      appendDailyMetaFooter();
     }
 
     async function fetchThreads(token) {
@@ -1370,6 +1394,7 @@
       }
       renderThreadList(threadId);
       updateActiveToolbar(threadId);
+      syncDailyLimitUi();
     }
 
     function beginNewConversation() {
@@ -1379,6 +1404,7 @@
       restoreWelcome();
       threadToolbar.hidden = true;
       renderThreadList(null);
+      syncDailyLimitUi();
     }
 
     async function createNewThread() {
@@ -1456,7 +1482,7 @@
         showPrefsView('onboarding');
       } else {
         ready = true;
-        refreshInputEnabled();
+        syncDailyLimitUi();
       }
     }
 
