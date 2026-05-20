@@ -86,7 +86,11 @@ function buildNextSteps(ctx) {
   }
 
   if (!thinkific.thinkificConfigured) {
-    steps.push('Add THINKIFIC_API_KEY, THINKIFIC_SUBDOMAIN, and THINKIFIC_PAID_PRODUCT_IDS on Render, then redeploy.');
+    steps.push('Add THINKIFIC_API_KEY (API Access Token) and THINKIFIC_PAID_PRODUCT_IDS on Render, then redeploy.');
+  } else if (thinkific.thinkificApiProbeOk === false) {
+    steps.push(
+      'Thinkific API token is set but auth failed — use API Access Token (Bearer), not SSO Signing Secret; redeploy after updating THINKIFIC_API_KEY.'
+    );
   }
   if (!thinkific.userIdUsableForThinkific) {
     steps.push(

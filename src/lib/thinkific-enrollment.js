@@ -1,7 +1,8 @@
 /**
- * Check Thinkific active enrollment for paid product(s) (option B).
- * Requires THINKIFIC_API_KEY, THINKIFIC_SUBDOMAIN, and THINKIFIC_PAID_PRODUCT_IDS (comma-separated).
- * Each entry may be a numeric Thinkific product/course id or an exact product/course name (case-insensitive).
+ * Check Thinkific active enrollment for paid product(s).
+ * Requires THINKIFIC_API_KEY (API Access Token) and THINKIFIC_PAID_PRODUCT_IDS (comma-separated).
+ * Auth: Authorization: Bearer <token> per Thinkific API Access Token docs.
+ * Each paid id may be a numeric course/product id or an exact product/course name (case-insensitive).
  */
 
 const API_BASE = 'https://api.thinkific.com/api/public/v1';
@@ -9,6 +10,15 @@ const PRODUCTS_CACHE_MS = 5 * 60 * 1000;
 
 /** @type {{ at: number; items: object[] } | null} */
 let productsCache = null;
+
+function getThinkificAccessToken() {
+  return String(process.env.THINKIFIC_API_KEY || '').trim();
+}
+
+/** @returns {boolean} */
+export function isThinkificConfigured() {
+  return Boolean(getThinkificAccessToken());
+}
 
 /**
  * @returns {{ ids: Set<number>; names: Set<string> }}
@@ -42,18 +52,17 @@ function normalizeName(value) {
 }
 
 function thinkificHeaders() {
-  const apiKey = process.env.THINKIFIC_API_KEY?.trim();
-  const subdomain = process.env.THINKIFIC_SUBDOMAIN?.trim();
-  if (!apiKey || !subdomain) return null;
+  const token = getThinkificAccessToken();
+  if (!token) return null;
   return {
-    'X-Auth-API-Key': apiKey,
-    'X-Auth-Subdomain': subdomain,
+    Authorization: `Bearer ${token}`,
     Accept: 'application/json',
+    'Content-Type': 'application/json',
   };
 }
 
 /**
- * @param {string} path e.g. /products
+ * @param {string} path e.g. /courses
  * @param {Record<string, string>} [query]
  */
 async function thinkificGet(path, query = {}) {
@@ -71,6 +80,14 @@ async function thinkificGet(path, query = {}) {
   const data = await res.json();
   const items = Array.isArray(data.items) ? data.items : [];
   return { ok: true, status: res.status, items, meta: data.meta || null };
+}
+
+/** Quick auth check (GET /courses?limit=1). */
+export async function probeThinkificApi() {
+  const result = await thinkificGet('/courses', { page: '1', limit: '1' });
+  if (!result) return { ok: false, status: 0, reason: 'not_configured' };
+  if (!result.ok) return { ok: false, status: result.status, reason: 'auth_or_api_error' };
+  return { ok: true, status: result.status, reason: null };
 }
 
 async function fetchAllCatalogItems(path) {
@@ -220,6 +237,7 @@ function enrollmentMatchesPaidProduct(enrollment, matchers) {
 
 function isActiveEnrollment(enrollment, matchers) {
   if (!enrollmentMatchesPaidProduct(enrollment, matchers)) return false;
+  if (enrollment.is_free_trial === true) return false;
   if (enrollment.expired === true) return false;
   if (enrollment.expiry_date) {
     const exp = new Date(enrollment.expiry_date);
@@ -247,9 +265,8 @@ async function buildEffectiveMatchers(userId, email) {
  * @returns {Promise<boolean>}
  */
 export async function hasActivePaidEnrollment(userId, email) {
-  const headers = thinkificHeaders();
   const base = parsePaidProductMatchers();
-  if (!headers || (base.ids.size === 0 && base.names.size === 0)) return false;
+  if (!isThinkificConfigured() || (base.ids.size === 0 && base.names.size === 0)) return false;
 
   const thinkificUserId = String(userId || '').trim();
   if (!thinkificUserId && !email) return false;
@@ -273,12 +290,15 @@ export async function hasActivePaidEnrollment(userId, email) {
  * @param {string} [email]
  */
 export async function diagnoseThinkificTier(userId, email) {
-  const headers = thinkificHeaders();
   const configured = parsePaidProductMatchers();
   const thinkificUserId = String(userId || '').trim();
+  const apiProbe = await probeThinkificApi();
 
   const out = {
-    thinkificConfigured: Boolean(headers),
+    thinkificConfigured: isThinkificConfigured(),
+    thinkificAuth: 'bearer',
+    thinkificApiProbeOk: apiProbe.ok,
+    thinkificApiProbeStatus: apiProbe.status || null,
     configuredIds: [...configured.ids],
     configuredNames: [...configured.names],
     userId: thinkificUserId,
@@ -291,12 +311,18 @@ export async function diagnoseThinkificTier(userId, email) {
     hints: [],
   };
 
-  if (!headers) {
-    out.hints.push('Set THINKIFIC_API_KEY and THINKIFIC_SUBDOMAIN on the API server.');
+  if (!out.thinkificConfigured) {
+    out.hints.push('Set THINKIFIC_API_KEY to your Thinkific API Access Token (Settings → Code & analytics).');
+    return out;
+  }
+  if (!apiProbe.ok) {
+    out.hints.push(
+      `Thinkific API auth failed (HTTP ${apiProbe.status || 'n/a'}) — use API Access Token with Bearer auth, not SSO Signing Secret.`
+    );
     return out;
   }
   if (configured.ids.size === 0 && configured.names.size === 0) {
-    out.hints.push('Set THINKIFIC_PAID_PRODUCT_IDS (comma-separated ids or exact product/course names).');
+    out.hints.push('Set THINKIFIC_PAID_PRODUCT_IDS (comma-separated course/product ids or exact names).');
     return out;
   }
   if (!out.userIdUsableForThinkific && !email) {
@@ -322,7 +348,9 @@ export async function diagnoseThinkificTier(userId, email) {
       product_id: e.product_id,
       product_name: e.product_name,
       expired: e.expired,
+      is_free_trial: e.is_free_trial,
       expiry_date: e.expiry_date,
+      activated_at: e.activated_at,
     }));
     out.matchedPaidEnrollment = items.some((enrollment) => isActiveEnrollment(enrollment, matchers));
 
@@ -330,7 +358,7 @@ export async function diagnoseThinkificTier(userId, email) {
       out.hints.push('No enrollments returned from Thinkific for this user/email — confirm purchase/enrollment exists.');
     } else if (!out.matchedPaidEnrollment) {
       out.hints.push(
-        'Enrollments exist but none match THINKIFIC_PAID_PRODUCT_IDS — compare course_name/product_name in enrollments above.'
+        'Enrollments exist but none match THINKIFIC_PAID_PRODUCT_IDS — compare course_id in enrollments above.'
       );
     }
   } catch (err) {

@@ -42,7 +42,8 @@ Optional:
 - `OMIBOT_PAID_DAILY_MESSAGE_LIMIT` (default `80`)
 - `OMIBOT_DAILY_LIMIT_TIMEZONE` (default `America/Los_Angeles`; calendar day boundary for daily counts)
 - `OMIBOT_TIER_CACHE_MINUTES` (default `60`)
-- `THINKIFIC_API_KEY`, `THINKIFIC_SUBDOMAIN`, `THINKIFIC_PAID_PRODUCT_IDS` (comma-separated numeric ids and/or exact product/course names) — paid tier if enrolled in any listed product
+- `THINKIFIC_API_KEY` — Thinkific **API Access Token** (Bearer auth; from Settings → Code & analytics; not SSO Signing Secret)
+- `THINKIFIC_PAID_PRODUCT_IDS` — comma-separated course/product ids and/or exact names — paid tier if user has an active enrollment in any listed product
 - `OMIBOT_PAID_USER_IDS` — comma-separated Thinkific user ids and/or emails treated as paid (testing; bypasses tier cache)
 - `OMIBOT_FORCE_TIER` — `free` or `paid` (dev override)
 
@@ -106,7 +107,7 @@ curl -s "https://your-app.onrender.com/internal/tier-debug?user_id=THINKIFIC_USE
   -H "x-cron-secret: YOUR_OMIBOT_CRON_SECRET"
 ```
 
-Check `thinkific.enrollments` for `course_name` / `product_name`, `matchedPaidEnrollment`, and `nextSteps`.
+Check `thinkificApiProbeOk`, `thinkific.enrollments`, `matchedPaidEnrollment`, and `nextSteps`.
 
 6. Quick isolation: set `OMIBOT_PAID_USER_IDS` to that user id — if they become PAID, the widget path works and Thinkific matching/env is the issue.
 7. Ensure `OMIBOT_FORCE_TIER` is not set to `free`.
