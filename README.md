@@ -37,8 +37,8 @@ Optional:
 - `BOOTSTRAP_ALLOWED_ORIGINS` (explicit allowlist for `/auth/bootstrap`; defaults to `CORS_ORIGINS`)
 - `APP_BOOTSTRAP_TOKEN_TTL_SECONDS` (default `3600`)
 - `OMIBOT_FREE_THREAD_LIMIT` (default `3`)
-- `OMIBOT_PAID_THREAD_LIMIT` (default `10`)
-- `OMIBOT_FREE_DAILY_MESSAGE_LIMIT` (default `11`)
+- `OMIBOT_PAID_THREAD_LIMIT` (default `15`)
+- `OMIBOT_FREE_DAILY_MESSAGE_LIMIT` (default `15`)
 - `OMIBOT_PAID_DAILY_MESSAGE_LIMIT` (default `80`)
 - `OMIBOT_DAILY_LIMIT_TIMEZONE` (default `America/Los_Angeles`; calendar day boundary for daily counts)
 - `OMIBOT_TIER_CACHE_MINUTES` (default `60`)
@@ -119,7 +119,7 @@ Set `OMIBOT_CRON_SECRET` and schedule a daily cron (e.g. Render Cron Job) to `PO
     }
 
     var s = document.createElement('script');
-    s.src = api + '/omi-chat-widget.js?v=59';
+    s.src = api + '/omi-chat-widget.js?v=60';
     s.defer = true;
     document.head.appendChild(s);
   }

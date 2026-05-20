@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=59
+ * OMIBOT_WIDGET_VERSION=60
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -484,7 +484,7 @@
 
     function appendDailyLimitMessage(limit, tier) {
       if (log.querySelector('#omibot-daily-limit-notice')) return;
-      const cap = limit || threadsMeta.dailyMessageLimit || 11;
+      const cap = limit || threadsMeta.dailyMessageLimit || 15;
       const isPaid = tier === 'paid';
       const row = document.createElement('div');
       row.id = 'omibot-daily-limit-notice';
@@ -522,7 +522,7 @@
 
     function isAtDailyMessageLimit() {
       const n = threadsMeta.dailyMessageCount != null ? threadsMeta.dailyMessageCount : 0;
-      const cap = threadsMeta.dailyMessageLimit != null ? threadsMeta.dailyMessageLimit : 11;
+      const cap = threadsMeta.dailyMessageLimit != null ? threadsMeta.dailyMessageLimit : 15;
       return n >= cap;
     }
 
@@ -966,7 +966,7 @@
       threadLimit: 3,
       threadCount: 0,
       tier: 'free',
-      dailyMessageLimit: 11,
+      dailyMessageLimit: 15,
       dailyMessageCount: 0,
     };
     let threadsCache = [];
@@ -1088,7 +1088,7 @@
       if (existing) existing.remove();
 
       const n = threadsMeta.dailyMessageCount != null ? threadsMeta.dailyMessageCount : 0;
-      const cap = threadsMeta.dailyMessageLimit != null ? threadsMeta.dailyMessageLimit : 11;
+      const cap = threadsMeta.dailyMessageLimit != null ? threadsMeta.dailyMessageLimit : 15;
       if (n < cap - 1) return;
 
       const footer = document.createElement('div');
@@ -1361,7 +1361,7 @@
         threadLimit: data.threadLimit || 3,
         threadCount: data.threadCount != null ? data.threadCount : threadsCache.length,
         tier: data.tier || 'free',
-        dailyMessageLimit: data.dailyMessageLimit != null ? data.dailyMessageLimit : 11,
+        dailyMessageLimit: data.dailyMessageLimit != null ? data.dailyMessageLimit : 15,
         dailyMessageCount: data.dailyMessageCount != null ? data.dailyMessageCount : 0,
       };
       updateThreadMeta();

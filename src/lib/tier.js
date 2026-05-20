@@ -8,10 +8,10 @@ import * as users from '../db/users.js';
 const FREE_THREAD_LIMIT =
   parseInt(process.env.OMIBOT_FREE_THREAD_LIMIT || process.env.ANGELBOT_FREE_THREAD_LIMIT || '3', 10) || 3;
 const PAID_THREAD_LIMIT =
-  parseInt(process.env.OMIBOT_PAID_THREAD_LIMIT || process.env.ANGELBOT_PAID_THREAD_LIMIT || '10', 10) || 10;
+  parseInt(process.env.OMIBOT_PAID_THREAD_LIMIT || process.env.ANGELBOT_PAID_THREAD_LIMIT || '15', 10) || 15;
 const FREE_DAILY_MESSAGE_LIMIT =
-  parseInt(process.env.OMIBOT_FREE_DAILY_MESSAGE_LIMIT || process.env.ANGELBOT_FREE_DAILY_MESSAGE_LIMIT || '11', 10) ||
-  11;
+  parseInt(process.env.OMIBOT_FREE_DAILY_MESSAGE_LIMIT || process.env.ANGELBOT_FREE_DAILY_MESSAGE_LIMIT || '15', 10) ||
+  15;
 const PAID_DAILY_MESSAGE_LIMIT =
   parseInt(process.env.OMIBOT_PAID_DAILY_MESSAGE_LIMIT || process.env.ANGELBOT_PAID_DAILY_MESSAGE_LIMIT || '80', 10) ||
   80;
