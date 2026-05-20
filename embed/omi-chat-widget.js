@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=56
+ * OMIBOT_WIDGET_VERSION=57
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -29,6 +29,15 @@
     'Greetings',
     'Good day',
     'Well hello',
+  ];
+
+  /** Starter prompts for empty conversations (Teachers of Light omitted — discover-only). */
+  const SUGGESTION_CHIPS = [
+    { text: "Something\u2019s on my heart \u2014 I\u2019d like to be heard." },
+    { text: "Help me understand what\u2019s happening energetically." },
+    { text: "I\u2019d like to try a tool or practice from the coursework." },
+    { text: "Help me capture what I\u2019m noticing today." },
+    { text: "Walk me through a step-by-step energetic shift." },
   ];
 
   const WELCOME_PROMPTS = [
@@ -77,6 +86,17 @@
 
   function pickWelcomePrompt() {
     return pickRandom(WELCOME_PROMPTS);
+  }
+
+  function pickSuggestionChips(count) {
+    const pool = SUGGESTION_CHIPS.slice();
+    const out = [];
+    const n = Math.min(count, pool.length);
+    for (let i = 0; i < n; i++) {
+      const idx = Math.floor(Math.random() * pool.length);
+      out.push(pool.splice(idx, 1)[0]);
+    }
+    return out;
   }
 
   function pickGreetingWord() {
@@ -322,6 +342,13 @@
       '@keyframes omibot-dot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}' +
       '#omibot-input{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid #ddd;background:#fff;font:inherit;font-size:1rem;resize:vertical}' +
       '#omibot-input:focus{outline:2px solid #c9c0b5;outline-offset:1px;border-color:#c9c0b5}' +
+      '.omibot-suggestions{margin:12px 0 0}' +
+      '.omibot-suggestions[hidden]{display:none!important}' +
+      '.omibot-suggestions-label{margin:0 0 8px;font-size:0.8rem;font-weight:600;color:#666;letter-spacing:0.02em}' +
+      '.omibot-suggestions-chips{display:flex;flex-wrap:wrap;gap:8px}' +
+      '.omibot-suggestion-chip{display:inline-flex;align-items:center;max-width:100%;padding:10px 14px;border:1px solid #e0dcd4;border-radius:999px;background:#f5f3ef;font:inherit;font-size:0.88rem;line-height:1.35;color:#1a1a1a;cursor:pointer;text-align:left}' +
+      '.omibot-suggestion-chip:hover:not(:disabled){background:#ebe6dc;border-color:#c9c0b5}' +
+      '.omibot-suggestion-chip:disabled{opacity:0.45;cursor:not-allowed}' +
       '.omibot-prefs-btn{margin:0;padding:0;border:none;background:transparent;font:inherit;font-size:0.7rem;font-weight:600;letter-spacing:0.04em;color:#7a5c1e;cursor:pointer;text-decoration:underline;text-underline-offset:2px;white-space:nowrap;flex-shrink:0}' +
       '.omibot-prefs-btn:hover{color:#1a1a1a}' +
       '.omibot-chat-view[hidden],.omibot-prefs-view[hidden]{display:none!important}' +
@@ -366,6 +393,9 @@
       '<div id="omibot-welcome"></div>' +
       '<div id="omibot-log"></div>' +
       '<textarea id="omibot-input" rows="2" placeholder="Write a message..."></textarea>' +
+      '<div class="omibot-suggestions" id="omibot-suggestions" hidden>' +
+      '<p class="omibot-suggestions-label">Suggestions to try</p>' +
+      '<div class="omibot-suggestions-chips" id="omibot-suggestions-chips"></div>' +
       '</div>' +
       '<section class="omibot-prefs-view" id="omibot-prefs-view" hidden aria-labelledby="omibot-prefs-title">' +
       '<button type="button" class="omibot-prefs-back" id="omibot-prefs-back">\u2190 Back to chat</button>' +
@@ -406,6 +436,8 @@
     const welcome = root.querySelector('#omibot-welcome');
     const log = root.querySelector('#omibot-log');
     const input = root.querySelector('#omibot-input');
+    const suggestionsEl = root.querySelector('#omibot-suggestions');
+    const suggestionsChipsEl = root.querySelector('#omibot-suggestions-chips');
     const threadListEl = root.querySelector('#omibot-thread-list');
     const tierBadgeEl = root.querySelector('#omibot-tier-badge');
     const upgradeUrl =
@@ -916,11 +948,38 @@
     };
     let threadsCache = [];
 
+    function hideSuggestionChips() {
+      if (suggestionsEl) suggestionsEl.hidden = true;
+      if (suggestionsChipsEl) suggestionsChipsEl.replaceChildren();
+    }
+
+    function renderSuggestionChips() {
+      if (!suggestionsEl || !suggestionsChipsEl) return;
+      suggestionsChipsEl.replaceChildren();
+      const chips = pickSuggestionChips(2);
+      for (let i = 0; i < chips.length; i++) {
+        const chip = chips[i];
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'omibot-suggestion-chip';
+        btn.textContent = chip.text;
+        btn.disabled = Boolean(input && input.disabled);
+        btn.addEventListener('click', function () {
+          if (!input || input.disabled) return;
+          input.value = chip.text;
+          input.focus();
+        });
+        suggestionsChipsEl.appendChild(btn);
+      }
+      suggestionsEl.hidden = chips.length === 0;
+    }
+
     function dismissWelcome() {
       if (welcomeDismissed) return;
       welcomeDismissed = true;
       welcome.replaceChildren();
       welcome.hidden = true;
+      hideSuggestionChips();
     }
 
     function restoreWelcome() {
@@ -935,6 +994,7 @@
       prompt.textContent = pickWelcomePrompt();
       welcome.appendChild(hello);
       welcome.appendChild(prompt);
+      renderSuggestionChips();
     }
 
     function showWelcome() {
@@ -945,6 +1005,10 @@
 
     function setInputEnabled(on) {
       input.disabled = !on;
+      if (suggestionsChipsEl) {
+        const chips = suggestionsChipsEl.querySelectorAll('.omibot-suggestion-chip');
+        for (let i = 0; i < chips.length; i++) chips[i].disabled = !on;
+      }
     }
 
     function updateTierBadge() {
