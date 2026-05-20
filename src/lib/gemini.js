@@ -499,7 +499,7 @@ export async function chat(messages) {
     model: modelName,
     ...(systemInstruction ? { systemInstruction } : {}),
     generationConfig: {
-      maxOutputTokens: 2000,
+      maxOutputTokens: 4096,
       temperature: 0.8,
     },
   });

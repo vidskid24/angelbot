@@ -28,28 +28,11 @@ function buildRetrievalQuery(message, history) {
   return [userAnchor, assistantAnchor, current].filter(Boolean).join('\n\n');
 }
 
-const MAX_DISPLAY_TEXT = 2000;
-
-/**
- * Split large text for clients that need chunked rendering.
- * @param {string} fullContent
- * @returns {string[]}
- */
-export function chunkDisplayContent(fullContent) {
-  const chunks = [];
-  let offset = 0;
-  while (offset < fullContent.length) {
-    chunks.push(fullContent.slice(offset, offset + MAX_DISPLAY_TEXT));
-    offset += MAX_DISPLAY_TEXT;
-  }
-  return chunks.length ? chunks : [''];
-}
-
 /**
  * @param {{ userId: string; sessionKey: string; message: string; threadId?: string; useDb?: boolean }} params
  * @returns {Promise<
  *   | { ok: false; code: 'error'; text: string }
- *   | { ok: true; kind: 'reply'; assistantReply: string; displayFull: string; chunks: string[]; threadTitle?: string | null }
+ *   | { ok: true; kind: 'reply'; assistantReply: string; threadTitle?: string | null }
  * >}
  */
 export async function processWisdomMessage({ userId, sessionKey, message, threadId, useDb = false }) {
@@ -98,8 +81,6 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
       ok: true,
       kind: 'reply',
       assistantReply: reply,
-      displayFull: reply,
-      chunks: chunkDisplayContent(reply),
       threadTitle,
     };
   } catch (err) {
