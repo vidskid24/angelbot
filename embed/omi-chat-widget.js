@@ -516,7 +516,7 @@
           document.createTextNode(
             "You have reached today's limit of " +
               cap +
-              ' messages on your plan. Please try again tomorrow, or email service@masteringalchemy.com if you need assistance.'
+              ' messages on your plan. Please ask again tomorrow, or email service@masteringalchemy.com if you need assistance.'
           )
         );
       } else {
@@ -524,7 +524,7 @@
           document.createTextNode(
             "You have reached today's limit of " +
               cap +
-              ' messages on your free plan. Please try again tomorrow, or '
+              ' messages on your free plan. Please ask again tomorrow, or '
           )
         );
         const link = document.createElement('a');
@@ -569,7 +569,7 @@
       const atLimit = isAtDailyMessageLimit();
       setInputEnabled(!atLimit);
       input.placeholder = atLimit
-        ? "You've reached today's message limit. Try again tomorrow."
+        ? "You've reached today's message limit. Please ask again tomorrow."
         : 'Write a message...';
     }
 

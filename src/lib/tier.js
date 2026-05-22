@@ -43,12 +43,12 @@ export function getDailyMessageLimitMessage(limit, tier = 'free') {
   if (tier === 'paid') {
     return (
       `You have reached today's limit of ${cap} messages on your plan. ` +
-      'Please try again tomorrow, or email service@masteringalchemy.com if you need assistance.'
+      'Please ask again tomorrow, or email service@masteringalchemy.com if you need assistance.'
     );
   }
   return (
     `You have reached today's limit of ${cap} messages on your free plan. ` +
-    'Please try again tomorrow, or upgrade to a paid plan for a higher daily limit.'
+    'Please ask again tomorrow, or upgrade to a paid plan for a higher daily limit.'
   );
 }
 
