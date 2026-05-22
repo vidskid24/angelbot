@@ -26,7 +26,7 @@ export async function getWisdomReply(
   let perTurnLimit = 1200;
 
   let styleExcerptsCapped = styleExcerpts ? String(styleExcerpts).slice(0, styleLimit) : null;
-  let historyCapped = Array.isArray(history) ? history.slice(-historyTurnsLimit) : [];
+  let historyCapped = Array.isArray(history) ? history.slice(-historyTurnsLimit * 2) : [];
   historyCapped = historyCapped.map((t) => ({ role: t.role, content: String(t.content || '').slice(0, perTurnLimit) }));
   let systemContent = buildSystemPrompt(styleExcerptsCapped, userPreferencesBlock, userMemoryBlock);
 

@@ -15,7 +15,7 @@ export async function listUserMessagesOnDate(userId, calendarDate = getMemoryCal
      INNER JOIN threads t ON t.id = tm.thread_id
      WHERE t.user_id = $1
        AND (tm.created_at AT TIME ZONE $2)::date = $3::date
-     ORDER BY tm.created_at ASC
+     ORDER BY tm.created_at ASC, tm.id ASC
      LIMIT $4`,
     [userId, tz, calendarDate, limit]
   );

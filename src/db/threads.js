@@ -124,7 +124,7 @@ export async function getThreadMessages(threadId) {
   const { rows } = await getPool().query(
     `SELECT role, content FROM thread_messages
      WHERE thread_id = $1
-     ORDER BY created_at ASC`,
+     ORDER BY created_at ASC, id ASC`,
     [threadId]
   );
   const list = rows.map((r) => ({

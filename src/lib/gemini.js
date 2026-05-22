@@ -53,6 +53,47 @@ export function getGeminiEmbeddingModel() {
 }
 
 /**
+ * Normalize prior turns so Gemini startChat history starts with user and alternates user/model.
+ * @param {Array<{ role: string; content: string }>} priorTurns
+ * @returns {Array<{ role: 'user' | 'assistant'; content: string }>}
+ */
+function sanitizePriorTurns(priorTurns) {
+  let list = priorTurns.filter((m) => m.role === 'user' || m.role === 'assistant');
+
+  while (list.length > 0 && list[0].role === 'assistant') {
+    list = list.slice(1);
+  }
+
+  const normalized = [];
+  for (const m of list) {
+    const content = String(m.content || '');
+    if (!content.trim()) continue;
+
+    if (m.role === 'user') {
+      const prev = normalized[normalized.length - 1];
+      if (prev?.role === 'user') {
+        normalized[normalized.length - 1] = { role: 'user', content };
+      } else {
+        normalized.push({ role: 'user', content });
+      }
+    } else if (m.role === 'assistant') {
+      const prev = normalized[normalized.length - 1];
+      if (prev?.role === 'user') {
+        normalized.push({ role: 'assistant', content });
+      } else if (prev?.role === 'assistant') {
+        normalized[normalized.length - 1] = { role: 'assistant', content };
+      }
+    }
+  }
+
+  while (normalized.length > 0 && normalized[normalized.length - 1].role === 'user') {
+    normalized.pop();
+  }
+
+  return normalized;
+}
+
+/**
  * @param {Array<{ role: 'system' | 'user' | 'assistant'; content: string }>} messages
  */
 function chatMessagesToGemini(messages) {
@@ -65,11 +106,10 @@ function chatMessagesToGemini(messages) {
     throw new Error('Expected last non-system message to be from user for Gemini chat');
   }
   const history = [];
-  for (let i = 0; i < rest.length - 1; i++) {
-    const m = rest[i];
+  for (const m of sanitizePriorTurns(rest.slice(0, -1))) {
     if (m.role === 'user') {
       history.push({ role: 'user', parts: [{ text: String(m.content) }] });
-    } else if (m.role === 'assistant') {
+    } else {
       history.push({ role: 'model', parts: [{ text: String(m.content) }] });
     }
   }
