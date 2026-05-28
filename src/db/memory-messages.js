@@ -28,19 +28,26 @@ export async function listUserMessagesOnDate(userId, calendarDate = getMemoryCal
 }
 
 /**
- * Paid users with chat activity on the given calendar day (memory timezone).
+ * Paid users with at least one thread message on the given calendar day (memory timezone).
+ * Uses message dates, not last_chat_activity_at, so backfill includes users who chatted
+ * on that day even if they have since chatted on a later day.
  * @param {string} [calendarDate]
  */
-export async function listPaidUsersActiveOnDate(calendarDate = getMemoryCalendarDate()) {
+export async function listPaidUsersWithMessagesOnDate(calendarDate = getMemoryCalendarDate()) {
   const tz = getMemoryTimezone();
   const { rows } = await getPool().query(
-    `SELECT user_id, email, memory_summary, memory_summary_generated_at,
-            memory_summary_edited_at, memory_auto_update_enabled
-     FROM user_profiles
-     WHERE tier = 'paid'
-       AND last_chat_activity_at IS NOT NULL
-       AND (last_chat_activity_at AT TIME ZONE $1)::date = $2::date`,
+    `SELECT DISTINCT up.user_id, up.email, up.memory_summary,
+            up.memory_summary_generated_at, up.memory_summary_edited_at,
+            up.memory_auto_update_enabled
+     FROM user_profiles up
+     INNER JOIN threads t ON t.user_id = up.user_id
+     INNER JOIN thread_messages tm ON tm.thread_id = t.id
+     WHERE up.tier = 'paid'
+       AND (tm.created_at AT TIME ZONE $1)::date = $2::date`,
     [tz, calendarDate]
   );
   return rows;
 }
+
+/** @deprecated Use listPaidUsersWithMessagesOnDate */
+export const listPaidUsersActiveOnDate = listPaidUsersWithMessagesOnDate;

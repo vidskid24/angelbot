@@ -3,6 +3,7 @@ import { isDbEnabled } from '../../db/pool.js';
 import * as users from '../../db/users.js';
 import { isValidMaExperience, isValidTone } from '../../lib/user-preferences.js';
 import { ensureUserTier } from '../../lib/tier.js';
+import { shouldSetMemorySummaryEdited } from '../../lib/memory-edit-lock.js';
 
 export function createUserPreferencesApiRouter() {
   const r = Router();
@@ -55,7 +56,9 @@ export function createUserPreferencesApiRouter() {
         }
         if (req.body?.memorySummary !== undefined) {
           patch.memorySummary = req.body.memorySummary;
-          patch.memorySummaryEdited = true;
+          if (shouldSetMemorySummaryEdited(existing.memorySummary, req.body.memorySummary)) {
+            patch.memorySummaryEdited = true;
+          }
         }
         if (req.body?.memoryAutoUpdateEnabled !== undefined) {
           patch.memoryAutoUpdateEnabled = Boolean(req.body.memoryAutoUpdateEnabled);

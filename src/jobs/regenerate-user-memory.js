@@ -1,10 +1,10 @@
 import { getMemoryCalendarDate } from '../lib/memory-timezone.js';
-import { listPaidUsersActiveOnDate, listUserMessagesOnDate } from '../db/memory-messages.js';
+import { listPaidUsersWithMessagesOnDate, listUserMessagesOnDate } from '../db/memory-messages.js';
 import { generateMemorySummary, formatMessagesForSummarizer } from '../lib/memory-summarize.js';
 import { getPool, isDbEnabled } from '../db/pool.js';
 
 /**
- * Regenerate memory summaries for paid users who chatted on the given day.
+ * Regenerate memory summaries for paid users with messages on the given day.
  * Skips users who edited the summary after the last auto-generation.
  * @param {string} [calendarDate] YYYY-MM-DD in memory timezone
  * @returns {Promise<{ processed: number; updated: number; skipped: number; errors: number }>}
@@ -14,7 +14,7 @@ export async function regenerateUserMemoriesForDate(calendarDate = getMemoryCale
     return { processed: 0, updated: 0, skipped: 0, errors: 0 };
   }
 
-  const users = await listPaidUsersActiveOnDate(calendarDate);
+  const users = await listPaidUsersWithMessagesOnDate(calendarDate);
   let updated = 0;
   let skipped = 0;
   let errors = 0;
