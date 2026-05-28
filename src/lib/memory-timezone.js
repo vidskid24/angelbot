@@ -24,3 +24,15 @@ export function getMemoryCalendarDate(now = new Date()) {
     day: '2-digit',
   }).format(now);
 }
+
+/**
+ * Calendar date YYYY-MM-DD for N days ago in the memory timezone.
+ * @param {number} [daysAgo]
+ * @param {Date} [now]
+ * @returns {string}
+ */
+export function getMemoryCalendarDateDaysAgo(daysAgo = 1, now = new Date()) {
+  const wholeDays = Math.max(0, Math.floor(Number(daysAgo) || 0));
+  const shifted = new Date(now.getTime() - wholeDays * 24 * 60 * 60 * 1000);
+  return getMemoryCalendarDate(shifted);
+}

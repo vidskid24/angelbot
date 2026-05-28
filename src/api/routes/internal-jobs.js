@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { isDbEnabled } from '../../db/pool.js';
 import { regenerateUserMemoriesForDate } from '../../jobs/regenerate-user-memory.js';
-import { getMemoryCalendarDate } from '../../lib/memory-timezone.js';
+import { getMemoryCalendarDateDaysAgo } from '../../lib/memory-timezone.js';
 
 function getCronSecret() {
   return String(process.env.OMIBOT_CRON_SECRET || process.env.ANGELBOT_CRON_SECRET || '').trim();
@@ -31,7 +31,7 @@ export function createInternalJobsRouter() {
       }
 
       const calendarDate =
-        String(req.body?.date || req.query?.date || '').trim() || getMemoryCalendarDate();
+        String(req.body?.date || req.query?.date || '').trim() || getMemoryCalendarDateDaysAgo(1);
       const result = await regenerateUserMemoriesForDate(calendarDate);
       res.json({ ok: true, calendarDate, ...result });
     } catch (e) {
