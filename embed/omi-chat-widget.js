@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=67
+ * OMIBOT_WIDGET_VERSION=68
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -343,7 +343,7 @@
       '.omibot-msg-system{margin:12px 0;padding:10px 12px;border-radius:8px;background:#f0ebe3;color:#5c5348;font-size:0.9rem;line-height:1.45}' +
       '.omibot-msg-system a.omibot-tier-link{color:#7a5c1e;text-decoration:none;border-bottom:1px solid rgba(122,92,30,.45)}' +
       '.omibot-msg-system a.omibot-tier-link:hover{color:#1a1a1a;border-bottom-color:#1a1a1a}' +
-      '.omibot-thinking{margin:16px 0;color:#666;font-size:0.95rem}' +
+      '.omibot-thinking{margin:16px 0;color:#722668;font-size:0.95rem}' +
       '.omibot-thinking-dots{display:inline-block;margin-left:2px}' +
       '.omibot-thinking-dots span{display:inline-block;animation:omibot-dot 1.2s ease-in-out infinite}' +
       '.omibot-thinking-dots span:nth-child(2){animation-delay:.15s}' +
