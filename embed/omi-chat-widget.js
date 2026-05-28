@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=64
+ * OMIBOT_WIDGET_VERSION=67
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -564,13 +564,26 @@
       refreshInputEnabled();
     }
 
-    function refreshInputEnabled() {
-      if (!ready || sending) return;
+    function syncInputPlaceholder() {
+      if (!input) return;
+      if (sending || !ready) {
+        input.placeholder = '';
+        return;
+      }
       const atLimit = isAtDailyMessageLimit();
-      setInputEnabled(!atLimit);
       input.placeholder = atLimit
         ? "You've reached today's message limit. Please ask again tomorrow."
         : 'Write a message...';
+    }
+
+    function refreshInputEnabled() {
+      syncInputPlaceholder();
+      if (!ready || sending) {
+        if (sending) setInputEnabled(false);
+        return;
+      }
+      const atLimit = isAtDailyMessageLimit();
+      setInputEnabled(!atLimit);
     }
 
     const newThreadBtn = root.querySelector('#omibot-new-thread');
@@ -1549,6 +1562,7 @@
       const message = (input.value || '').trim();
       if (!message) return;
       sending = true;
+      syncInputPlaceholder();
       updateSendButtonState();
       setInputEnabled(false);
       dismissWelcome();
