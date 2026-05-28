@@ -37,7 +37,6 @@ export async function listPaidUsersWithMessagesOnDate(calendarDate = getMemoryCa
   const tz = getMemoryTimezone();
   const { rows } = await getPool().query(
     `SELECT DISTINCT up.user_id, up.email, up.memory_summary,
-            up.memory_summary_generated_at, up.memory_summary_edited_at,
             up.memory_auto_update_enabled
      FROM user_profiles up
      INNER JOIN threads t ON t.user_id = up.user_id

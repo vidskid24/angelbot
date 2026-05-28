@@ -5,7 +5,7 @@ import { getPool, isDbEnabled } from '../db/pool.js';
 
 /**
  * Regenerate memory summaries for paid users with messages on the given day.
- * Skips users who edited the summary after the last auto-generation.
+ * Merges that day's conversations into the current summary (including user edits).
  * @param {string} [calendarDate] YYYY-MM-DD in memory timezone
  * @returns {Promise<{ processed: number; updated: number; skipped: number; errors: number }>}
  */
@@ -22,16 +22,6 @@ export async function regenerateUserMemoriesForDate(calendarDate = getMemoryCale
   for (const user of users) {
     try {
       if (user.memory_auto_update_enabled === false) {
-        skipped++;
-        continue;
-      }
-      const editedAt = user.memory_summary_edited_at
-        ? new Date(user.memory_summary_edited_at).getTime()
-        : 0;
-      const generatedAt = user.memory_summary_generated_at
-        ? new Date(user.memory_summary_generated_at).getTime()
-        : 0;
-      if (editedAt > generatedAt) {
         skipped++;
         continue;
       }

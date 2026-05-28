@@ -15,6 +15,7 @@ Write an updated memory document in markdown with EXACTLY these sections and hea
 
 Rules:
 - Merge prior summary with new information; do not duplicate bullets.
+- The prior summary may include user edits; keep their intent and wording where still accurate.
 - Focus on work, MA journey, preferences, ongoing themes, and how to collaborate well.
 - Under Brief history / Recent months, note patterns from the past few months when visible.
 - Do not store passwords, payment details, or clinical diagnoses.
