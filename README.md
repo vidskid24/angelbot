@@ -73,7 +73,7 @@ Authenticated routes (Bearer app session JWT):
 - `POST /api/chat/send` — body: `{ message, threadId? }`; returns `threadId`
 - `GET /api/user/preferences` — tone, MA experience, and (paid) memory fields
 - `PATCH /api/user/preferences` — save settings (`{ tone?, maExperience?, memoryInstructions?, memorySummary? }`)
-- `POST /internal/jobs/regenerate-memory` — nightly memory synthesis (header `x-cron-secret`; defaults to the previous calendar day in `OMIBOT_MEMORY_TIMEZONE`, or pass `?date=YYYY-MM-DD`; selects paid users with messages on that day)
+- `POST /internal/jobs/regenerate-memory` — nightly memory synthesis (header `x-cron-secret`; defaults to the previous calendar day in `OMIBOT_MEMORY_TIMEZONE`, or pass `?date=YYYY-MM-DD`; selects paid users with messages on that day; retries Gemini on failure and preserves prior summary if all attempts fail)
 - `GET /internal/tier-debug?user_id=...&email=...` — tier troubleshooting (header `x-cron-secret`; same secret as cron)
 - `GET /api/threads` — list conversations (limit by tier)
 - `POST /api/threads` — create conversation (`{ title? }`)

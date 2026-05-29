@@ -149,6 +149,37 @@ function extractText(response) {
 }
 
 /**
+ * Gemini generateContent without chat fallbacks. Throws on API or empty response.
+ * Used for memory cron and other server-side jobs that must not save user-facing errors.
+ * @param {{
+ *   model?: string;
+ *   systemInstruction?: string;
+ *   userPrompt: string;
+ *   maxOutputTokens?: number;
+ *   temperature?: number;
+ * }} opts
+ * @returns {Promise<string>}
+ */
+export async function generateTextStrict({
+  model: modelName = getGeminiChatModel(),
+  systemInstruction,
+  userPrompt,
+  maxOutputTokens = 4096,
+  temperature = 0.4,
+}) {
+  const genAI = getGeminiClient();
+  const model = genAI.getGenerativeModel({
+    model: modelName,
+    ...(systemInstruction ? { systemInstruction } : {}),
+    generationConfig: { maxOutputTokens, temperature },
+  });
+  const result = await model.generateContent(userPrompt);
+  const text = String(extractText(result.response) || '').trim();
+  if (!text) throw new Error('Empty Gemini response');
+  return text;
+}
+
+/**
  * True when Gemini API error is transient/overload.
  * @param {unknown} err
  * @returns {boolean}

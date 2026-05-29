@@ -1,11 +1,12 @@
 import { getMemoryCalendarDate } from '../lib/memory-timezone.js';
 import { listPaidUsersWithMessagesOnDate, listUserMessagesOnDate } from '../db/memory-messages.js';
-import { generateMemorySummary, formatMessagesForSummarizer } from '../lib/memory-summarize.js';
+import { generateMemorySummaryWithRetry, formatMessagesForSummarizer } from '../lib/memory-summarize.js';
 import { getPool, isDbEnabled } from '../db/pool.js';
 
 /**
  * Regenerate memory summaries for paid users with messages on the given day.
  * Merges that day's conversations into the current summary (including user edits).
+ * Retries transient Gemini failures; preserves prior summary if all attempts fail.
  * @param {string} [calendarDate] YYYY-MM-DD in memory timezone
  * @returns {Promise<{ processed: number; updated: number; skipped: number; errors: number }>}
  */
@@ -34,11 +35,24 @@ export async function regenerateUserMemoriesForDate(calendarDate = getMemoryCale
 
       const transcript = formatMessagesForSummarizer(messages);
       const priorSummary = String(user.memory_summary || '');
-      const summary = await generateMemorySummary({
+      const userLabel = user.email || user.user_id;
+      const result = await generateMemorySummaryWithRetry({
         priorSummary,
         transcript,
-        userLabel: user.email || user.user_id,
+        userLabel,
       });
+
+      if (!result.ok) {
+        console.error(
+          'Memory regeneration failed for',
+          user.user_id,
+          'reason:',
+          result.reason,
+          result.error?.message || ''
+        );
+        errors++;
+        continue;
+      }
 
       await getPool().query(
         `UPDATE user_profiles SET
@@ -46,7 +60,7 @@ export async function regenerateUserMemoriesForDate(calendarDate = getMemoryCale
            memory_summary_generated_at = NOW(),
            updated_at = NOW()
          WHERE user_id = $1`,
-        [user.user_id, summary]
+        [user.user_id, result.summary]
       );
       updated++;
     } catch (e) {
