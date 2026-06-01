@@ -32,7 +32,7 @@
     'Well hello',
   ];
 
-  /** Starter prompts for empty conversations (Teachers of Light omitted — discover-only). */
+  /** Starter prompts for empty conversations. */
   const SUGGESTION_CHIPS = [
     { text: "Something\u2019s on my heart \u2014 I\u2019d like to be heard." },
     { text: "Help me understand what\u2019s happening energetically." },
