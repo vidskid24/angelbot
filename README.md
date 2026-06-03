@@ -39,7 +39,7 @@ Optional:
 - `OMIBOT_FREE_THREAD_LIMIT` (default `3`)
 - `OMIBOT_PAID_THREAD_LIMIT` (default `15`)
 - `OMIBOT_FREE_DAILY_MESSAGE_LIMIT` (default `15`)
-- `OMIBOT_PAID_DAILY_MESSAGE_LIMIT` (default `80`)
+- `OMIBOT_PAID_DAILY_MESSAGE_LIMIT` (default `110`)
 - `OMIBOT_DAILY_LIMIT_TIMEZONE` (default `America/Los_Angeles`; calendar day boundary for daily counts)
 - `OMIBOT_TIER_CACHE_MINUTES` (default `60`)
 - `THINKIFIC_API_KEY` — Thinkific **API Access Token** (Bearer auth; from Settings → Code & analytics; not SSO Signing Secret)

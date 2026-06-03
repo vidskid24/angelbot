@@ -13,8 +13,8 @@ const FREE_DAILY_MESSAGE_LIMIT =
   parseInt(process.env.OMIBOT_FREE_DAILY_MESSAGE_LIMIT || process.env.ANGELBOT_FREE_DAILY_MESSAGE_LIMIT || '15', 10) ||
   15;
 const PAID_DAILY_MESSAGE_LIMIT =
-  parseInt(process.env.OMIBOT_PAID_DAILY_MESSAGE_LIMIT || process.env.ANGELBOT_PAID_DAILY_MESSAGE_LIMIT || '80', 10) ||
-  80;
+  parseInt(process.env.OMIBOT_PAID_DAILY_MESSAGE_LIMIT || process.env.ANGELBOT_PAID_DAILY_MESSAGE_LIMIT || '110', 10) ||
+  110;
 
 /**
  * @param {'free' | 'paid'} tier
