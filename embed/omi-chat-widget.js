@@ -464,7 +464,7 @@
     const upgradeUrl =
       window.OMIBOT_UPGRADE_URL ||
       window.ANGELBOT_UPGRADE_URL ||
-      'https://courses.masteringalchemy.com/pages/omi-ai';
+      'https://courses.masteringalchemy.com/courses/omi-ai';
 
     function appendThreadLimitMessage(limit, tier) {
       const cap = limit || 3;
