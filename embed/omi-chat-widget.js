@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=68
+ * OMIBOT_WIDGET_VERSION=69
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -393,6 +393,12 @@
       '.omibot-prefs-save:disabled{opacity:.55;cursor:not-allowed}' +
       '.omibot-prefs-footer .omibot-prefs-error{margin:0 0 10px}' +
       '.omibot-prefs-error{font-size:0.85rem;color:#8b3a3a}' +
+      '.omibot-prefs-danger-zone{margin-top:28px;padding-top:20px;border-top:1px solid #e8e2d8}' +
+      '.omibot-prefs-danger-zone[hidden]{display:none!important}' +
+      '.omibot-prefs-danger-desc{font-size:0.82rem;color:#666;margin:0 0 12px;line-height:1.45}' +
+      '.omibot-prefs-delete-data{padding:10px 18px;border-radius:10px;border:1px solid #c9a0a0;background:#fff;color:#8b3a3a;font:inherit;font-size:0.95rem;cursor:pointer}' +
+      '.omibot-prefs-delete-data:hover{background:#fdf5f5;border-color:#8b3a3a}' +
+      '.omibot-prefs-delete-data:disabled{opacity:.55;cursor:not-allowed}' +
       '@media(max-width:640px){.omibot-layout{flex-direction:column}.omibot-sidebar{width:100%;border-right:none;border-bottom:1px solid #e0dcd4;padding:0 0 12px;margin-bottom:12px}.omibot-main{padding-left:0}}' +
       '</style>' +
       '<div class="omibot-shell">' +
@@ -445,6 +451,10 @@
       '<label for="omibot-pref-memory-summary">What Omi remembers <span class="omibot-prefs-paid-only">paid plans only</span></label>' +
       '<p class="omibot-prefs-memory-note" id="omibot-prefs-memory-note">Here\u2019s what Omi remembers about you. This summary is regenerated each night based off your conversations.</p>' +
       '<textarea id="omibot-pref-memory-summary" class="omibot-memory-summary" rows="10" placeholder="Work context, personal context, how to work with you, top of mind, and brief history will appear here."></textarea>' +
+      '</div>' +
+      '<div class="omibot-prefs-danger-zone" id="omibot-prefs-danger-zone">' +
+      '<p class="omibot-prefs-danger-desc">Permanently delete all saved conversations, memory, and preferences from Omi. This cannot be undone. Your course account is not affected.</p>' +
+      '<button type="button" class="omibot-prefs-delete-data" id="omibot-prefs-delete-data">Delete all my data</button>' +
       '</div>' +
       '<div class="omibot-prefs-footer">' +
       '<p class="omibot-prefs-error" id="omibot-prefs-error" hidden></p>' +
@@ -616,6 +626,8 @@
     const prefsMemoryUpgradeLink = prefsViewEl.querySelector('#omibot-prefs-memory-upgrade-link');
     const prefsMemoryNote = prefsViewEl.querySelector('#omibot-prefs-memory-note');
     const prefsMemorySummaryField = prefsViewEl.querySelector('#omibot-prefs-memory-summary-field');
+    const prefsDangerZone = prefsViewEl.querySelector('#omibot-prefs-danger-zone');
+    const prefsDeleteDataBtn = prefsViewEl.querySelector('#omibot-prefs-delete-data');
     let prefsViewMode = null;
 
     function isPaidTier() {
@@ -668,6 +680,7 @@
           : 'You can change these anytime.';
       }
       if (prefsBackBtn) prefsBackBtn.hidden = isOnboarding;
+      if (prefsDangerZone) prefsDangerZone.hidden = isOnboarding;
       syncPrefsFormFromState();
       setPrefsError('');
       chatViewEl.hidden = true;
@@ -699,6 +712,70 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok) return null;
       return data;
+    }
+
+    async function deleteAllUserData(token) {
+      setPrefsError('');
+      if (prefsDeleteDataBtn) prefsDeleteDataBtn.disabled = true;
+      if (prefsSaveBtn) prefsSaveBtn.disabled = true;
+      try {
+        const res = await fetch(API_BASE + '/api/user/data', {
+          method: 'DELETE',
+          headers: authHeaders(token),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setPrefsError(data.message || data.error || 'Could not delete your data.');
+          return false;
+        }
+        userPrefs = {
+          tone: 'warm',
+          maExperience: 'some_experience',
+          preferencesCompleted: false,
+          tier: userPrefs.tier || threadsMeta.tier || 'free',
+          memoryInstructions: '',
+          memorySummary: '',
+          memoryAvailable: false,
+        };
+        threadsCache = [];
+        threadsMeta = {
+          threadLimit: threadsMeta.threadLimit || 3,
+          threadCount: 0,
+          tier: threadsMeta.tier || 'free',
+          dailyMessageLimit: threadsMeta.dailyMessageLimit != null ? threadsMeta.dailyMessageLimit : 15,
+          dailyMessageCount: 0,
+        };
+        syncPrefsFormFromState();
+        beginNewConversation();
+        updateTierBadge();
+        updateThreadMeta();
+        const prefs = await fetchPreferences(token);
+        if (prefs) {
+          userPrefs = {
+            tone: prefs.tone || 'warm',
+            maExperience: prefs.maExperience || 'some_experience',
+            preferencesCompleted: Boolean(prefs.preferencesCompleted),
+            tier: prefs.tier || 'free',
+            memoryInstructions: prefs.memoryInstructions || '',
+            memorySummary: prefs.memorySummary || '',
+            memoryAvailable: Boolean(prefs.memoryAvailable),
+          };
+          if (prefs.tier) threadsMeta.tier = prefs.tier;
+          updateTierBadge();
+        }
+        showChatView();
+        if (!ready) {
+          ready = true;
+          syncDailyLimitUi();
+        }
+        return true;
+      } catch (e) {
+        setPrefsError(String(e && e.message ? e.message : e));
+        return false;
+      } finally {
+        if (prefsDeleteDataBtn) prefsDeleteDataBtn.disabled = false;
+        if (prefsSaveBtn) prefsSaveBtn.disabled = false;
+      }
     }
 
     async function savePreferencesFromModal(token) {
@@ -770,6 +847,25 @@
       prefsBackBtn.addEventListener('click', function () {
         syncPrefsFormFromState();
         showChatView();
+      });
+    }
+
+    if (prefsDeleteDataBtn) {
+      prefsDeleteDataBtn.addEventListener('click', function () {
+        const confirmed = window.confirm(
+          'Delete all your Omi data?\n\n' +
+            'This permanently removes saved conversations, memory, and preferences from Omi. ' +
+            'It cannot be undone.\n\n' +
+            'Your course account is not affected. You can continue using Omi with a fresh start.'
+        );
+        if (!confirmed) return;
+        ensureToken()
+          .then(function (tok) {
+            return deleteAllUserData(tok);
+          })
+          .catch(function (e) {
+            setPrefsError(String(e && e.message ? e.message : e));
+          });
       });
     }
 

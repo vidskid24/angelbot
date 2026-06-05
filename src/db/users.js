@@ -169,3 +169,13 @@ export async function upsertUserProfile(userId, email, tier) {
     [userId, email || null, tier]
   );
 }
+
+/**
+ * Delete profile and all cascaded data (threads, messages, daily usage).
+ * @param {string} userId
+ * @returns {Promise<boolean>} true if a row was deleted
+ */
+export async function deleteUserData(userId) {
+  const { rowCount } = await getPool().query('DELETE FROM user_profiles WHERE user_id = $1', [userId]);
+  return rowCount > 0;
+}

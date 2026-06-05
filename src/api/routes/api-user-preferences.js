@@ -73,5 +73,19 @@ export function createUserPreferencesApiRouter() {
     }
   });
 
+  r.delete('/api/user/data', async (req, res, next) => {
+    try {
+      if (!isDbEnabled()) {
+        res.status(503).json({ error: 'database_not_configured' });
+        return;
+      }
+      const userId = req.omiUser.sub;
+      await users.deleteUserData(userId);
+      res.json({ ok: true });
+    } catch (e) {
+      next(e);
+    }
+  });
+
   return r;
 }
