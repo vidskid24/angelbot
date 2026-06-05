@@ -399,6 +399,9 @@
       '.omibot-prefs-delete-data{padding:10px 18px;border-radius:10px;border:1px solid #c9a0a0;background:#fff;color:#8b3a3a;font:inherit;font-size:0.95rem;cursor:pointer}' +
       '.omibot-prefs-delete-data:hover{background:#fdf5f5;border-color:#8b3a3a}' +
       '.omibot-prefs-delete-data:disabled{opacity:.55;cursor:not-allowed}' +
+      '.omibot-prefs-privacy-notice{font-size:0.82rem;color:#666;margin:14px 0 0;line-height:1.45}' +
+      '.omibot-prefs-privacy-notice a{color:#7a5c1e;text-decoration:underline}' +
+      '.omibot-prefs-privacy-notice a:hover{color:#5c4616}' +
       '@media(max-width:640px){.omibot-layout{flex-direction:column}.omibot-sidebar{width:100%;border-right:none;border-bottom:1px solid #e0dcd4;padding:0 0 12px;margin-bottom:12px}.omibot-main{padding-left:0}}' +
       '</style>' +
       '<div class="omibot-shell">' +
@@ -460,6 +463,9 @@
       '<div class="omibot-prefs-danger-zone" id="omibot-prefs-danger-zone">' +
       '<p class="omibot-prefs-danger-desc">Permanently delete all saved conversations, memory, and preferences from Omi. This cannot be undone. Your course account is not affected.</p>' +
       '<button type="button" class="omibot-prefs-delete-data" id="omibot-prefs-delete-data">Delete all my data</button>' +
+      '<p class="omibot-prefs-privacy-notice" id="omibot-prefs-privacy-notice">' +
+      '<strong>Privacy:</strong> Omi saves your chats and preferences so you can continue conversations later. Paid plans may store memory across chats. We use AI providers to generate replies; we do not sell your data. You can delete all Omi data anytime in Preferences. See our ' +
+      '<a href="https://masteringalchemy.com/privacy-policy/" target="_blank" rel="noopener noreferrer">Privacy Policy</a> for details.</p>' +
       '</div></section></div></div></div>';
 
     const status = root.querySelector('#omibot-status');
