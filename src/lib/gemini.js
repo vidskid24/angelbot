@@ -709,6 +709,22 @@ export async function chat(messages) {
 /** Backward compatibility export name. */
 export const chatWithGemini = chat;
 
+const MAX_THREAD_TITLE_WORDS = 4;
+
+/**
+ * @param {string} title
+ * @param {number} [maxWords]
+ * @returns {string}
+ */
+function capThreadTitleWords(title, maxWords = MAX_THREAD_TITLE_WORDS) {
+  const words = String(title || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (!words.length) return 'Conversation';
+  return words.slice(0, Math.max(1, maxWords)).join(' ');
+}
+
 /**
  * @param {string} message
  * @returns {string}
@@ -718,10 +734,7 @@ function fallbackThreadTitleFromMessage(message) {
   if (!cleaned) return 'Conversation';
   const line = cleaned.split('\n')[0].trim();
   const sentence = (line.split(/[.!?]/)[0] || line).trim() || line;
-  if (sentence.length <= 60) return sentence;
-  const cut = sentence.slice(0, 60);
-  const lastSpace = cut.lastIndexOf(' ');
-  return (lastSpace > 16 ? cut.slice(0, lastSpace) : cut).trim() + '\u2026';
+  return capThreadTitleWords(sentence);
 }
 
 /**
@@ -735,7 +748,7 @@ function normalizeGeneratedThreadTitle(raw) {
   title = title.split('\n')[0].trim();
   if (!title || title.length > 80) return null;
   if (/^saved\s+space$/i.test(title)) return null;
-  return title;
+  return capThreadTitleWords(title);
 }
 
 /**
@@ -747,10 +760,11 @@ function isUsableGeneratedThreadTitle(title) {
   const t = String(title || '').trim();
   if (t.length < 4) return false;
   const words = t.split(/\s+/).filter(Boolean);
+  if (words.length > MAX_THREAD_TITLE_WORDS) return false;
   if (words.length >= 2) {
     return !words.some((w) => w.length < 2);
   }
-  return t.length >= 12;
+  return t.length >= 4;
 }
 
 /** Generation config for short labels — disable thinking budget on 2.5+ models. */
@@ -781,7 +795,7 @@ export async function generateThreadTitleFromMessage(message) {
     });
     const prompt =
       'The user started a new chat with the message below. Write a very short conversation title ' +
-      '(3 to 8 words) that names their main topic or question. Use title case. ' +
+      '(4 words or fewer) that names their main topic or question. Use title case. ' +
       'No quotes, no trailing punctuation, no prefix like "Title:". Reply with only the title.\n\n' +
       `User message:\n${text}`;
     const res = await model.generateContent(prompt);
