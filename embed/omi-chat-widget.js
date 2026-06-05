@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=69
+ * OMIBOT_WIDGET_VERSION=70
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -376,7 +376,8 @@
       '.omibot-prefs-back[hidden]{display:none!important}' +
       '.omibot-prefs-view h2{margin:0 0 8px;font-size:1.35rem;font-weight:500}' +
       '.omibot-prefs-desc{margin:0 0 18px;font-size:0.92rem;line-height:1.5;color:#555}' +
-      '.omibot-prefs-footer{position:sticky;bottom:0;z-index:2;margin-top:20px;padding:12px 0;padding-bottom:max(12px,env(safe-area-inset-bottom));background:linear-gradient(to top,#fff 85%,rgba(255,255,255,0))}' +
+      '.omibot-prefs-footer{margin-top:8px;padding:0 0 8px;background:transparent}' +
+      '.omibot-prefs-footer .omibot-prefs-error{margin:0 0 10px}' +
       '.omibot-prefs-field{margin:0 0 14px}' +
       '.omibot-prefs-field label{display:block;font-size:0.85rem;font-weight:600;color:#444;margin-bottom:6px}' +
       '.omibot-prefs-field select{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid #ddd;font:inherit;font-size:0.95rem;background:#fff}' +
@@ -387,11 +388,10 @@
       '.omibot-prefs-memory-upgrade{font-size:0.82rem;color:#666;margin:0 0 10px;line-height:1.4}' +
       '.omibot-prefs-memory-upgrade a.omibot-tier-link{color:#7a5c1e}' +
       '.omibot-prefs-paid-only{font-style:italic;font-weight:400;color:#999;margin-left:6px;font-size:0.88em;letter-spacing:0;text-transform:none}' +
-      '.omibot-prefs-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}' +
+      '.omibot-prefs-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}' +
       '.omibot-prefs-save{padding:10px 18px;border-radius:10px;border:none;background:#7a5c1e;color:#fff;font:inherit;font-size:0.95rem;cursor:pointer}' +
       '.omibot-prefs-save:hover{background:#5c4616}' +
       '.omibot-prefs-save:disabled{opacity:.55;cursor:not-allowed}' +
-      '.omibot-prefs-footer .omibot-prefs-error{margin:0 0 10px}' +
       '.omibot-prefs-error{font-size:0.85rem;color:#8b3a3a}' +
       '.omibot-prefs-danger-zone{margin-top:28px;padding-top:20px;border-top:1px solid #e8e2d8}' +
       '.omibot-prefs-danger-zone[hidden]{display:none!important}' +
@@ -452,15 +452,15 @@
       '<p class="omibot-prefs-memory-note" id="omibot-prefs-memory-note">Here\u2019s what Omi remembers about you. This summary is regenerated each night based off your conversations.</p>' +
       '<textarea id="omibot-pref-memory-summary" class="omibot-memory-summary" rows="10" placeholder="Work context, personal context, how to work with you, top of mind, and brief history will appear here."></textarea>' +
       '</div>' +
-      '<div class="omibot-prefs-danger-zone" id="omibot-prefs-danger-zone">' +
-      '<p class="omibot-prefs-danger-desc">Permanently delete all saved conversations, memory, and preferences from Omi. This cannot be undone. Your course account is not affected.</p>' +
-      '<button type="button" class="omibot-prefs-delete-data" id="omibot-prefs-delete-data">Delete all my data</button>' +
-      '</div>' +
       '<div class="omibot-prefs-footer">' +
       '<p class="omibot-prefs-error" id="omibot-prefs-error" hidden></p>' +
       '<div class="omibot-prefs-actions">' +
       '<button type="button" class="omibot-prefs-save" id="omibot-prefs-save">Save preferences</button>' +
-      '</div></div></section></div></div></div>';
+      '</div></div>' +
+      '<div class="omibot-prefs-danger-zone" id="omibot-prefs-danger-zone">' +
+      '<p class="omibot-prefs-danger-desc">Permanently delete all saved conversations, memory, and preferences from Omi. This cannot be undone. Your course account is not affected.</p>' +
+      '<button type="button" class="omibot-prefs-delete-data" id="omibot-prefs-delete-data">Delete all my data</button>' +
+      '</div></section></div></div></div>';
 
     const status = root.querySelector('#omibot-status');
     const welcome = root.querySelector('#omibot-welcome');
