@@ -464,7 +464,7 @@
       '<p class="omibot-prefs-danger-desc">Permanently delete all saved conversations, memory, and preferences from Omi. This cannot be undone. Your course account is not affected.</p>' +
       '<button type="button" class="omibot-prefs-delete-data" id="omibot-prefs-delete-data">Delete all my data</button>' +
       '<p class="omibot-prefs-privacy-notice" id="omibot-prefs-privacy-notice">' +
-      '<strong>Privacy:</strong> Omi saves your chats and preferences so you can continue conversations later. Paid plans may store memory across chats. We use AI providers to generate replies; we do not sell your data. You can delete all Omi data anytime in Preferences. See our ' +
+      '<strong>Privacy:</strong> Omi saves your chats and preferences so you can continue conversations later. We do not share, train or sell your data. You can delete all Omi data anytime. See our ' +
       '<a href="https://masteringalchemy.com/privacy-policy/" target="_blank" rel="noopener noreferrer">Privacy Policy</a> for details.</p>' +
       '</div></section></div></div></div>';
 
