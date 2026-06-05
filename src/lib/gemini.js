@@ -739,6 +739,31 @@ function normalizeGeneratedThreadTitle(raw) {
 }
 
 /**
+ * Reject truncated or incomplete model titles (e.g. "O", "Observ" from token limits).
+ * @param {string} title
+ * @returns {boolean}
+ */
+function isUsableGeneratedThreadTitle(title) {
+  const t = String(title || '').trim();
+  if (t.length < 4) return false;
+  const words = t.split(/\s+/).filter(Boolean);
+  if (words.length >= 2) {
+    return !words.some((w) => w.length < 2);
+  }
+  return t.length >= 12;
+}
+
+/** Generation config for short labels — disable thinking budget on 2.5+ models. */
+function shortLabelGenerationConfig(maxOutputTokens = 256) {
+  const config = { maxOutputTokens, temperature: 0.2 };
+  const model = getGeminiFallbackChatModel();
+  if (/gemini-2\.5|gemini-3/i.test(model)) {
+    config.thinkingConfig = { thinkingBudget: 0 };
+  }
+  return config;
+}
+
+/**
  * Generate a short conversation title from the user's first message.
  * @param {string} message
  * @returns {Promise<string>}
@@ -752,7 +777,7 @@ export async function generateThreadTitleFromMessage(message) {
     const genAI = getGeminiClient();
     const model = genAI.getGenerativeModel({
       model: getGeminiFallbackChatModel(),
-      generationConfig: { maxOutputTokens: 64, temperature: 0.2 },
+      generationConfig: shortLabelGenerationConfig(256),
     });
     const prompt =
       'The user started a new chat with the message below. Write a very short conversation title ' +
@@ -760,8 +785,13 @@ export async function generateThreadTitleFromMessage(message) {
       'No quotes, no trailing punctuation, no prefix like "Title:". Reply with only the title.\n\n' +
       `User message:\n${text}`;
     const res = await model.generateContent(prompt);
-    const normalized = normalizeGeneratedThreadTitle(extractText(res.response));
-    if (normalized) return normalized;
+    const response = res.response;
+    const finishReason = response.candidates?.[0]?.finishReason;
+    if (isMaxTokensFinish(finishReason)) {
+      return fallback;
+    }
+    const normalized = normalizeGeneratedThreadTitle(extractText(response));
+    if (normalized && isUsableGeneratedThreadTitle(normalized)) return normalized;
   } catch (err) {
     console.error('generateThreadTitleFromMessage error:', err);
   }
