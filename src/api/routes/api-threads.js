@@ -138,7 +138,7 @@ export function createThreadsApiRouter() {
         res.status(404).json({ error: 'thread_not_found' });
         return;
       }
-      const messages = await threadDb.getThreadMessages(threadId);
+      const messages = await threadDb.getAllThreadMessages(threadId);
       res.json({
         thread: {
           id: thread.id,

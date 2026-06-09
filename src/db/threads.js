@@ -120,17 +120,35 @@ export async function deleteThread(threadId, userId) {
  * @param {string} threadId
  * @returns {Promise<Array<{ role: 'user' | 'assistant'; content: string }>>}
  */
-export async function getThreadMessages(threadId) {
+async function fetchAllThreadMessages(threadId) {
   const { rows } = await getPool().query(
     `SELECT role, content FROM thread_messages
      WHERE thread_id = $1
      ORDER BY created_at ASC, id ASC`,
     [threadId]
   );
-  const list = rows.map((r) => ({
+  return rows.map((r) => ({
     role: r.role === 'assistant' ? 'assistant' : 'user',
     content: r.content,
   }));
+}
+
+/**
+ * Full message history for UI display when a user opens a saved conversation.
+ * @param {string} threadId
+ * @returns {Promise<Array<{ role: 'user' | 'assistant'; content: string }>>}
+ */
+export async function getAllThreadMessages(threadId) {
+  return fetchAllThreadMessages(threadId);
+}
+
+/**
+ * Recent turns only — for LLM context (MAX_HISTORY_TURNS, default 10).
+ * @param {string} threadId
+ * @returns {Promise<Array<{ role: 'user' | 'assistant'; content: string }>>}
+ */
+export async function getThreadMessages(threadId) {
+  const list = await fetchAllThreadMessages(threadId);
   const maxMessages = maxTurns * 2;
   if (list.length > maxMessages) {
     return list.slice(-maxMessages);
