@@ -477,6 +477,85 @@ async function tryFallbackModelReply(genAI, modelName, systemInstruction, histor
 }
 
 /**
+ * When the primary model is overloaded, try flash (or configured fallback) with repair/rescue paths.
+ * @returns {Promise<string | null>} assistant reply, or null if fallback produced nothing usable
+ */
+async function attemptFallbackModelChat(genAI, fallbackModelName, systemInstruction, history, userText) {
+  try {
+    const fb = await tryFallbackModelReply(genAI, fallbackModelName, systemInstruction, history, userText);
+    if (!fb.text.trim()) return null;
+
+    const fbTrimmed = fb.text.trim();
+    if (fbTrimmed.length >= 140 && (!fb.truncated || looksCompleteText(fbTrimmed))) {
+      return finalizeAssistantText(fbTrimmed, false);
+    }
+    if (fb.truncated && fbTrimmed.length >= 140) {
+      const salvaged = salvageToSentenceBoundary(fbTrimmed);
+      if (salvaged.length >= 120) return finalizeAssistantText(salvaged, false);
+    }
+    if (fb.truncated || fb.text.trim().length < 140) {
+      try {
+        const repaired = await repairFallbackFragment(
+          genAI,
+          fallbackModelName,
+          systemInstruction,
+          history,
+          userText
+        );
+        if (
+          repaired.trim().length >= 80 ||
+          (repaired.trim().length >= 50 && looksCompleteText(repaired))
+        ) {
+          return finalizeAssistantText(repaired, false);
+        }
+        try {
+          const rescued = await rescueDirectReply(genAI, fallbackModelName, userText);
+          if (
+            rescued.trim().length >= 80 ||
+            (rescued.trim().length >= 50 && looksCompleteText(rescued))
+          ) {
+            return finalizeAssistantText(rescued, false);
+          }
+        } catch {
+          /* rescue failed */
+        }
+      } catch {
+        /* repair failed */
+      }
+      return chooseFallbackText(userText);
+    }
+    return finalizeAssistantText(fb.text, fb.truncated);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Try flash when primary hits 500/503; show hiccup only if fallback also fails.
+ * @returns {Promise<string>}
+ */
+async function recoverFromServiceUnavailable(
+  genAI,
+  primaryModelName,
+  systemInstruction,
+  history,
+  userText
+) {
+  const fallbackModelName = getGeminiFallbackChatModel();
+  if (fallbackModelName && fallbackModelName !== primaryModelName) {
+    const fbReply = await attemptFallbackModelChat(
+      genAI,
+      fallbackModelName,
+      systemInstruction,
+      history,
+      userText
+    );
+    if (fbReply) return fbReply;
+  }
+  return serviceUnavailableFallbackText();
+}
+
+/**
  * Repair a short/truncated fallback fragment into one complete concise answer.
  * @param {GoogleGenerativeAI} genAI
  * @param {string} modelName
@@ -583,42 +662,8 @@ export async function chat(messages) {
     if (Number(err?.status) === 429) {
       return rateLimitFallbackText();
     }
-    if (isTransientGeminiError(err)) {
-      if (isServiceUnavailableError(err)) {
-        return serviceUnavailableFallbackText();
-      }
-      const fallbackModelName = getGeminiFallbackChatModel();
-      if (fallbackModelName && fallbackModelName !== modelName) {
-        try {
-          const fb = await tryFallbackModelReply(genAI, fallbackModelName, systemInstruction, history, lastUserText);
-          if (fb.text.trim()) {
-            const fbTrimmed = fb.text.trim();
-            if (fbTrimmed.length >= 140 && (!fb.truncated || looksCompleteText(fbTrimmed))) {
-              return finalizeAssistantText(fbTrimmed, false);
-            }
-            if (fb.truncated && fbTrimmed.length >= 140) {
-              const salvaged = salvageToSentenceBoundary(fbTrimmed);
-              if (salvaged.length >= 120) return finalizeAssistantText(salvaged, false);
-            }
-            if (fb.truncated || fb.text.trim().length < 140) {
-              try {
-                const repaired = await repairFallbackFragment(genAI, fallbackModelName, systemInstruction, history, lastUserText);
-                if (repaired.trim().length >= 80 || (repaired.trim().length >= 50 && looksCompleteText(repaired))) return finalizeAssistantText(repaired, false);
-                try {
-                  const rescued = await rescueDirectReply(genAI, fallbackModelName, lastUserText);
-                  if (rescued.trim().length >= 80 || (rescued.trim().length >= 50 && looksCompleteText(rescued))) return finalizeAssistantText(rescued, false);
-                } catch (rescueErr) {
-                }
-              } catch (repairErr) {
-              }
-              return chooseFallbackText(lastUserText);
-            }
-            return finalizeAssistantText(fb.text, fb.truncated);
-          }
-        } catch (fallbackErr) {
-        }
-      }
-      return chooseFallbackText(lastUserText);
+    if (isServiceUnavailableError(err)) {
+      return recoverFromServiceUnavailable(genAI, modelName, systemInstruction, history, lastUserText);
     }
     throw err;
   }
@@ -659,7 +704,7 @@ export async function chat(messages) {
         return rateLimitFallbackText();
       }
       if (isServiceUnavailableError(err)) {
-        return serviceUnavailableFallbackText();
+        return recoverFromServiceUnavailable(genAI, modelName, systemInstruction, history, lastUserText);
       }
       if (isTransientGeminiError(err)) {
         return chooseFallbackText(lastUserText);
@@ -671,34 +716,14 @@ export async function chat(messages) {
     }
     const fallbackModelName = getGeminiFallbackChatModel();
     if (fallbackModelName && fallbackModelName !== modelName) {
-      try {
-        const fb = await tryFallbackModelReply(genAI, fallbackModelName, systemInstruction, history, lastUserText);
-        if (fb.text.trim()) {
-          const fbTrimmed = fb.text.trim();
-          if (fbTrimmed.length >= 140 && (!fb.truncated || looksCompleteText(fbTrimmed))) {
-            return finalizeAssistantText(fbTrimmed, false);
-          }
-          if (fb.truncated && fbTrimmed.length >= 140) {
-            const salvaged = salvageToSentenceBoundary(fbTrimmed);
-            if (salvaged.length >= 120) return finalizeAssistantText(salvaged, false);
-          }
-          if (fb.truncated || fb.text.trim().length < 140) {
-            try {
-              const repaired = await repairFallbackFragment(genAI, fallbackModelName, systemInstruction, history, lastUserText);
-              if (repaired.trim().length >= 80 || (repaired.trim().length >= 50 && looksCompleteText(repaired))) return finalizeAssistantText(repaired, false);
-              try {
-                const rescued = await rescueDirectReply(genAI, fallbackModelName, lastUserText);
-                if (rescued.trim().length >= 80 || (rescued.trim().length >= 50 && looksCompleteText(rescued))) return finalizeAssistantText(rescued, false);
-              } catch (rescueErr) {
-              }
-            } catch (repairErr) {
-            }
-            return chooseFallbackText(lastUserText);
-          }
-          return finalizeAssistantText(fb.text, fb.truncated);
-        }
-      } catch (fallbackErr) {
-      }
+      const fbReply = await attemptFallbackModelChat(
+        genAI,
+        fallbackModelName,
+        systemInstruction,
+        history,
+        lastUserText
+      );
+      if (fbReply) return fbReply;
     }
     return chooseFallbackText(lastUserText);
   }
