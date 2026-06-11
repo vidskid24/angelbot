@@ -3,6 +3,17 @@ import { listPaidUsersWithMessagesOnDate, listUserMessagesOnDate } from '../db/m
 import { generateMemorySummaryWithRetry, formatMessagesForSummarizer } from '../lib/memory-summarize.js';
 import { getPool, isDbEnabled } from '../db/pool.js';
 
+function getMemoryUserDelayMs() {
+  const raw =
+    process.env.OMIBOT_MEMORY_USER_DELAY_MS || process.env.ANGELBOT_MEMORY_USER_DELAY_MS || '3000';
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) && n >= 0 ? n : 3000;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
  * Regenerate memory summaries for paid users with messages on the given day.
  * Merges that day's conversations into the current summary (including user edits).
@@ -19,6 +30,8 @@ export async function regenerateUserMemoriesForDate(calendarDate = getMemoryCale
   let updated = 0;
   let skipped = 0;
   let errors = 0;
+  const userDelayMs = getMemoryUserDelayMs();
+  let summarizeCount = 0;
 
   for (const user of users) {
     try {
@@ -36,6 +49,10 @@ export async function regenerateUserMemoriesForDate(calendarDate = getMemoryCale
       const transcript = formatMessagesForSummarizer(messages);
       const priorSummary = String(user.memory_summary || '');
       const userLabel = user.email || user.user_id;
+      if (summarizeCount > 0 && userDelayMs > 0) {
+        await sleep(userDelayMs);
+      }
+      summarizeCount++;
       const result = await generateMemorySummaryWithRetry({
         priorSummary,
         transcript,

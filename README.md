@@ -91,7 +91,7 @@ Authenticated routes (Bearer app session JWT):
 
 Paid vs free thread and daily message limits are enforced on the server. **Paid memory** (user instructions + auto-generated summary across conversations) is injected into the system prompt for paid users. Configure Thinkific enrollment vars or `OMIBOT_PAID_USER_IDS` for testing.
 
-Set `OMIBOT_CRON_SECRET` and schedule a daily cron (e.g. Render Cron Job) to `POST /internal/jobs/regenerate-memory` with header `x-cron-secret`. Default timezone is `America/Los_Angeles`.
+Set `OMIBOT_CRON_SECRET` and schedule a daily cron (e.g. Render Cron Job) to `POST /internal/jobs/regenerate-memory` with header `x-cron-secret`. Default timezone is `America/Los_Angeles`. Optional `OMIBOT_MEMORY_USER_DELAY_MS` (default `3000`) pauses between users during the job to reduce Gemini burst 503s.
 
 ### Paid tier troubleshooting
 
