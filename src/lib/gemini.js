@@ -802,6 +802,9 @@ function shortLabelGenerationConfig(maxOutputTokens = 256) {
   return config;
 }
 
+const THREAD_TITLE_MAX_ATTEMPTS = 3;
+const THREAD_TITLE_RETRY_DELAYS_MS = [2000, 5000];
+
 /**
  * Generate a short conversation title from the user's first message.
  * @param {string} message
@@ -812,27 +815,43 @@ export async function generateThreadTitleFromMessage(message) {
   const fallback = fallbackThreadTitleFromMessage(text);
   if (!text) return fallback;
 
-  try {
-    const genAI = getGeminiClient();
-    const model = genAI.getGenerativeModel({
-      model: getGeminiFallbackChatModel(),
-      generationConfig: shortLabelGenerationConfig(256),
-    });
-    const prompt =
-      'The user started a new chat with the message below. Write a very short conversation title ' +
-      '(4 words or fewer) that names their main topic or question. Use title case. ' +
-      'No quotes, no trailing punctuation, no prefix like "Title:". Reply with only the title.\n\n' +
-      `User message:\n${text}`;
-    const res = await model.generateContent(prompt);
-    const response = res.response;
-    const finishReason = response.candidates?.[0]?.finishReason;
-    if (isMaxTokensFinish(finishReason)) {
-      return fallback;
+  const genAI = getGeminiClient();
+  const modelName = getGeminiFallbackChatModel();
+  const model = genAI.getGenerativeModel({
+    model: modelName,
+    generationConfig: shortLabelGenerationConfig(256),
+  });
+  const prompt =
+    'The user started a new chat with the message below. Write a very short conversation title ' +
+    '(4 words or fewer) that names their main topic or question. Use title case. ' +
+    'No quotes, no trailing punctuation, no prefix like "Title:". Reply with only the title.\n\n' +
+    `User message:\n${text}`;
+
+  for (let attempt = 0; attempt < THREAD_TITLE_MAX_ATTEMPTS; attempt++) {
+    if (attempt > 0) {
+      await sleep(THREAD_TITLE_RETRY_DELAYS_MS[attempt - 1] ?? 5000);
     }
-    const normalized = normalizeGeneratedThreadTitle(extractText(response));
-    if (normalized && isUsableGeneratedThreadTitle(normalized)) return normalized;
-  } catch (err) {
-    console.error('generateThreadTitleFromMessage error:', err);
+    try {
+      const res = await model.generateContent(prompt);
+      const response = res.response;
+      const finishReason = response.candidates?.[0]?.finishReason;
+      if (isMaxTokensFinish(finishReason)) {
+        return fallback;
+      }
+      const normalized = normalizeGeneratedThreadTitle(extractText(response));
+      if (normalized && isUsableGeneratedThreadTitle(normalized)) return normalized;
+      return fallback;
+    } catch (err) {
+      const canRetry = isTransientGeminiError(err) && attempt < THREAD_TITLE_MAX_ATTEMPTS - 1;
+      if (canRetry) {
+        console.warn(
+          `generateThreadTitleFromMessage transient error (attempt ${attempt + 1}/${THREAD_TITLE_MAX_ATTEMPTS}, model=${modelName}):`,
+          err?.message || err
+        );
+        continue;
+      }
+      console.error('generateThreadTitleFromMessage error:', err);
+    }
   }
   return fallback;
 }
