@@ -7,6 +7,7 @@ import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { embed } from '../lib/gemini.js';
+import { formatRetrievedChunk } from './course-source.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '../..');
@@ -30,7 +31,7 @@ function cosineSimilarity(a, b) {
 /**
  * @param {string} query
  * @param {number} [topK]
- * @returns {Promise<string>} Concatenated top-k chunk texts for system prompt
+ * @returns {Promise<string>} Labeled top-k chunk texts for system prompt
  */
 export async function retrieve(query, topK = DEFAULT_TOP_K) {
   let data;
@@ -57,9 +58,11 @@ export async function retrieve(query, topK = DEFAULT_TOP_K) {
   }
   const withScore = chunks.map((c) => ({
     text: c.text,
+    source: c.source ?? null,
+    sourcePath: c.sourcePath,
     score: cosineSimilarity(c.embedding, queryEmbedding),
   }));
   withScore.sort((a, b) => b.score - a.score);
-  const top = withScore.slice(0, topK).map((c) => c.text);
-  return top.join('\n\n---\n\n');
+  const top = withScore.slice(0, topK).map((c) => formatRetrievedChunk(c)).filter(Boolean);
+  return top.join('\n\n');
 }

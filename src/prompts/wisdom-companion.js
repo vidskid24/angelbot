@@ -191,7 +191,12 @@ export function buildSystemPrompt(styleExcerpts = null, userPreferencesBlock = n
     const toneNote = hasUserContext
       ? 'Use the following for **content and facts** only — do not copy its tone; follow the user preference and memory sections at the end of this prompt.'
       : 'Use it for tone and content.';
-    prompt += `\n\n## MA framework and content (style reference)\nThe following material is MA framework and content. ${toneNote} You may quote directly from this material and offer techniques or practices when applicable. Where the user's question touches on it, include relevant ideas, quotes, or techniques, then invite them to explore or try them.\n\n${styleExcerpts.trim()}`;
+    prompt +=
+      `\n\n## MA framework and content (style reference)\nThe following material is MA framework and content. ${toneNote} ` +
+      'Each excerpt may begin with a **Source** line (Level, Chapter, Session, Track, Video, or Book). When the user asks where to find a meditation, practice, video, or topic in the coursework, name that location in plain language when a Source line supports it. ' +
+      'You may quote directly from this material and offer techniques or practices when applicable. Where the user\'s question touches on it, include relevant ideas, quotes, or techniques, then invite them to explore or try them. ' +
+      'Do not invent a class or session location if no Source line supports it.\n\n' +
+      styleExcerpts.trim();
   }
 
   if (hasUserTone) {

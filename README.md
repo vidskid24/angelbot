@@ -174,3 +174,25 @@ npm run ingest:new
 ```
 
 Files are read from `data/style-guides` or Dropbox if configured.
+
+### Course media filenames (Phase 1 source labels)
+
+Dropbox transcripts and guides can use any of these patterns (`.txt`, `.md`, or `.pdf`):
+
+| Pattern | Example | Omi label |
+|---------|---------|-----------|
+| Level + Chapter + **Track #** + name | `L1-C1-T2-Clear Your Energy.txt` | Level 1, Chapter 1, Track 2 — "Clear Your Energy" |
+| Level + Chapter + **Video** + name | `L1-C1-V-GroundingCord.txt` | Level 1, Chapter 1, Video — "GroundingCord" |
+| Level + Chapter + **Session #** + title | `L1-C1-S4-Living Light Meditation.txt` | Level 1, Chapter 1, Session 4 — "…" |
+| Level + **Session #** + name (no class) | `L2-S2-TFull.txt` | Level 2, Session 2 — "TFull" |
+| **Book** (PDF, no `L#-` prefix) | `ACIMA-final.pdf` | Book — "ACIMA-final" |
+
+- **L#** — Level  
+- **C#** — Chapter within that level  
+- **S#** — Session or chapter  
+- **T#** — Audio track number within a class  
+- **V** — Video track within a class  
+
+On ingest, each chunk stores this metadata. Retrieved excerpts include a **Source:** line so Omi can point users to the right level, class, session, track, or video.
+
+After changing ingest logic or filenames, run **`npm run ingest`** (full re-index). `ingest:new` only adds files not already in the manifest.

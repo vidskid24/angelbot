@@ -1,14 +1,17 @@
 /**
  * Chunk style-guide files and embed them; save to data/embeddings.json.
  * Source can be a local folder (STYLE_GUIDES_PATH) or a Dropbox folder (DROPBOX_ACCESS_TOKEN + DROPBOX_FOLDER_PATH).
+ *
+ * Course session files use: L{level}-C{class}-S{session}-{title}.ext
+ * Example: L1-C1-S4-Living Light Meditation.pdf
  */
 
 import { createRequire } from 'module';
 import { readdir, readFile, mkdir, writeFile } from 'fs/promises';
 import { join, extname, isAbsolute, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { embed } from '../lib/gemini.js';
 import { listFilesInFolder, downloadFileAsText, downloadFileAsBuffer } from '../lib/dropbox.js';
+import { buildEmbeddedChunksForFile } from './ingest-chunks.js';
 
 const require = createRequire(import.meta.url);
 const pdfParse = require('pdf-parse');
@@ -19,7 +22,6 @@ const STYLE_GUIDES_PATH = process.env.STYLE_GUIDES_PATH || 'data/style-guides';
 const DROPBOX_ACCESS_TOKEN = process.env.DROPBOX_ACCESS_TOKEN;
 const DROPBOX_FOLDER_PATH = process.env.DROPBOX_FOLDER_PATH || '';
 const EMBEDDINGS_PATH = join(ROOT, 'data', 'embeddings.json');
-const CHUNK_SIZE = 1600;
 const EXTS = new Set(['.txt', '.md', '.pdf']);
 
 const useDropbox = Boolean(DROPBOX_ACCESS_TOKEN);
@@ -27,7 +29,7 @@ const useDropbox = Boolean(DROPBOX_ACCESS_TOKEN);
 async function extractPdfText(buffer) {
   try {
     const data = await pdfParse(buffer);
-    return (data && data.text) ? String(data.text) : '';
+    return data && data.text ? String(data.text) : '';
   } catch (err) {
     console.error('PDF extract error:', err?.message || err);
     return '';
@@ -49,22 +51,6 @@ async function getFileText(path, ext, source = 'auto') {
   return useDropboxForFile
     ? downloadFileAsText(DROPBOX_ACCESS_TOKEN, path)
     : readFile(path, 'utf-8');
-}
-
-function chunkText(text) {
-  const chunks = [];
-  const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim());
-  let current = '';
-  for (const p of paragraphs) {
-    if (current.length + p.length > CHUNK_SIZE && current.length > 0) {
-      chunks.push(current.trim());
-      current = '';
-    }
-    current += (current ? '\n\n' : '') + p;
-  }
-  if (current.trim()) chunks.push(current.trim());
-  if (chunks.length === 0 && text.trim()) chunks.push(text.trim().slice(0, CHUNK_SIZE * 2));
-  return chunks;
 }
 
 async function listSourceFilesLocal() {
@@ -110,11 +96,7 @@ async function ingestFromLocal() {
     const filePath = join(dir, ent.name);
     const text = await getFileText(filePath, ext, 'local');
     if (!text || !text.trim()) continue;
-    const parts = chunkText(text);
-    for (const part of parts) {
-      const embedding = await embed(part);
-      chunks.push({ text: part, embedding, sourcePath: filePath });
-    }
+    chunks.push(...(await buildEmbeddedChunksForFile(filePath, text)));
   }
   return chunks;
 }
@@ -122,7 +104,6 @@ async function ingestFromLocal() {
 async function ingestFromDropbox() {
   const raw = DROPBOX_FOLDER_PATH.trim();
   let folderPath = raw === '' ? '' : raw.startsWith('/') ? raw : `/${raw}`;
-  // App folder apps: API root is ""; paths like /Apps/AppName are invalid and cause 409. Use "" for app root.
   if (folderPath === '' || /^\/Apps\//i.test(folderPath)) {
     folderPath = '';
   }
@@ -133,11 +114,7 @@ async function ingestFromDropbox() {
     if (!EXTS.has(ext)) continue;
     const text = await getFileText(file.path_display, ext, 'dropbox');
     if (!text || !text.trim()) continue;
-    const parts = chunkText(text);
-    for (const part of parts) {
-      const embedding = await embed(part);
-      chunks.push({ text: part, embedding, sourcePath: file.path_display });
-    }
+    chunks.push(...(await buildEmbeddedChunksForFile(file.path_display, text)));
   }
   return chunks;
 }
@@ -207,11 +184,7 @@ export async function ingestIncremental() {
     const ext = extname(path).toLowerCase();
     const text = await getFileText(path, ext, useDropbox ? 'dropbox' : 'local');
     if (!text || !text.trim()) continue;
-    const parts = chunkText(text);
-    for (const part of parts) {
-      const embedding = await embed(part);
-      chunks.push({ text: part, embedding, sourcePath: path });
-    }
+    chunks.push(...(await buildEmbeddedChunksForFile(path, text)));
     manifest[path] = true;
   }
 
