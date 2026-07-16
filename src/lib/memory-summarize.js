@@ -25,7 +25,7 @@ Rules:
 - Focus on work, MA journey, preferences, ongoing themes, and how to collaborate well.
 - Under Brief history / Recent months, note patterns from the past few months when visible.
 - Do not store passwords, payment details, or clinical diagnoses.
-- Do not store or repeat explicit terms or details about sexual abuse, sexual assault, sexual violation, rape, or similar. If prior summary or new excerpts mention these, rewrite to high-level wording only (e.g. "past trauma", "shame and boundary patterns", "protective parts", "prefers gentle pacing") and keep collaboration-relevant preferences — never the explicit phrasing or graphic detail.
+- Do not store or repeat explicit terms or details about sexual abuse, sexual assault, sexual violation, rape, or similar. If prior summary or new excerpts mention these, rewrite to high-level wording only (e.g. "past trauma") and keep collaboration-relevant preferences — never the explicit phrasing or graphic detail.
 - If the prior summary already contains those explicit terms, replace them with the high-level wording above in the updated document.
 - Keep the full document under 900 words.
 - Use concise prose or short bullets. Third person is fine ("They..." or use their name if known).
@@ -36,8 +36,47 @@ const MEMORY_RETRY_DELAYS_MS = [5000, 15000];
 /** Gemini 2.5 thinking can consume output budget; leave room for the markdown document. */
 const MEMORY_MAX_OUTPUT_TOKENS = 8192;
 
+/**
+ * Phrases aligned with SUMMARIZE_SYSTEM sensitive-trauma rules.
+ * Applied to prior summary + transcript before Gemini (and to model output before save).
+ * Longer phrases first so replacements do not overlap oddly.
+ * @type {Array<{ pattern: RegExp; replacement: string }>}
+ */
+const MEMORY_SENSITIVE_PHRASE_REPLACEMENTS = [
+  { pattern: /sexual\s+abuse/gi, replacement: 'trauma' },
+  { pattern: /sexual\s+assault/gi, replacement: 'trauma' },
+  { pattern: /sexual\s+violation/gi, replacement: 'trauma' },
+  { pattern: /\brape(?:d|s)?\b/gi, replacement: 'trauma' },
+];
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Redact sensitive trauma phrases so Gemini does not reject the request as PROHIBITED_CONTENT.
+ * Does not change live chat — only text sent to / saved from the nightly summarizer.
+ * @param {string} text
+ * @returns {string}
+ */
+export function sanitizeMemoryTextForSummarizer(text) {
+  let out = String(text || '');
+  for (const { pattern, replacement } of MEMORY_SENSITIVE_PHRASE_REPLACEMENTS) {
+    out = out.replace(pattern, replacement);
+  }
+  return out;
+}
+
+/**
+ * @param {{ priorSummary: string; transcript: string; userLabel?: string }} input
+ * @returns {{ priorSummary: string; transcript: string; userLabel?: string }}
+ */
+function sanitizeMemorySummarizeInput(input) {
+  return {
+    ...input,
+    priorSummary: sanitizeMemoryTextForSummarizer(input.priorSummary),
+    transcript: sanitizeMemoryTextForSummarizer(input.transcript),
+  };
 }
 
 /**
@@ -87,6 +126,7 @@ function classifyMemoryApiError(err) {
  * @returns {Promise<{ ok: true; summary: string; attempt: number } | { ok: false; reason: string; error?: unknown }>}
  */
 export async function generateMemorySummaryWithRetry(input) {
+  const safeInput = sanitizeMemorySummarizeInput(input);
   const attempts = [
     { model: getGeminiChatModel(), temperature: 0.4 },
     { model: getGeminiFallbackChatModel(), temperature: 0.35 },
@@ -101,7 +141,7 @@ export async function generateMemorySummaryWithRetry(input) {
   for (let i = 0; i < MEMORY_MAX_ATTEMPTS; i++) {
     if (i > 0) await sleep(MEMORY_RETRY_DELAYS_MS[i - 1] ?? 15000);
     const { model, temperature } = attempts[i] ?? attempts[attempts.length - 1];
-    const userPrompt = buildMemorySummarizePrompt(input, {
+    const userPrompt = buildMemorySummarizePrompt(safeInput, {
       shortenTranscript: sawMaxTokensEmpty && i > 0,
       enforceHeadings: sawMissingHeadings && i > 0,
     });
@@ -113,9 +153,10 @@ export async function generateMemorySummaryWithRetry(input) {
         temperature,
         maxOutputTokens: MEMORY_MAX_OUTPUT_TOKENS,
       });
-      const rejection = getMemorySummaryRejectionReason(text);
+      const sanitized = sanitizeMemoryTextForSummarizer(text);
+      const rejection = getMemorySummaryRejectionReason(sanitized);
       if (!rejection) {
-        return { ok: true, summary: text, attempt: i + 1 };
+        return { ok: true, summary: sanitized, attempt: i + 1 };
       }
       lastReason = rejection;
       if (rejection === 'missing_headings') sawMissingHeadings = true;
@@ -132,6 +173,8 @@ export async function generateMemorySummaryWithRetry(input) {
           `(attempt ${i + 1}/${MEMORY_MAX_ATTEMPTS}, model=${model}):`,
         err?.message || err
       );
+      // Same sanitized payload will keep failing; do not burn remaining attempts.
+      if (lastReason === 'safety_blocked') break;
     }
   }
 
