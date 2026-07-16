@@ -149,6 +149,49 @@ function extractText(response) {
 }
 
 /**
+ * Diagnostic fields when Gemini returns no usable text (safety, max tokens, empty parts).
+ * @param {*} response
+ * @returns {{
+ *   finishReason: string | null;
+ *   blockReason: string | null;
+ *   candidateCount: number;
+ *   partsCount: number;
+ * }}
+ */
+function describeEmptyGeminiResponse(response) {
+  const candidates = Array.isArray(response?.candidates) ? response.candidates : [];
+  const candidate = candidates[0];
+  const parts = candidate?.content?.parts;
+  return {
+    finishReason: candidate?.finishReason != null ? String(candidate.finishReason) : null,
+    blockReason:
+      response?.promptFeedback?.blockReason != null
+        ? String(response.promptFeedback.blockReason)
+        : null,
+    candidateCount: candidates.length,
+    partsCount: Array.isArray(parts) ? parts.length : 0,
+  };
+}
+
+/**
+ * @param {*} response
+ * @returns {Error}
+ */
+function emptyGeminiResponseError(response) {
+  const d = describeEmptyGeminiResponse(response);
+  const bits = [];
+  if (d.finishReason) bits.push(`finishReason=${d.finishReason}`);
+  if (d.blockReason) bits.push(`blockReason=${d.blockReason}`);
+  bits.push(`candidates=${d.candidateCount}`);
+  bits.push(`parts=${d.partsCount}`);
+  const err = new Error(`Empty Gemini response (${bits.join(', ')})`);
+  err.code = 'empty_gemini_response';
+  err.finishReason = d.finishReason;
+  err.blockReason = d.blockReason;
+  return err;
+}
+
+/**
  * Gemini generateContent without chat fallbacks. Throws on API or empty response.
  * Used for memory cron and other server-side jobs that must not save user-facing errors.
  * @param {{
@@ -175,7 +218,7 @@ export async function generateTextStrict({
   });
   const result = await model.generateContent(userPrompt);
   const text = String(extractText(result.response) || '').trim();
-  if (!text) throw new Error('Empty Gemini response');
+  if (!text) throw emptyGeminiResponseError(result.response);
   return text;
 }
 

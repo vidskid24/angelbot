@@ -31,6 +31,8 @@ Rules:
 
 const MEMORY_MAX_ATTEMPTS = 3;
 const MEMORY_RETRY_DELAYS_MS = [5000, 15000];
+/** Gemini 2.5 thinking can consume output budget; leave room for the markdown document. */
+const MEMORY_MAX_OUTPUT_TOKENS = 8192;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -38,15 +40,44 @@ function sleep(ms) {
 
 /**
  * @param {{ priorSummary: string; transcript: string; userLabel?: string }} input
+ * @param {{ shortenTranscript?: boolean; enforceHeadings?: boolean }} [opts]
  * @returns {string}
  */
-function buildMemorySummarizePrompt({ priorSummary, transcript, userLabel = 'this user' }) {
+function buildMemorySummarizePrompt(
+  { priorSummary, transcript, userLabel = 'this user' },
+  opts = {}
+) {
+  let body = String(transcript || '').trim() || '(no new messages)';
+  if (opts.shortenTranscript && body.length > 3500) {
+    body = `${body.slice(0, 3500)}\n\n[...transcript truncated for retry...]`;
+  }
+  const closing = opts.enforceHeadings
+    ? 'Produce the updated memory document. You MUST include these exact headings: ## Work context, ## Personal context, ## How to work with me, ## Top of mind, ## Brief history.'
+    : 'Produce the updated memory document.';
   return (
     `User: ${userLabel}\n\n` +
     `Prior memory summary:\n${priorSummary.trim() || '(none yet)'}\n\n` +
-    `New conversation excerpts (oldest first):\n${transcript.trim() || '(no new messages)'}\n\n` +
-    'Produce the updated memory document.'
+    `New conversation excerpts (oldest first):\n${body}\n\n` +
+    closing
   );
+}
+
+/**
+ * Classify empty/blocked Gemini failures for clearer cron logs and metrics.
+ * @param {unknown} err
+ * @returns {string}
+ */
+function classifyMemoryApiError(err) {
+  const msg = String(err?.message || err || '');
+  const finish = String(err?.finishReason || '');
+  const block = String(err?.blockReason || '');
+  const combined = `${finish} ${block} ${msg}`.toUpperCase();
+  if (combined.includes('SAFETY') || combined.includes('BLOCK')) return 'safety_blocked';
+  if (combined.includes('MAX_TOKENS')) return 'max_tokens_empty';
+  if (err?.code === 'empty_gemini_response' || msg.includes('Empty Gemini response')) {
+    return 'empty_response';
+  }
+  return 'api_error';
 }
 
 /**
@@ -54,7 +85,6 @@ function buildMemorySummarizePrompt({ priorSummary, transcript, userLabel = 'thi
  * @returns {Promise<{ ok: true; summary: string; attempt: number } | { ok: false; reason: string; error?: unknown }>}
  */
 export async function generateMemorySummaryWithRetry(input) {
-  const userPrompt = buildMemorySummarizePrompt(input);
   const attempts = [
     { model: getGeminiChatModel(), temperature: 0.4 },
     { model: getGeminiFallbackChatModel(), temperature: 0.35 },
@@ -63,29 +93,38 @@ export async function generateMemorySummaryWithRetry(input) {
 
   let lastReason = 'unknown';
   let lastError = null;
+  let sawMaxTokensEmpty = false;
+  let sawMissingHeadings = false;
 
   for (let i = 0; i < MEMORY_MAX_ATTEMPTS; i++) {
     if (i > 0) await sleep(MEMORY_RETRY_DELAYS_MS[i - 1] ?? 15000);
     const { model, temperature } = attempts[i] ?? attempts[attempts.length - 1];
+    const userPrompt = buildMemorySummarizePrompt(input, {
+      shortenTranscript: sawMaxTokensEmpty && i > 0,
+      enforceHeadings: sawMissingHeadings && i > 0,
+    });
     try {
       const text = await generateTextStrict({
         model,
         systemInstruction: SUMMARIZE_SYSTEM,
         userPrompt,
         temperature,
+        maxOutputTokens: MEMORY_MAX_OUTPUT_TOKENS,
       });
       const rejection = getMemorySummaryRejectionReason(text);
       if (!rejection) {
         return { ok: true, summary: text, attempt: i + 1 };
       }
       lastReason = rejection;
+      if (rejection === 'missing_headings') sawMissingHeadings = true;
       console.warn(
         `Memory summary rejected for ${input.userLabel || 'user'} ` +
           `(attempt ${i + 1}/${MEMORY_MAX_ATTEMPTS}, model=${model}): ${rejection}`
       );
     } catch (err) {
       lastError = err;
-      lastReason = 'api_error';
+      lastReason = classifyMemoryApiError(err);
+      if (lastReason === 'max_tokens_empty') sawMaxTokensEmpty = true;
       console.warn(
         `Memory summary API error for ${input.userLabel || 'user'} ` +
           `(attempt ${i + 1}/${MEMORY_MAX_ATTEMPTS}, model=${model}):`,
