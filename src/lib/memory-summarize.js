@@ -25,6 +25,8 @@ Rules:
 - Focus on work, MA journey, preferences, ongoing themes, and how to collaborate well.
 - Under Brief history / Recent months, note patterns from the past few months when visible.
 - Do not store passwords, payment details, or clinical diagnoses.
+- Do not store or repeat explicit terms or details about sexual abuse, sexual assault, sexual violation, rape, or similar. If prior summary or new excerpts mention these, rewrite to high-level wording only (e.g. "past trauma", "shame and boundary patterns", "protective parts", "prefers gentle pacing") and keep collaboration-relevant preferences — never the explicit phrasing or graphic detail.
+- If the prior summary already contains those explicit terms, replace them with the high-level wording above in the updated document.
 - Keep the full document under 900 words.
 - Use concise prose or short bullets. Third person is fine ("They..." or use their name if known).
 - Output ONLY the markdown document, no preamble.`;
