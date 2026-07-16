@@ -172,31 +172,50 @@ Your reply is shown in a web chat page. Emphasize 2 to 5 key terms per response 
   someone who can support them directly.
 
 ## Grounding
-Base every response only on the text above and the style reference (if present). If the user's question goes beyond what is provided, acknowledge that;`;
+Base every response only on the text above and the source material (if present). If the user's question goes beyond what is provided, acknowledge that;`;
 
 /**
  * Builds the full system message, optionally appending user prefs and RAG style excerpts.
  * @param {string} [styleExcerpts] - Optional text from style-guide retrieval to append.
  * @param {string} [userPreferencesBlock] - Optional per-user tone and experience instructions.
  * @param {string} [userMemoryBlock] - Optional paid-tier cross-conversation memory.
+ * @param {{ quoteMode?: boolean }} [options]
  * @returns {string}
  */
-export function buildSystemPrompt(styleExcerpts = null, userPreferencesBlock = null, userMemoryBlock = null) {
+export function buildSystemPrompt(
+  styleExcerpts = null,
+  userPreferencesBlock = null,
+  userMemoryBlock = null,
+  options = {}
+) {
   let prompt = ALCHEMY_SCRIBE_SYSTEM_PROMPT;
   const hasUserTone = Boolean(userPreferencesBlock && userPreferencesBlock.trim());
   const hasUserMemory = Boolean(userMemoryBlock && userMemoryBlock.trim());
   const hasUserContext = hasUserTone || hasUserMemory;
+  const quoteMode = Boolean(options.quoteMode);
 
   if (styleExcerpts && styleExcerpts.trim()) {
     const toneNote = hasUserContext
       ? 'Use the following for **content and facts** only — do not copy its tone; follow the user preference and memory sections at the end of this prompt.'
       : 'Use it for tone and content.';
     prompt +=
-      `\n\n## MA framework and content (style reference)\nThe following material is MA framework and content. ${toneNote} ` +
+      `\n\n## MA framework and content (source material)\nThe following excerpts are citable Mastering Alchemy source material. ${toneNote} ` +
       'Each excerpt may begin with a **Source** line (Level, Chapter, Session, Track, Video, or Book). When the user asks where to find a meditation, practice, video, or topic in the coursework, name that location in plain language when a Source line supports it. ' +
-      'You may quote directly from this material and offer techniques or practices when applicable. Where the user\'s question touches on it, include relevant ideas, quotes, or techniques, then invite them to explore or try them. ' +
-      'Do not invent a class or session location if no Source line supports it.\n\n' +
+      'You may and should quote directly from this material when relevant — including longer multi-sentence passages when the user asks for them. Offer techniques or practices when applicable. Where the user\'s question touches on it, include relevant ideas, quotes, or techniques, then invite them to explore or try them. ' +
+      'Do not invent a class or session location if no Source line supports it. ' +
+      'Do not refuse quote requests by saying you are only a synthesizing companion or not a searchable library — when source material is present, use it.\n\n' +
       styleExcerpts.trim();
+
+    if (quoteMode) {
+      prompt +=
+        '\n\n## Direct quotes (required for this turn)\n' +
+        'The user asked for quotes, passages, or exact wording from the coursework. ' +
+        'Quote **verbatim** from the source material above using quotation marks. ' +
+        'Prefer continuous multi-sentence passages when available. Cite the Source line for each quote when present. ' +
+        'Do not paraphrase as a substitute for a requested quote. ' +
+        'Do not invent wording that is not in the excerpts. ' +
+        'If the excerpts are too short for the requested length or count, quote what is available and briefly say that more of the passage is not in the retrieved excerpts.';
+    }
   }
 
   if (hasUserTone) {
