@@ -197,7 +197,17 @@ export async function fetchThinkificEnrollments(userId, email) {
       const res = await fetch(url.toString(), { headers });
       if (!res.ok) {
         if (page === 1) {
-          console.warn('Thinkific user enrollments API:', res.status, await res.text().catch(() => ''));
+          const body = await res.text().catch(() => '');
+          // 404 after an empty /enrollments list is common for free users with no courses.
+          if (res.status !== 404) {
+            console.warn(
+              'Thinkific user enrollments API:',
+              res.status,
+              `userId=${thinkificUserId}`,
+              normalizedEmail ? `email=${normalizedEmail}` : '',
+              body
+            );
+          }
         }
         break;
       }
