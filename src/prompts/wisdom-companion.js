@@ -179,20 +179,17 @@ Base every response only on the text above and the source material (if present).
  * @param {string} [styleExcerpts] - Optional text from style-guide retrieval to append.
  * @param {string} [userPreferencesBlock] - Optional per-user tone and experience instructions.
  * @param {string} [userMemoryBlock] - Optional paid-tier cross-conversation memory.
- * @param {{ quoteMode?: boolean }} [options]
  * @returns {string}
  */
 export function buildSystemPrompt(
   styleExcerpts = null,
   userPreferencesBlock = null,
-  userMemoryBlock = null,
-  options = {}
+  userMemoryBlock = null
 ) {
   let prompt = ALCHEMY_SCRIBE_SYSTEM_PROMPT;
   const hasUserTone = Boolean(userPreferencesBlock && userPreferencesBlock.trim());
   const hasUserMemory = Boolean(userMemoryBlock && userMemoryBlock.trim());
   const hasUserContext = hasUserTone || hasUserMemory;
-  const quoteMode = Boolean(options.quoteMode);
 
   if (styleExcerpts && styleExcerpts.trim()) {
     const toneNote = hasUserContext
@@ -201,21 +198,16 @@ export function buildSystemPrompt(
     prompt +=
       `\n\n## MA framework and content (source material)\nThe following excerpts are citable Mastering Alchemy source material. ${toneNote} ` +
       'Each excerpt may begin with a **Source** line (Level, Chapter, Session, Track, Video, or Book). When the user asks where to find a meditation, practice, video, or topic in the coursework, name that location in plain language when a Source line supports it. ' +
-      'You may and should quote directly from this material when relevant — including longer multi-sentence passages when the user asks for them. Offer techniques or practices when applicable. Where the user\'s question touches on it, include relevant ideas, quotes, or techniques, then invite them to explore or try them. ' +
+      'Use this source material precisely. When summarizing, stay close to the wording and meaning of the excerpts; do not add claims, locations, or terms that are not supported by the source material. ' +
+      'You may and should quote directly from this material when relevant — including longer multi-sentence passages when the user asks for them. Any text inside quotation marks must be copied **verbatim** as one continuous span from the source material. ' +
+      'Preserve the source exactly as written or transcribed, including its grammar, repetition, filler words, and transcription errors. Do not polish, clean up, correct, summarize, combine, complete, or paraphrase quoted wording. ' +
+      'Do not join sentences or phrases from different places into one quote. You may omit timestamps and Source lines from inside quotation marks, but do not alter the words between them. ' +
+      'Cite the Source line separately for each quote when present. Before responding with any quotation, confirm that every word inside quotation marks appears in the same order in one source excerpt. ' +
+      'Do not use quotation marks around paraphrases. If the excerpts are too short for the requested quote length or count, quote what is available and briefly say that more of the passage is not in the retrieved excerpts. ' +
+      'Offer techniques or practices when applicable. Where the user\'s question touches on it, include relevant ideas, quotes, or techniques, then invite them to explore or try them. ' +
       'Do not invent a class or session location if no Source line supports it. ' +
       'Do not refuse quote requests by saying you are only a synthesizing companion or not a searchable library — when source material is present, use it.\n\n' +
       styleExcerpts.trim();
-
-    if (quoteMode) {
-      prompt +=
-        '\n\n## Direct quotes (required for this turn)\n' +
-        'The user asked for quotes, passages, or exact wording from the coursework. ' +
-        'Quote **verbatim** from the source material above using quotation marks. ' +
-        'Prefer continuous multi-sentence passages when available. Cite the Source line for each quote when present. ' +
-        'Do not paraphrase as a substitute for a requested quote. ' +
-        'Do not invent wording that is not in the excerpts. ' +
-        'If the excerpts are too short for the requested length or count, quote what is available and briefly say that more of the passage is not in the retrieved excerpts.';
-    }
   }
 
   if (hasUserTone) {

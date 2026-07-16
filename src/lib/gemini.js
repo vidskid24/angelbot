@@ -693,7 +693,7 @@ export async function chat(messages) {
     ...(systemInstruction ? { systemInstruction } : {}),
     generationConfig: {
       maxOutputTokens: 4096,
-      temperature: 0.8,
+      temperature: 0.7,
     },
   });
 

@@ -6,9 +6,7 @@ import { buildSystemPrompt } from '../prompts/wisdom-companion.js';
 import { chat } from '../lib/gemini.js';
 
 /** Default char budget for retrieved course excerpts (whole chunks preferred). */
-const DEFAULT_STYLE_LIMIT = 8000;
-/** Larger budget when the user asks for direct quotes / verbatim passages. */
-const QUOTE_STYLE_LIMIT = 12000;
+const DEFAULT_STYLE_LIMIT = 12000;
 
 /**
  * Cap excerpts without cutting mid-chunk when possible (chunks start with --- Source:).
@@ -39,7 +37,6 @@ export function capStyleExcerpts(excerpts, limit) {
  * @param {string} [styleExcerpts] - Optional RAG style excerpts to inject into system prompt
  * @param {string} [userPreferencesBlock] - Optional per-user preference instructions
  * @param {string} [userMemoryBlock] - Optional paid-tier memory context
- * @param {{ quoteMode?: boolean }} [options]
  * @returns {Promise<string>}
  */
 export async function getWisdomReply(
@@ -47,15 +44,12 @@ export async function getWisdomReply(
   history = [],
   styleExcerpts = null,
   userPreferencesBlock = null,
-  userMemoryBlock = null,
-  options = {}
+  userMemoryBlock = null
 ) {
-  const quoteMode = Boolean(options.quoteMode);
-  const styleLimit = quoteMode ? QUOTE_STYLE_LIMIT : DEFAULT_STYLE_LIMIT;
   const historyTurnsLimit = 8;
   const perTurnLimit = 1200;
 
-  const styleExcerptsCapped = capStyleExcerpts(styleExcerpts, styleLimit);
+  const styleExcerptsCapped = capStyleExcerpts(styleExcerpts, DEFAULT_STYLE_LIMIT);
   let historyCapped = Array.isArray(history) ? history.slice(-historyTurnsLimit * 2) : [];
   historyCapped = historyCapped.map((t) => ({
     role: t.role,
@@ -64,8 +58,7 @@ export async function getWisdomReply(
   const systemContent = buildSystemPrompt(
     styleExcerptsCapped,
     userPreferencesBlock,
-    userMemoryBlock,
-    { quoteMode }
+    userMemoryBlock
   );
 
   const messages = [{ role: 'system', content: systemContent }];
