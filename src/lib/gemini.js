@@ -26,6 +26,7 @@ const EMBED_CACHE_TTL_MS = Math.max(0, parseInt(process.env.GEMINI_EMBED_CACHE_T
 const EMBED_CACHE_MAX_ENTRIES = Math.max(1, parseInt(process.env.GEMINI_EMBED_CACHE_MAX_ENTRIES || '500', 10) || 500);
 const EMBED_METRICS_LOG = String(process.env.GEMINI_EMBED_METRICS_LOG || '').toLowerCase() === 'true';
 const EMBED_METRICS_LOG_INTERVAL_MS = Math.max(5000, parseInt(process.env.GEMINI_EMBED_METRICS_LOG_INTERVAL_MS || '30000', 10) || 30000);
+const CHAT_TEMPERATURE = 0.5;
 let _embedLastMetricsLogAt = 0;
 
 export function getGeminiClient() {
@@ -508,7 +509,7 @@ async function tryFallbackModelReply(genAI, modelName, systemInstruction, histor
     ...(systemInstruction ? { systemInstruction } : {}),
     generationConfig: {
       maxOutputTokens: 900,
-      temperature: 0.7,
+      temperature: CHAT_TEMPERATURE,
     },
   });
   const chatSession = model.startChat({ history });
@@ -552,7 +553,12 @@ async function attemptFallbackModelChat(genAI, fallbackModelName, systemInstruct
           return finalizeAssistantText(repaired, false);
         }
         try {
-          const rescued = await rescueDirectReply(genAI, fallbackModelName, userText);
+          const rescued = await rescueDirectReply(
+            genAI,
+            fallbackModelName,
+            systemInstruction,
+            userText
+          );
           if (
             rescued.trim().length >= 80 ||
             (rescued.trim().length >= 50 && looksCompleteText(rescued))
@@ -613,7 +619,7 @@ async function repairFallbackFragment(genAI, modelName, systemInstruction, histo
     ...(systemInstruction ? { systemInstruction } : {}),
     generationConfig: {
       maxOutputTokens: 300,
-      temperature: 0.3,
+      temperature: CHAT_TEMPERATURE,
     },
   });
   const chatSession = model.startChat({ history });
@@ -630,15 +636,17 @@ async function repairFallbackFragment(genAI, modelName, systemInstruction, histo
  * a complete short response when full-context paths keep truncating.
  * @param {GoogleGenerativeAI} genAI
  * @param {string} modelName
+ * @param {string | undefined} systemInstruction
  * @param {string} userText
  * @returns {Promise<string>}
  */
-async function rescueDirectReply(genAI, modelName, userText) {
+async function rescueDirectReply(genAI, modelName, systemInstruction, userText) {
   const model = genAI.getGenerativeModel({
     model: modelName,
+    ...(systemInstruction ? { systemInstruction } : {}),
     generationConfig: {
       maxOutputTokens: 260,
-      temperature: 0.35,
+      temperature: CHAT_TEMPERATURE,
     },
   });
   const prompt =
@@ -654,18 +662,26 @@ async function rescueDirectReply(genAI, modelName, userText) {
  * Asks the model for a continuation only (no repetition of the partial body).
  * @param {GoogleGenerativeAI} genAI
  * @param {string} modelName
+ * @param {string | undefined} systemInstruction
  * @param {string} userText
  * @param {string} partialAssistantText
  * @returns {Promise<string>}
  */
-async function completeTruncatedContinuation(genAI, modelName, userText, partialAssistantText) {
+async function completeTruncatedContinuation(
+  genAI,
+  modelName,
+  systemInstruction,
+  userText,
+  partialAssistantText
+) {
   const partial = String(partialAssistantText || '').trim();
   const tail = partial.length > 2800 ? partial.slice(-2800) : partial;
   const model = genAI.getGenerativeModel({
     model: modelName,
+    ...(systemInstruction ? { systemInstruction } : {}),
     generationConfig: {
       maxOutputTokens: 600,
-      temperature: 0.35,
+      temperature: CHAT_TEMPERATURE,
     },
   });
   const prompt =
@@ -693,7 +709,7 @@ export async function chat(messages) {
     ...(systemInstruction ? { systemInstruction } : {}),
     generationConfig: {
       maxOutputTokens: 4096,
-      temperature: 0.7,
+      temperature: CHAT_TEMPERATURE,
     },
   });
 
@@ -720,7 +736,13 @@ export async function chat(messages) {
     const partial = text.trim();
     const completionModel = getGeminiFallbackChatModel() || modelName;
     try {
-      const cont = await completeTruncatedContinuation(genAI, completionModel, lastUserText, partial);
+      const cont = await completeTruncatedContinuation(
+        genAI,
+        completionModel,
+        systemInstruction,
+        lastUserText,
+        partial
+      );
       if (cont.length >= 25) {
         const merged = `${partial}\n\n${cont}`.trim();
         return finalizeAssistantText(merged, false);
@@ -736,7 +758,7 @@ export async function chat(messages) {
       ...(systemInstruction ? { systemInstruction } : {}),
       generationConfig: {
         maxOutputTokens: 320,
-        temperature: 0.3,
+        temperature: CHAT_TEMPERATURE,
       },
     });
     let retryText = '';
