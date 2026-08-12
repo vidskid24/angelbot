@@ -16,6 +16,13 @@ Duplication: commit short SHAs already listed in this file are skipped.
 
 ------------------------------------------------------------------------------
 
+[2026-08-12] Ship course catalog, Gemini 3.5 caching, and free-plan limit of 8.
+  - What changed:
+  - 13f7143 Ship course catalog, Gemini 3.5 caching, and free-plan limit of 8.
+      Add full course-catalog mapping and access-aware RAG links; migrate chat to gemini-3.5 with thought signatures, in-memory embeddings preload, and explicit system-prompt context cache; lower free daily messages to 8.
+  - Why / notes: Auto-logged from git (commit subjects/bodies).
+  - Related files or areas: (see commits)
+
 [2026-08-04] Course catalog - transcript removals
   - What changed: Removed the following transcripts from the course catalog because of
     references to The Architect or Robert Edward Grant:
