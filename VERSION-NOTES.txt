@@ -1,0 +1,44 @@
+AngelBot - Personal version / change notes
+==========================================
+For your own tracking only. Not an official changelog.
+
+How to use
+----------
+- Hand-write entries anytime (newest first, under the separator below).
+- Or enable auto-log on push (once per clone):  npm run notes:hooks
+  Then each git push prepends date + commit subjects for the commits being pushed.
+- Manual/sync without a push:  npm run notes:log
+  (uses commits not yet on your upstream branch)
+
+Auto-logged text comes from git commit messages. Edit any entry afterward.
+
+Duplication: commit short SHAs already listed in this file are skipped.
+
+------------------------------------------------------------------------------
+
+[2026-08-04] Course catalog - transcript removals
+  - What changed: Removed the following transcripts from the course catalog because of
+    references to The Architect or Robert Edward Grant:
+      - Mastery Live 7
+      - Chapter 2 - S2 - The Standing Wave of Reality
+      - Chapter 3 - S1 - The Living Field
+      - Chapter 4 - S1 - Out of the Mush
+      - 2025 Conference - Day 2 PM2
+  - Why / notes: Exclude content that names The Architect / Robert Edward Grant from
+    catalog (and related exposure) while preserving the rest of the catalog.
+  - Related files or areas: data/course-catalog.json (and any linked session/source files)
+
+[2026-08-04] Push - 3 commits
+  - What changed:
+  - d6efb20 Strengthen MA grounding rules and align chat temperature to reduce outside-knowledge leakage.
+  - 8c64130 Remove always-on Suggested Tools glossary from Omi prompt.
+      Let tool and concept answers come from retrieved course source material instead of the static starter list.
+  - 87400a7 Require always-on verbatim source precision for quotes.
+      Remove quoteMode branching, keep a larger RAG budget for all turns, and lower main chat temperature to 0.7.
+  - Why / notes: Auto-logged from git (commit subjects/bodies). Sample run when enabling auto-log.
+  - Related files or areas: (see commits)
+
+[2026-08-04] Created this notes file + auto-log on push
+  - What changed: Added VERSION-NOTES.txt and scripts to auto-prepend notes from git pushes.
+  - Why / notes: Personal place to track history; auto-log fills date + commit subjects.
+  - Related files or areas: VERSION-NOTES.txt, scripts/append-version-notes.js, .githooks/pre-push

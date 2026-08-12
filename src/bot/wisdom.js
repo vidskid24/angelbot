@@ -2,7 +2,10 @@
  * Builds prompt, optional RAG context, and calls LLM for wisdom replies.
  */
 
-import { buildSystemPrompt } from '../prompts/wisdom-companion.js';
+import {
+  getStaticSystemPrompt,
+  buildDynamicContextBlock,
+} from '../prompts/wisdom-companion.js';
 import { chat } from '../lib/gemini.js';
 
 /** Default char budget for retrieved course excerpts (whole chunks preferred). */
@@ -31,13 +34,30 @@ export function capStyleExcerpts(excerpts, limit) {
 }
 
 /**
+ * Attach per-turn RAG / prefs / memory to the user message so the system prompt
+ * stays stable for Gemini context caching. Not persisted to thread history.
+ * @param {string} userMessage
+ * @param {string} dynamicContext
+ * @returns {string}
+ */
+function attachDynamicContextToUserMessage(userMessage, dynamicContext) {
+  const dynamic = String(dynamicContext || '').trim();
+  const user = String(userMessage || '');
+  if (!dynamic) return user;
+  return (
+    `[Context for this reply — not written by the user]\n${dynamic}\n\n` +
+    `[User message]\n${user}`
+  );
+}
+
+/**
  * Get a wisdom reply from the LLM.
  * @param {string} userMessage - Current user message
- * @param {Array<{ role: 'user' | 'assistant'; content: string }>} [history] - Prior turns (oldest first)
+ * @param {Array<{ role: 'user' | 'assistant'; content: string; thoughtSignature?: string | null }>} [history] - Prior turns (oldest first)
  * @param {string} [styleExcerpts] - Optional RAG style excerpts to inject into system prompt
  * @param {string} [userPreferencesBlock] - Optional per-user preference instructions
  * @param {string} [userMemoryBlock] - Optional paid-tier memory context
- * @returns {Promise<string>}
+ * @returns {Promise<{ text: string; thoughtSignature: string | null }>}
  */
 export async function getWisdomReply(
   userMessage,
@@ -54,19 +74,30 @@ export async function getWisdomReply(
   historyCapped = historyCapped.map((t) => ({
     role: t.role,
     content: String(t.content || '').slice(0, perTurnLimit),
+    thoughtSignature: t.thoughtSignature != null ? String(t.thoughtSignature) : null,
   }));
-  const systemContent = buildSystemPrompt(
+
+  // Keep system instruction stable (cacheable). Variable RAG/prefs/memory ride on the user turn.
+  const staticSystem = getStaticSystemPrompt();
+  const dynamicContext = buildDynamicContextBlock(
     styleExcerptsCapped,
     userPreferencesBlock,
     userMemoryBlock
   );
 
-  const messages = [{ role: 'system', content: systemContent }];
+  const messages = [{ role: 'system', content: staticSystem }];
 
   for (const turn of historyCapped) {
-    messages.push({ role: turn.role, content: turn.content });
+    messages.push({
+      role: turn.role,
+      content: turn.content,
+      thoughtSignature: turn.thoughtSignature,
+    });
   }
-  messages.push({ role: 'user', content: userMessage });
+  messages.push({
+    role: 'user',
+    content: attachDynamicContextToUserMessage(userMessage, dynamicContext),
+  });
 
   return chat(messages);
 }

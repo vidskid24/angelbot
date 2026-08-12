@@ -122,7 +122,8 @@ export async function deleteThread(threadId, userId) {
  */
 async function fetchAllThreadMessages(threadId) {
   const { rows } = await getPool().query(
-    `SELECT role, content FROM thread_messages
+    `SELECT role, content, thought_signature
+     FROM thread_messages
      WHERE thread_id = $1
      ORDER BY created_at ASC, id ASC`,
     [threadId]
@@ -130,6 +131,7 @@ async function fetchAllThreadMessages(threadId) {
   return rows.map((r) => ({
     role: r.role === 'assistant' ? 'assistant' : 'user',
     content: r.content,
+    thoughtSignature: r.thought_signature != null ? String(r.thought_signature) : null,
   }));
 }
 
@@ -139,13 +141,15 @@ async function fetchAllThreadMessages(threadId) {
  * @returns {Promise<Array<{ role: 'user' | 'assistant'; content: string }>>}
  */
 export async function getAllThreadMessages(threadId) {
-  return fetchAllThreadMessages(threadId);
+  const list = await fetchAllThreadMessages(threadId);
+  return list.map(({ role, content }) => ({ role, content }));
 }
 
 /**
  * Recent turns only — for LLM context (MAX_HISTORY_TURNS, default 10).
+ * Includes thought signatures for Gemini 3.x multi-turn continuity.
  * @param {string} threadId
- * @returns {Promise<Array<{ role: 'user' | 'assistant'; content: string }>>}
+ * @returns {Promise<Array<{ role: 'user' | 'assistant'; content: string; thoughtSignature?: string | null }>>}
  */
 export async function getThreadMessages(threadId) {
   const list = await fetchAllThreadMessages(threadId);
@@ -160,14 +164,15 @@ export async function getThreadMessages(threadId) {
  * @param {string} threadId
  * @param {string} userContent
  * @param {string} assistantContent
+ * @param {string | null} [thoughtSignature]
  */
-export async function appendThreadTurn(threadId, userContent, assistantContent) {
+export async function appendThreadTurn(threadId, userContent, assistantContent, thoughtSignature = null) {
   const pool = getPool();
   await pool.query(
-    `INSERT INTO thread_messages (thread_id, role, content) VALUES
-     ($1, 'user', $2),
-     ($1, 'assistant', $3)`,
-    [threadId, userContent, assistantContent]
+    `INSERT INTO thread_messages (thread_id, role, content, thought_signature) VALUES
+     ($1, 'user', $2, NULL),
+     ($1, 'assistant', $3, $4)`,
+    [threadId, userContent, assistantContent, thoughtSignature]
   );
   await touchThread(threadId);
 }

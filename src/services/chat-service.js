@@ -10,6 +10,7 @@ import { generateThreadTitleFromMessage } from '../lib/gemini.js';
 import { buildUserPreferencesPromptBlock } from '../lib/user-preferences.js';
 import { buildUserMemoryPromptBlock } from '../lib/user-memory.js';
 import { retrieve } from '../rag/retrieve.js';
+import { resolveCourseLinkVariant } from '../lib/course-access.js';
 
 const DEFAULT_RETRIEVE_TOP_K = 8;
 
@@ -31,38 +32,48 @@ function buildRetrievalQuery(message, history) {
 }
 
 /**
- * @param {{ userId: string; sessionKey: string; message: string; threadId?: string; useDb?: boolean }} params
+ * @param {{ userId: string; sessionKey: string; message: string; threadId?: string; useDb?: boolean; email?: string }} params
  * @returns {Promise<
  *   | { ok: false; code: 'error'; text: string }
  *   | { ok: true; kind: 'reply'; assistantReply: string; threadTitle?: string | null }
  * >}
  */
-export async function processWisdomMessage({ userId, sessionKey, message, threadId, useDb = false }) {
+export async function processWisdomMessage({ userId, sessionKey, message, threadId, useDb = false, email }) {
   const history =
     useDb && threadId ? await threadDb.getThreadMessages(threadId) : getHistory(sessionKey);
 
   try {
     const retrievalQuery = buildRetrievalQuery(message, history);
-    const styleExcerpts = await retrieve(retrievalQuery, DEFAULT_RETRIEVE_TOP_K);
     let userPreferencesBlock = null;
     let userMemoryBlock = null;
+    /** @type {'free' | 'paid'} */
+    let tier = 'free';
     if (useDb) {
       const settings = await users.getUserSettings(userId);
+      tier = settings.tier === 'paid' ? 'paid' : 'free';
       userPreferencesBlock = buildUserPreferencesPromptBlock(settings);
-      if (settings.tier === 'paid') {
+      if (tier === 'paid') {
         userMemoryBlock = buildUserMemoryPromptBlock(settings);
       }
     }
-    const reply = await getWisdomReply(
+    const sourceDetail = tier === 'paid' ? 'full' : 'course';
+    const linkVariant = tier === 'paid' ? await resolveCourseLinkVariant(userId, email) : null;
+    const styleExcerpts = await retrieve(retrievalQuery, DEFAULT_RETRIEVE_TOP_K, {
+      linkVariant,
+      sourceDetail,
+    });
+    const result = await getWisdomReply(
       message,
       history,
       styleExcerpts || null,
       userPreferencesBlock,
       userMemoryBlock
     );
+    const reply = result.text;
+    const thoughtSignature = result.thoughtSignature;
     let threadTitle = null;
     if (useDb && threadId) {
-      await threadDb.appendThreadTurn(threadId, message, reply);
+      await threadDb.appendThreadTurn(threadId, message, reply, thoughtSignature);
       await users.touchUserChatActivity(userId);
       if (history.length === 0) {
         try {
@@ -77,7 +88,7 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
         }
       }
     } else {
-      appendTurn(sessionKey, message, reply);
+      appendTurn(sessionKey, message, reply, thoughtSignature);
     }
     return {
       ok: true,

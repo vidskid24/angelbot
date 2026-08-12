@@ -8,7 +8,10 @@
     "start": "node src/index.js",
     "ingest": "node src/rag/run-ingest.js",
     "ingest:new": "node src/rag/run-ingest.js --new",
+    "catalog:validate": "node scripts/validate-course-catalog.js",
     "metrics:embed": "node scripts/summarize-embed-metrics.js",
+    "notes:hooks": "node scripts/setup-version-notes-hooks.js",
+    "notes:log": "node scripts/append-version-notes.js",
     "db:migrate": "node -e \"import('dotenv/config'); import('./src/db/migrate.js').then(m => m.runMigrations()).then(() => console.log('Done')).catch(e => { console.error(e); process.exit(1); })\""
   },
   "engines": {

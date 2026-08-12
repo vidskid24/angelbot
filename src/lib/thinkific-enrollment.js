@@ -117,7 +117,7 @@ async function fetchAllCatalogItems(path) {
  * @param {Set<string>} names
  * @returns {Promise<Set<number>>}
  */
-async function resolveProductIdsFromNames(names) {
+export async function resolveProductIdsFromNames(names) {
   const resolved = new Set();
   if (!names.size) return resolved;
 

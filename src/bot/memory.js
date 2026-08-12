@@ -7,7 +7,7 @@ const store = new Map();
 
 /**
  * @param {string} key - Channel id (or DM channel id)
- * @returns {Array<{ role: 'user' | 'assistant'; content: string }>}
+ * @returns {Array<{ role: 'user' | 'assistant'; content: string; thoughtSignature?: string | null }>}
  */
 export function getHistory(key) {
   const list = store.get(key);
@@ -19,15 +19,20 @@ export function getHistory(key) {
  * @param {string} key - Channel id
  * @param {string} userContent
  * @param {string} assistantContent
+ * @param {string | null} [thoughtSignature]
  */
-export function appendTurn(key, userContent, assistantContent) {
+export function appendTurn(key, userContent, assistantContent, thoughtSignature = null) {
   let list = store.get(key);
   if (!list) {
     list = [];
     store.set(key, list);
   }
   list.push({ role: 'user', content: userContent });
-  list.push({ role: 'assistant', content: assistantContent });
+  list.push({
+    role: 'assistant',
+    content: assistantContent,
+    thoughtSignature: thoughtSignature != null ? String(thoughtSignature) : null,
+  });
   if (list.length > maxTurns * 2) {
     store.set(key, list.slice(-maxTurns * 2));
   }

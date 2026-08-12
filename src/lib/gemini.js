@@ -4,6 +4,8 @@
 
 import { GoogleGenerativeAI, FinishReason } from '@google/generative-ai';
 import { finalizeAssistantText } from './chat-reply.js';
+import { ensureWisdomSystemCache } from './gemini-context-cache.js';
+import { getStaticSystemPrompt } from '../prompts/wisdom-companion.js';
 
 let _genAI = null;
 let _embedInFlight = 0;
@@ -40,12 +42,12 @@ export function getGeminiClient() {
 
 /** Effective Gemini chat model (env or default). */
 export function getGeminiChatModel() {
-  return process.env.GEMINI_CHAT_MODEL || 'gemini-2.5-pro';
+  return process.env.GEMINI_CHAT_MODEL || 'gemini-3.5-flash-lite';
 }
 
 /** Effective Gemini fallback chat model for transient overloads. */
 export function getGeminiFallbackChatModel() {
-  return process.env.GEMINI_FALLBACK_CHAT_MODEL || 'gemini-2.5-flash';
+  return process.env.GEMINI_FALLBACK_CHAT_MODEL || 'gemini-3.5-flash';
 }
 
 /** Effective Gemini embedding model (env or default). */
@@ -55,8 +57,8 @@ export function getGeminiEmbeddingModel() {
 
 /**
  * Normalize prior turns so Gemini startChat history starts with user and alternates user/model.
- * @param {Array<{ role: string; content: string }>} priorTurns
- * @returns {Array<{ role: 'user' | 'assistant'; content: string }>}
+ * @param {Array<{ role: string; content: string; thoughtSignature?: string | null }>} priorTurns
+ * @returns {Array<{ role: 'user' | 'assistant'; content: string; thoughtSignature?: string | null }>}
  */
 function sanitizePriorTurns(priorTurns) {
   let list = priorTurns.filter((m) => m.role === 'user' || m.role === 'assistant');
@@ -69,6 +71,7 @@ function sanitizePriorTurns(priorTurns) {
   for (const m of list) {
     const content = String(m.content || '');
     if (!content.trim()) continue;
+    const thoughtSignature = m.thoughtSignature != null ? String(m.thoughtSignature) : null;
 
     if (m.role === 'user') {
       const prev = normalized[normalized.length - 1];
@@ -80,9 +83,9 @@ function sanitizePriorTurns(priorTurns) {
     } else if (m.role === 'assistant') {
       const prev = normalized[normalized.length - 1];
       if (prev?.role === 'user') {
-        normalized.push({ role: 'assistant', content });
+        normalized.push({ role: 'assistant', content, thoughtSignature });
       } else if (prev?.role === 'assistant') {
-        normalized[normalized.length - 1] = { role: 'assistant', content };
+        normalized[normalized.length - 1] = { role: 'assistant', content, thoughtSignature };
       }
     }
   }
@@ -95,7 +98,20 @@ function sanitizePriorTurns(priorTurns) {
 }
 
 /**
- * @param {Array<{ role: 'system' | 'user' | 'assistant'; content: string }>} messages
+ * Build a model history part, preserving thought signatures for Gemini 3.x multi-turn.
+ * @param {string} text
+ * @param {string | null | undefined} thoughtSignature
+ */
+function modelHistoryPart(text, thoughtSignature) {
+  /** @type {{ text: string; thoughtSignature?: string }} */
+  const part = { text: String(text) };
+  const sig = String(thoughtSignature || '').trim();
+  if (sig) part.thoughtSignature = sig;
+  return part;
+}
+
+/**
+ * @param {Array<{ role: 'system' | 'user' | 'assistant'; content: string; thoughtSignature?: string | null }>} messages
  */
 function chatMessagesToGemini(messages) {
   const systemParts = messages.filter((m) => m.role === 'system');
@@ -111,7 +127,10 @@ function chatMessagesToGemini(messages) {
     if (m.role === 'user') {
       history.push({ role: 'user', parts: [{ text: String(m.content) }] });
     } else {
-      history.push({ role: 'model', parts: [{ text: String(m.content) }] });
+      history.push({
+        role: 'model',
+        parts: [modelHistoryPart(m.content, m.thoughtSignature)],
+      });
     }
   }
   return { systemInstruction, history, lastUserText: String(last.content) };
@@ -127,13 +146,83 @@ function isMaxTokensFinish(finishReason) {
 
 /**
  * Extract concatenated text from a Gemini candidate (fallback when response.text() fails).
+ * Skips internal thought summary parts when present.
  * @param {*} response
  */
 function textFromCandidate(response) {
   const candidate = response.candidates?.[0];
   const parts = candidate?.content?.parts;
   if (!parts?.length) return '';
-  return parts.map((p) => (p && 'text' in p ? String(p.text) : '')).join('');
+  return parts
+    .map((p) => {
+      if (!p || typeof p !== 'object') return '';
+      if (p.thought === true) return '';
+      return 'text' in p ? String(p.text || '') : '';
+    })
+    .join('');
+}
+
+/**
+ * Pull the encrypted thought signature from a Gemini response for multi-turn circulation.
+ * @param {*} response
+ * @returns {string | null}
+ */
+function extractThoughtSignature(response) {
+  const parts = response?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts)) return null;
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const sig = parts[i]?.thoughtSignature ?? parts[i]?.thought_signature;
+    if (sig != null && String(sig).trim()) return String(sig);
+  }
+  return null;
+}
+
+/**
+ * Generation config for chat / long-form replies.
+ * Gemini 3.x uses thinkingLevel (not thinkingBudget). Prefer minimal for Flash-Lite cost/latency.
+ * @param {{ maxOutputTokens?: number; temperature?: number; modelName?: string }} [opts]
+ */
+function chatGenerationConfig({
+  maxOutputTokens = 4096,
+  temperature = CHAT_TEMPERATURE,
+  modelName = getGeminiChatModel(),
+} = {}) {
+  /** @type {Record<string, unknown>} */
+  const config = { maxOutputTokens, temperature };
+  if (/gemini-3/i.test(modelName)) {
+    config.thinkingConfig = { thinkingLevel: 'minimal' };
+  } else if (/gemini-2\.5/i.test(modelName)) {
+    // Legacy 2.5 path if someone still points env at 2.5.
+    config.thinkingConfig = { thinkingBudget: 1024 };
+  }
+  return config;
+}
+
+/**
+ * Build a chat model, preferring an explicit context cache for the stable wisdom system prompt.
+ * @param {string} modelName
+ * @param {string | undefined} systemInstruction
+ * @param {Record<string, unknown>} generationConfig
+ */
+async function createChatGenerativeModel(modelName, systemInstruction, generationConfig) {
+  const genAI = getGeminiClient();
+  const instruction = String(systemInstruction || '').trim();
+  const staticPrompt = getStaticSystemPrompt().trim();
+
+  if (instruction && instruction === staticPrompt) {
+    const cached = await ensureWisdomSystemCache(modelName, instruction);
+    if (cached?.name) {
+      return genAI.getGenerativeModelFromCachedContent(cached, {
+        generationConfig,
+      });
+    }
+  }
+
+  return genAI.getGenerativeModel({
+    model: modelName,
+    ...(instruction ? { systemInstruction: instruction } : {}),
+    generationConfig,
+  });
 }
 
 /**
@@ -143,7 +232,13 @@ function textFromCandidate(response) {
  */
 function extractText(response) {
   try {
-    return response.text();
+    const direct = response.text();
+    // response.text() may include thought summaries on some SDK versions; prefer filtered parts when mixed.
+    const fromParts = textFromCandidate(response);
+    if (fromParts && fromParts !== direct && /thought/i.test(String(direct))) {
+      return fromParts;
+    }
+    return fromParts || direct;
   } catch {
     return textFromCandidate(response);
   }
@@ -215,7 +310,11 @@ export async function generateTextStrict({
   const model = genAI.getGenerativeModel({
     model: modelName,
     ...(systemInstruction ? { systemInstruction } : {}),
-    generationConfig: { maxOutputTokens, temperature },
+    generationConfig: chatGenerationConfig({
+      maxOutputTokens,
+      temperature,
+      modelName,
+    }),
   });
   const result = await model.generateContent(userPrompt);
   const text = String(extractText(result.response) || '').trim();
@@ -504,25 +603,30 @@ async function retrySummaryReply(model, history, userText) {
  * @returns {Promise<{ text: string, truncated: boolean }>}
  */
 async function tryFallbackModelReply(genAI, modelName, systemInstruction, history, userText) {
-  const model = genAI.getGenerativeModel({
-    model: modelName,
-    ...(systemInstruction ? { systemInstruction } : {}),
-    generationConfig: {
+  const model = await createChatGenerativeModel(
+    modelName,
+    systemInstruction,
+    chatGenerationConfig({
       maxOutputTokens: 900,
       temperature: CHAT_TEMPERATURE,
-    },
-  });
+      modelName,
+    })
+  );
   const chatSession = model.startChat({ history });
   const result = await chatSession.sendMessage(userText);
   const response = result.response;
   const candidate = response.candidates?.[0];
   const finishReason = candidate?.finishReason;
-  return { text: extractText(response), truncated: isMaxTokensFinish(finishReason) };
+  return {
+    text: extractText(response),
+    truncated: isMaxTokensFinish(finishReason),
+    thoughtSignature: extractThoughtSignature(response),
+  };
 }
 
 /**
  * When the primary model is overloaded, try flash (or configured fallback) with repair/rescue paths.
- * @returns {Promise<string | null>} assistant reply, or null if fallback produced nothing usable
+ * @returns {Promise<{ text: string; thoughtSignature: string | null } | null>}
  */
 async function attemptFallbackModelChat(genAI, fallbackModelName, systemInstruction, history, userText) {
   try {
@@ -531,11 +635,19 @@ async function attemptFallbackModelChat(genAI, fallbackModelName, systemInstruct
 
     const fbTrimmed = fb.text.trim();
     if (fbTrimmed.length >= 140 && (!fb.truncated || looksCompleteText(fbTrimmed))) {
-      return finalizeAssistantText(fbTrimmed, false);
+      return {
+        text: finalizeAssistantText(fbTrimmed, false),
+        thoughtSignature: fb.thoughtSignature,
+      };
     }
     if (fb.truncated && fbTrimmed.length >= 140) {
       const salvaged = salvageToSentenceBoundary(fbTrimmed);
-      if (salvaged.length >= 120) return finalizeAssistantText(salvaged, false);
+      if (salvaged.length >= 120) {
+        return {
+          text: finalizeAssistantText(salvaged, false),
+          thoughtSignature: fb.thoughtSignature,
+        };
+      }
     }
     if (fb.truncated || fb.text.trim().length < 140) {
       try {
@@ -547,10 +659,13 @@ async function attemptFallbackModelChat(genAI, fallbackModelName, systemInstruct
           userText
         );
         if (
-          repaired.trim().length >= 80 ||
-          (repaired.trim().length >= 50 && looksCompleteText(repaired))
+          repaired.text.trim().length >= 80 ||
+          (repaired.text.trim().length >= 50 && looksCompleteText(repaired.text))
         ) {
-          return finalizeAssistantText(repaired, false);
+          return {
+            text: finalizeAssistantText(repaired.text, false),
+            thoughtSignature: repaired.thoughtSignature,
+          };
         }
         try {
           const rescued = await rescueDirectReply(
@@ -560,10 +675,13 @@ async function attemptFallbackModelChat(genAI, fallbackModelName, systemInstruct
             userText
           );
           if (
-            rescued.trim().length >= 80 ||
-            (rescued.trim().length >= 50 && looksCompleteText(rescued))
+            rescued.text.trim().length >= 80 ||
+            (rescued.text.trim().length >= 50 && looksCompleteText(rescued.text))
           ) {
-            return finalizeAssistantText(rescued, false);
+            return {
+              text: finalizeAssistantText(rescued.text, false),
+              thoughtSignature: rescued.thoughtSignature,
+            };
           }
         } catch {
           /* rescue failed */
@@ -571,9 +689,12 @@ async function attemptFallbackModelChat(genAI, fallbackModelName, systemInstruct
       } catch {
         /* repair failed */
       }
-      return chooseFallbackText(userText);
+      return { text: chooseFallbackText(userText), thoughtSignature: null };
     }
-    return finalizeAssistantText(fb.text, fb.truncated);
+    return {
+      text: finalizeAssistantText(fb.text, fb.truncated),
+      thoughtSignature: fb.thoughtSignature,
+    };
   } catch {
     return null;
   }
@@ -581,7 +702,7 @@ async function attemptFallbackModelChat(genAI, fallbackModelName, systemInstruct
 
 /**
  * Try flash when primary hits 500/503; show hiccup only if fallback also fails.
- * @returns {Promise<string>}
+ * @returns {Promise<{ text: string; thoughtSignature: string | null }>}
  */
 async function recoverFromServiceUnavailable(
   genAI,
@@ -601,71 +722,65 @@ async function recoverFromServiceUnavailable(
     );
     if (fbReply) return fbReply;
   }
-  return serviceUnavailableFallbackText();
+  return { text: serviceUnavailableFallbackText(), thoughtSignature: null };
 }
 
 /**
  * Repair a short/truncated fallback fragment into one complete concise answer.
- * @param {GoogleGenerativeAI} genAI
- * @param {string} modelName
- * @param {string | undefined} systemInstruction
- * @param {*} history
- * @param {string} userText
- * @returns {Promise<string>}
+ * @returns {Promise<{ text: string; thoughtSignature: string | null }>}
  */
 async function repairFallbackFragment(genAI, modelName, systemInstruction, history, userText) {
-  const model = genAI.getGenerativeModel({
-    model: modelName,
-    ...(systemInstruction ? { systemInstruction } : {}),
-    generationConfig: {
+  const model = await createChatGenerativeModel(
+    modelName,
+    systemInstruction,
+    chatGenerationConfig({
       maxOutputTokens: 300,
       temperature: CHAT_TEMPERATURE,
-    },
-  });
+      modelName,
+    })
+  );
   const chatSession = model.startChat({ history });
   const prompt =
     `Return one complete concise reply (2 short paragraphs max) to the user's message. ` +
     `Do not include ellipses or an unfinished sentence. Include 2-3 bold terms and end with one follow-up question.\n\n` +
     `User message: ${userText}`;
   const result = await chatSession.sendMessage(prompt);
-  return extractText(result.response);
+  return {
+    text: extractText(result.response),
+    thoughtSignature: extractThoughtSignature(result.response),
+  };
 }
 
 /**
  * Last-resort rescue: ask fallback model directly with a minimal prompt to ensure
  * a complete short response when full-context paths keep truncating.
- * @param {GoogleGenerativeAI} genAI
- * @param {string} modelName
- * @param {string | undefined} systemInstruction
- * @param {string} userText
- * @returns {Promise<string>}
+ * @returns {Promise<{ text: string; thoughtSignature: string | null }>}
  */
 async function rescueDirectReply(genAI, modelName, systemInstruction, userText) {
-  const model = genAI.getGenerativeModel({
-    model: modelName,
-    ...(systemInstruction ? { systemInstruction } : {}),
-    generationConfig: {
+  const model = await createChatGenerativeModel(
+    modelName,
+    systemInstruction,
+    chatGenerationConfig({
       maxOutputTokens: 260,
       temperature: CHAT_TEMPERATURE,
-    },
-  });
+      modelName,
+    })
+  );
   const prompt =
     `Reply with one complete concise response (2 short paragraphs max) to this user message. ` +
     `Include 2-3 bold terms and end with one follow-up question. Do not end mid-sentence.\n\n` +
     `User message: ${userText}`;
   const result = await model.generateContent(prompt);
-  return extractText(result.response);
+  return {
+    text: extractText(result.response),
+    thoughtSignature: extractThoughtSignature(result.response),
+  };
 }
 
 /**
  * Second pass when primary generation hit MAX_TOKENS but returned partial text.
  * Asks the model for a continuation only (no repetition of the partial body).
- * @param {GoogleGenerativeAI} genAI
- * @param {string} modelName
- * @param {string | undefined} systemInstruction
- * @param {string} userText
- * @param {string} partialAssistantText
- * @returns {Promise<string>}
+ * @returns {Promise<{ text: string; thoughtSignature: string | null }>}
  */
 async function completeTruncatedContinuation(
   genAI,
@@ -676,14 +791,15 @@ async function completeTruncatedContinuation(
 ) {
   const partial = String(partialAssistantText || '').trim();
   const tail = partial.length > 2800 ? partial.slice(-2800) : partial;
-  const model = genAI.getGenerativeModel({
-    model: modelName,
-    ...(systemInstruction ? { systemInstruction } : {}),
-    generationConfig: {
+  const model = await createChatGenerativeModel(
+    modelName,
+    systemInstruction,
+    chatGenerationConfig({
       maxOutputTokens: 600,
       temperature: CHAT_TEMPERATURE,
-    },
-  });
+      modelName,
+    })
+  );
   const prompt =
     `The assistant reply below was cut off by an output length limit.\n` +
     `Write ONLY the continuation: finish any incomplete bullet, sentence, or step. ` +
@@ -692,26 +808,30 @@ async function completeTruncatedContinuation(
     `User message:\n${String(userText || '').trim()}\n\n` +
     `Partial assistant reply (may be truncated at the end):\n${tail}`;
   const result = await model.generateContent(prompt);
-  return extractText(result.response).trim();
+  return {
+    text: extractText(result.response).trim(),
+    thoughtSignature: extractThoughtSignature(result.response),
+  };
 }
 
 /**
- * @param {Array<{ role: 'system' | 'user' | 'assistant'; content: string }>} messages
- * @returns {Promise<string>}
+ * @param {Array<{ role: 'system' | 'user' | 'assistant'; content: string; thoughtSignature?: string | null }>} messages
+ * @returns {Promise<{ text: string; thoughtSignature: string | null }>}
  */
 export async function chat(messages) {
   const genAI = getGeminiClient();
   const modelName = getGeminiChatModel();
   const { systemInstruction, history, lastUserText } = chatMessagesToGemini(messages);
 
-  const model = genAI.getGenerativeModel({
-    model: modelName,
-    ...(systemInstruction ? { systemInstruction } : {}),
-    generationConfig: {
+  const model = await createChatGenerativeModel(
+    modelName,
+    systemInstruction,
+    chatGenerationConfig({
       maxOutputTokens: 4096,
       temperature: CHAT_TEMPERATURE,
-    },
-  });
+      modelName,
+    })
+  );
 
   const chatSession = model.startChat({ history });
   let result;
@@ -719,7 +839,7 @@ export async function chat(messages) {
     result = await chatSession.sendMessage(lastUserText);
   } catch (err) {
     if (Number(err?.status) === 429) {
-      return rateLimitFallbackText();
+      return { text: rateLimitFallbackText(), thoughtSignature: null };
     }
     if (isServiceUnavailableError(err)) {
       return recoverFromServiceUnavailable(genAI, modelName, systemInstruction, history, lastUserText);
@@ -731,6 +851,7 @@ export async function chat(messages) {
   const finishReason = candidate?.finishReason;
   const truncated = isMaxTokensFinish(finishReason);
   const text = extractText(response);
+  const thoughtSignature = extractThoughtSignature(response);
 
   if (truncated && text.trim()) {
     const partial = text.trim();
@@ -743,41 +864,48 @@ export async function chat(messages) {
         lastUserText,
         partial
       );
-      if (cont.length >= 25) {
-        const merged = `${partial}\n\n${cont}`.trim();
-        return finalizeAssistantText(merged, false);
+      if (cont.text.length >= 25) {
+        const merged = `${partial}\n\n${cont.text}`.trim();
+        return {
+          text: finalizeAssistantText(merged, false),
+          thoughtSignature: cont.thoughtSignature || thoughtSignature,
+        };
       }
     } catch (e) {
     }
-    return finalizeAssistantText(partial, true);
+    return {
+      text: finalizeAssistantText(partial, true),
+      thoughtSignature,
+    };
   }
 
   if (truncated && !text.trim()) {
-    const shortModel = genAI.getGenerativeModel({
-      model: modelName,
-      ...(systemInstruction ? { systemInstruction } : {}),
-      generationConfig: {
+    const shortModel = await createChatGenerativeModel(
+      modelName,
+      systemInstruction,
+      chatGenerationConfig({
         maxOutputTokens: 320,
         temperature: CHAT_TEMPERATURE,
-      },
-    });
+        modelName,
+      })
+    );
     let retryText = '';
     try {
       retryText = await retrySummaryReply(shortModel, history, lastUserText);
     } catch (err) {
       if (Number(err?.status) === 429) {
-        return rateLimitFallbackText();
+        return { text: rateLimitFallbackText(), thoughtSignature: null };
       }
       if (isServiceUnavailableError(err)) {
         return recoverFromServiceUnavailable(genAI, modelName, systemInstruction, history, lastUserText);
       }
       if (isTransientGeminiError(err)) {
-        return chooseFallbackText(lastUserText);
+        return { text: chooseFallbackText(lastUserText), thoughtSignature: null };
       }
       throw err;
     }
     if (retryText.trim()) {
-      return finalizeAssistantText(retryText, false);
+      return { text: finalizeAssistantText(retryText, false), thoughtSignature: null };
     }
     const fallbackModelName = getGeminiFallbackChatModel();
     if (fallbackModelName && fallbackModelName !== modelName) {
@@ -790,10 +918,13 @@ export async function chat(messages) {
       );
       if (fbReply) return fbReply;
     }
-    return chooseFallbackText(lastUserText);
+    return { text: chooseFallbackText(lastUserText), thoughtSignature: null };
   }
 
-  return finalizeAssistantText(text, truncated);
+  return {
+    text: finalizeAssistantText(text, truncated),
+    thoughtSignature,
+  };
 }
 
 /** Backward compatibility export name. */
@@ -857,14 +988,14 @@ function isUsableGeneratedThreadTitle(title) {
   return t.length >= 4;
 }
 
-/** Generation config for short labels — disable thinking budget on 2.5+ models. */
+/** Generation config for short labels — keep thinking minimal on Gemini 3.x. */
 function shortLabelGenerationConfig(maxOutputTokens = 256) {
-  const config = { maxOutputTokens, temperature: 0.2 };
   const model = getGeminiFallbackChatModel();
-  if (/gemini-2\.5|gemini-3/i.test(model)) {
-    config.thinkingConfig = { thinkingBudget: 0 };
-  }
-  return config;
+  return chatGenerationConfig({
+    maxOutputTokens,
+    temperature: 0.2,
+    modelName: model,
+  });
 }
 
 const THREAD_TITLE_MAX_ATTEMPTS = 3;
@@ -932,7 +1063,11 @@ export async function generateTitleForContent(content) {
   const genAI = getGeminiClient();
   const model = genAI.getGenerativeModel({
     model: getGeminiChatModel(),
-    generationConfig: { maxOutputTokens: 40, temperature: 0.3 },
+    generationConfig: chatGenerationConfig({
+      maxOutputTokens: 40,
+      temperature: 0.3,
+      modelName: getGeminiChatModel(),
+    }),
   });
   const prompt =
     'Suggest a very short title (3-6 words) that captures the main theme or topic of the given text. ' +
@@ -953,7 +1088,11 @@ export async function summarizeConversation(messages) {
   const genAI = getGeminiClient();
   const model = genAI.getGenerativeModel({
     model: getGeminiChatModel(),
-    generationConfig: { maxOutputTokens: 256, temperature: 0.4 },
+    generationConfig: chatGenerationConfig({
+      maxOutputTokens: 256,
+      temperature: 0.4,
+      modelName: getGeminiChatModel(),
+    }),
   });
   const thread = messages.map((m) => `${m.role}: ${m.content}`).join('\n\n').slice(0, 6000);
   const prompt =

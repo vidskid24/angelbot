@@ -33,7 +33,7 @@ Rules:
 
 const MEMORY_MAX_ATTEMPTS = 3;
 const MEMORY_RETRY_DELAYS_MS = [5000, 15000];
-/** Gemini 2.5 thinking can consume output budget; leave room for the markdown document. */
+/** Gemini 3.x thinking can still consume output budget; leave room for the markdown document. */
 const MEMORY_MAX_OUTPUT_TOKENS = 8192;
 
 /**

@@ -1,18 +1,23 @@
 /**
  * Load embeddings index and return top-k chunks by similarity to the query.
+ * The embeddings file is kept warm in memory and reloaded when mtime changes.
  */
 
-import { readFile } from 'fs/promises';
-import { join } from 'path';
+import { readFile, stat } from 'fs/promises';
+import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import { embed } from '../lib/gemini.js';
-import { formatRetrievedChunk } from './course-source.js';
+import { loadCourseCatalog, formatRetrievedChunkWithCatalog } from './course-catalog.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '../..');
 const EMBEDDINGS_PATH = join(ROOT, 'data', 'embeddings.json');
 const DEFAULT_TOP_K = 6;
+
+/** @type {{ mtimeMs: number; chunks: any[] } | null} */
+let embeddingsIndexCache = null;
+/** @type {Promise<{ mtimeMs: number; chunks: any[] } | null> | null} */
+let embeddingsIndexLoadPromise = null;
 
 function cosineSimilarity(a, b) {
   if (a.length !== b.length) return 0;
@@ -29,21 +34,79 @@ function cosineSimilarity(a, b) {
 }
 
 /**
- * @param {string} query
- * @param {number} [topK]
- * @returns {Promise<string>} Labeled top-k chunk texts for system prompt
+ * @returns {Promise<{ mtimeMs: number; chunks: any[] } | null>}
  */
-export async function retrieve(query, topK = DEFAULT_TOP_K) {
-  let data;
+async function loadEmbeddingsIndex() {
+  let mtimeMs = 0;
   try {
-    const raw = await readFile(EMBEDDINGS_PATH, 'utf-8');
-    data = JSON.parse(raw);
+    const info = await stat(EMBEDDINGS_PATH);
+    mtimeMs = info.mtimeMs;
   } catch (e) {
-    if (e.code === 'ENOENT') return '';
+    if (e?.code === 'ENOENT') {
+      embeddingsIndexCache = null;
+      return null;
+    }
     throw e;
   }
-  const chunks = data.chunks;
-  if (!chunks || chunks.length === 0) return '';
+
+  if (embeddingsIndexCache && embeddingsIndexCache.mtimeMs === mtimeMs) {
+    return embeddingsIndexCache;
+  }
+
+  if (embeddingsIndexLoadPromise) {
+    return embeddingsIndexLoadPromise;
+  }
+
+  embeddingsIndexLoadPromise = (async () => {
+    try {
+      // Recheck cache after awaiting — another caller may have finished first.
+      if (embeddingsIndexCache && embeddingsIndexCache.mtimeMs === mtimeMs) {
+        return embeddingsIndexCache;
+      }
+      const raw = await readFile(EMBEDDINGS_PATH, 'utf-8');
+      const data = JSON.parse(raw);
+      const chunks = Array.isArray(data?.chunks) ? data.chunks : [];
+      embeddingsIndexCache = { mtimeMs, chunks };
+      console.info(
+        `[rag] Embeddings index loaded into memory (${chunks.length} chunks, ${(Buffer.byteLength(raw) / (1024 * 1024)).toFixed(1)} MB)`
+      );
+      return embeddingsIndexCache;
+    } finally {
+      embeddingsIndexLoadPromise = null;
+    }
+  })();
+
+  return embeddingsIndexLoadPromise;
+}
+
+/**
+ * Warm the embeddings index at process startup (optional; retrieve also lazy-loads).
+ * @returns {Promise<void>}
+ */
+export async function preloadEmbeddingsIndex() {
+  await loadEmbeddingsIndex();
+}
+
+/** Clear in-memory index (tests / after manual ingest in same process). */
+export function clearEmbeddingsIndexCache() {
+  embeddingsIndexCache = null;
+  embeddingsIndexLoadPromise = null;
+}
+
+/**
+ * @param {string} query
+ * @param {number} [topK]
+ * @param {{
+ *   linkVariant?: import('./course-catalog.js').CourseLinkVariant | null;
+ *   sourceDetail?: import('./course-catalog.js').SourceDetail;
+ * }} [options]
+ * @returns {Promise<string>} Labeled top-k chunk texts for system prompt
+ */
+export async function retrieve(query, topK = DEFAULT_TOP_K, options = {}) {
+  const index = await loadEmbeddingsIndex();
+  if (!index) return '';
+  const chunks = index.chunks;
+  if (!chunks.length) return '';
 
   let queryEmbedding;
   try {
@@ -63,6 +126,12 @@ export async function retrieve(query, topK = DEFAULT_TOP_K) {
     score: cosineSimilarity(c.embedding, queryEmbedding),
   }));
   withScore.sort((a, b) => b.score - a.score);
-  const top = withScore.slice(0, topK).map((c) => formatRetrievedChunk(c)).filter(Boolean);
+  const catalog = await loadCourseCatalog();
+  const linkVariant = options.linkVariant || null;
+  const sourceDetail = options.sourceDetail === 'course' ? 'course' : 'full';
+  const top = withScore
+    .slice(0, topK)
+    .map((c) => formatRetrievedChunkWithCatalog(c, catalog, linkVariant, { sourceDetail }))
+    .filter(Boolean);
   return top.join('\n\n');
 }

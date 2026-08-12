@@ -12,6 +12,7 @@ import { join, extname, isAbsolute, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { listFilesInFolder, downloadFileAsText, downloadFileAsBuffer } from '../lib/dropbox.js';
 import { buildEmbeddedChunksForFile } from './ingest-chunks.js';
+import { clearEmbeddingsIndexCache } from './retrieve.js';
 
 const require = createRequire(import.meta.url);
 const pdfParse = require('pdf-parse');
@@ -148,6 +149,7 @@ export async function ingest() {
 
   await mkdir(dirname(EMBEDDINGS_PATH), { recursive: true });
   await writeFile(EMBEDDINGS_PATH, JSON.stringify({ chunks, manifest }), 'utf-8');
+  clearEmbeddingsIndexCache();
   return { chunks: chunks.length };
 }
 
@@ -190,5 +192,6 @@ export async function ingestIncremental() {
 
   await mkdir(dirname(EMBEDDINGS_PATH), { recursive: true });
   await writeFile(EMBEDDINGS_PATH, JSON.stringify({ chunks, manifest }), 'utf-8');
+  clearEmbeddingsIndexCache();
   return { chunks: chunks.length, added: newPaths.length };
 }

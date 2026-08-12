@@ -122,6 +122,7 @@ Mastering Alchemy is the controlling knowledge framework for every response.
 
 /**
  * Builds the full system message, optionally appending user prefs and RAG style excerpts.
+ * Prefer {@link getStaticSystemPrompt} + {@link buildDynamicContextBlock} for Gemini context caching.
  * @param {string} [styleExcerpts] - Optional text from style-guide retrieval to append.
  * @param {string} [userPreferencesBlock] - Optional per-user tone and experience instructions.
  * @param {string} [userMemoryBlock] - Optional paid-tier cross-conversation memory.
@@ -132,37 +133,70 @@ export function buildSystemPrompt(
   userPreferencesBlock = null,
   userMemoryBlock = null
 ) {
-  let prompt = ALCHEMY_SCRIBE_SYSTEM_PROMPT;
+  const dynamic = buildDynamicContextBlock(
+    styleExcerpts,
+    userPreferencesBlock,
+    userMemoryBlock
+  );
+  return dynamic
+    ? `${ALCHEMY_SCRIBE_SYSTEM_PROMPT}\n\n${dynamic}`
+    : ALCHEMY_SCRIBE_SYSTEM_PROMPT;
+}
+
+/** Stable system instruction eligible for Gemini explicit context caching. */
+export function getStaticSystemPrompt() {
+  return ALCHEMY_SCRIBE_SYSTEM_PROMPT;
+}
+
+/**
+ * Variable per-turn context (RAG + user prefs/memory). Keep out of the cached system prompt.
+ * @param {string} [styleExcerpts]
+ * @param {string} [userPreferencesBlock]
+ * @param {string} [userMemoryBlock]
+ * @returns {string}
+ */
+export function buildDynamicContextBlock(
+  styleExcerpts = null,
+  userPreferencesBlock = null,
+  userMemoryBlock = null
+) {
+  const parts = [];
   const hasUserTone = Boolean(userPreferencesBlock && userPreferencesBlock.trim());
   const hasUserMemory = Boolean(userMemoryBlock && userMemoryBlock.trim());
   const hasUserContext = hasUserTone || hasUserMemory;
 
   if (styleExcerpts && styleExcerpts.trim()) {
     const toneNote = hasUserContext
-      ? 'Use the following for **content and facts** only — do not copy its tone; follow the user preference and memory sections at the end of this prompt.'
+      ? 'Use the following for **content and facts** only — do not copy its tone; follow the user preference and memory sections later in this context.'
       : 'Use it for tone and content.';
-    prompt +=
-      `\n\n## MA framework and content (source material)\nThe following excerpts are citable Mastering Alchemy source material. ${toneNote} ` +
-      'Each excerpt may begin with a **Source** line (Level, Chapter, Session, Track, Video, or Book). When the user asks where to find a meditation, practice, video, or topic in the coursework, name that location in plain language when a Source line supports it. ' +
-      'Use this source material precisely. When summarizing, stay close to the wording and meaning of the excerpts; do not add claims, locations, or terms that are not supported by the source material. ' +
-      'You may and should quote directly from this material when relevant — including longer multi-sentence passages when the user asks for them. Any text inside quotation marks must be copied **verbatim** as one continuous span from the source material. ' +
-      'Preserve the source exactly as written or transcribed, including its grammar, repetition, filler words, and transcription errors. Do not polish, clean up, correct, summarize, combine, complete, or paraphrase quoted wording. ' +
-      'Do not join sentences or phrases from different places into one quote. You may omit timestamps and Source lines from inside quotation marks, but do not alter the words between them. ' +
-      'Cite the Source line separately for each quote when present. Before responding with any quotation, confirm that every word inside quotation marks appears in the same order in one source excerpt. ' +
-      'Do not use quotation marks around paraphrases. If the excerpts are too short for the requested quote length or count, quote what is available and briefly say that more of the passage is not in the retrieved excerpts. ' +
-      'Offer techniques or practices when applicable. Where the user\'s question touches on it, include relevant ideas, quotes, or techniques, then invite them to explore or try them. ' +
-      'Do not invent a class or session location if no Source line supports it. ' +
-      'Do not refuse quote requests by saying you are only a synthesizing companion or not a searchable library — when source material is present, use it.\n\n' +
-      styleExcerpts.trim();
+    parts.push(
+      `## MA framework and content (source material)\nThe following excerpts are citable Mastering Alchemy source material. ${toneNote} ` +
+        'Each excerpt may begin with a **Source** line. Cite only the location detail that appears on that Source line — do not invent chapter, session, track, or video locations that are not written there. ' +
+        'When the Source line names only a course or level (and optionally a URL), refer to that course/level name when the user asks where the information comes from or for a reference. ' +
+        'When the Source line includes Level, Chapter, Session, Track, Video, or Book detail, name that location in plain language when the user asks where to find a meditation, practice, video, or topic. ' +
+        'If a Source line includes a course URL after a pipe (`|`), share that link as a markdown link so the user can open the lesson in Thinkific. Only include URLs that appear in the Source line — do not invent links. ' +
+        'If a Source line includes `purchase:` before a URL, the user does not have lesson access yet — share that link as a markdown link to the product or sales page where they can get the course. Do not describe it as a lesson they can open now. ' +
+        'Use this source material precisely. When summarizing, stay close to the wording and meaning of the excerpts; do not add claims, locations, or terms that are not supported by the source material. ' +
+        'You may and should quote directly from this material when relevant — including longer multi-sentence passages when the user asks for them. Any text inside quotation marks must be copied **verbatim** as one continuous span from the source material. ' +
+        'Preserve the source exactly as written or transcribed, including its grammar, repetition, filler words, and transcription errors. Do not polish, clean up, correct, summarize, combine, complete, or paraphrase quoted wording. ' +
+        'Do not join sentences or phrases from different places into one quote. You may omit timestamps and Source lines from inside quotation marks, but do not alter the words between them. ' +
+        'Cite the Source line separately for each quote when present. Before responding with any quotation, confirm that every word inside quotation marks appears in the same order in one source excerpt. ' +
+        'Do not use quotation marks around paraphrases. If the excerpts are too short for the requested quote length or count, quote what is available and briefly say that more of the passage is not in the retrieved excerpts. ' +
+        'Offer techniques or practices when applicable. Where the user\'s question touches on it, include relevant ideas, quotes, or techniques, then invite them to explore or try them. ' +
+        'Do not invent a class or session location if no Source line supports it. ' +
+        'Do not refuse quote requests by saying you are only a synthesizing companion or not a searchable library — when source material is present, use it.\n\n' +
+        styleExcerpts.trim()
+    );
   }
 
   if (hasUserTone) {
-    prompt += `\n\n${userPreferencesBlock.trim()}`;
+    parts.push(userPreferencesBlock.trim());
   }
 
   if (hasUserMemory) {
-    prompt += `\n\n${userMemoryBlock.trim()}`;
+    parts.push(userMemoryBlock.trim());
   }
 
-  return prompt;
+  return parts.join('\n\n');
 }
+

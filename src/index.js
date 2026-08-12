@@ -6,6 +6,7 @@ import 'dotenv/config';
 import { runMigrations } from './db/migrate.js';
 import { isDbEnabled } from './db/pool.js';
 import { startWebServer } from './api/server.js';
+import { preloadEmbeddingsIndex } from './rag/retrieve.js';
 
 async function main() {
   if (isDbEnabled()) {
@@ -16,6 +17,13 @@ async function main() {
       'DATABASE_URL not set — durable threads and chat history are disabled (in-memory fallback)'
     );
   }
+
+  try {
+    await preloadEmbeddingsIndex();
+  } catch (err) {
+    console.warn('Embeddings preload skipped:', err?.message || err);
+  }
+
   startWebServer();
 }
 

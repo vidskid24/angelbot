@@ -38,7 +38,7 @@ Optional:
 - `APP_BOOTSTRAP_TOKEN_TTL_SECONDS` (default `3600`)
 - `OMIBOT_FREE_THREAD_LIMIT` (default `3`)
 - `OMIBOT_PAID_THREAD_LIMIT` (default `15`)
-- `OMIBOT_FREE_DAILY_MESSAGE_LIMIT` (default `15`)
+- `OMIBOT_FREE_DAILY_MESSAGE_LIMIT` (default `8`)
 - `OMIBOT_PAID_DAILY_MESSAGE_LIMIT` (default `110`)
 - `OMIBOT_DAILY_LIMIT_TIMEZONE` (default `America/Los_Angeles`; calendar day boundary for daily counts)
 - `OMIBOT_TIER_CACHE_MINUTES` (default `60`)
@@ -193,6 +193,69 @@ Dropbox transcripts and guides can use any of these patterns (`.txt`, `.md`, or 
 - **T#** — Audio track number within a class  
 - **V** — Video track within a class  
 
-On ingest, each chunk stores this metadata. Retrieved excerpts include a **Source:** line so Omi can point users to the right level, class, session, track, or video.
+On ingest, each chunk stores this metadata. Retrieved excerpts include a **Source:** line so Omi can point users to the right level, chapter, session, track, or video.
 
 After changing ingest logic or filenames, run **`npm run ingest`** (full re-index). `ingest:new` only adds files not already in the manifest.
+
+### Course catalog (Phase 2 — friendly names + Thinkific course links)
+
+Edit **`data/course-catalog.json`** to map each **sessionKey** (from Phase 1 filenames) to a friendly title. Links go to the **course page** for that level (not individual lessons).
+
+| sessionKey | Example unit entry |
+|------------|-------------------|
+| `L1-C1-T1` | Track in Level 1, Chapter 1 |
+| `L1-C1-V` | Video in Level 1, Chapter 1 |
+| `L1-C1-S4` | Session in Level 1, Chapter 1 |
+| `L2-S21` | Level 2 session (no chapter in filename) |
+| `book:ACIMA-final` | Book PDF |
+
+**Units need titles only.** Session/chapter labels still appear in Source lines:
+
+```json
+"L2-S21": {
+  "title": "Eighth Ray #3"
+}
+```
+
+**Owned vs membership** are set once per level (not per lesson):
+
+```json
+"L2": {
+  "title": "Level 2 — Core",
+  "purchaseUrl": "https://courses.masteringalchemy.com/courses/level-2-program",
+  "variants": {
+    "owned": { "courseSlug": "level-2-program" },
+    "membership": { "courseSlug": "core-l2" }
+  }
+}
+```
+
+At chat time Omi cites the session name and links to the matching Thinkific **course**:
+
+- `THINKIFIC_OWNED_PRODUCT_IDS` — owned course page (`variants.owned`)
+- `THINKIFIC_MEMBERSHIP_PRODUCT_IDS` — membership course page (`variants.membership`)
+
+If a user has both, the **owned** course is preferred. If neither matches, Omi cites the location and includes a **purchase** link (`purchaseUrl`).
+
+**Purchase fallback** (no owned or membership enrollment): set `purchaseUrl` on each level:
+
+```json
+"L1": {
+  "title": "Level 1 — Energy Essentials",
+  "purchaseUrl": "https://courses.masteringalchemy.com/courses/energyessentials-level1"
+}
+```
+
+Use the Thinkific **product/course sales page** URL (not `/courses/take/...`). Optional site-wide default: top-level `"defaultPurchaseUrl"`.
+
+Source lines use `purchase:` prefix for sales links: `--- Source: ... | purchase: https://... ---`
+
+Optional test override: `OMIBOT_COURSE_LINK_VARIANT=owned` or `membership`.
+
+Validate coverage after ingest:
+
+```bash
+npm run catalog:validate
+```
+
+No re-ingest required when you only update the catalog — redeploy the API (catalog is committed with the repo).

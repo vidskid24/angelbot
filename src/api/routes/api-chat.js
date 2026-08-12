@@ -68,6 +68,7 @@ export function createChatApiRouter() {
       const sessionKey = `web:${userId}:${threadId}`;
       const out = await processWisdomMessage({
         userId,
+        email: req.omiUser.email,
         sessionKey,
         message,
         threadId: useDb ? threadId : undefined,
