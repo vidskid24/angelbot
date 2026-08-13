@@ -10,6 +10,7 @@ import { generateThreadTitleFromMessage } from '../lib/gemini.js';
 import { buildUserPreferencesPromptBlock } from '../lib/user-preferences.js';
 import { buildUserMemoryPromptBlock } from '../lib/user-memory.js';
 import { retrieve } from '../rag/retrieve.js';
+import { loadCourseCatalog } from '../rag/course-catalog.js';
 import { resolveCourseLinkVariant } from '../lib/course-access.js';
 import {
   sanitizeReplyCitations,
@@ -29,22 +30,25 @@ function isContextDependentFollowup(message) {
 function extractAssistantQuotes(text) {
   const s = String(text || '');
   const quotes = [];
-  const patterns = [/^>\s*["“]([^"”\n]{20,})["”]/gm, /["“]([^"”\n]{40,})["”]/g];
+  const patterns = [
+    /^>\s*["“]([^"”\n]{20,})["”]/gm,
+    /^>\s*([^"\n]{40,})/gm,
+    /["“]([^"”\n]{40,})["”]/g,
+  ];
   for (const re of patterns) {
     let match;
     while ((match = re.exec(s)) !== null) {
-      quotes.push(match[1].trim());
+      quotes.push(String(match[1] || '').trim());
     }
   }
-  return [...new Set(quotes)];
+  return [...new Set(quotes)].filter(Boolean);
 }
 
 function looksLikeCitationHuntReply(text) {
   const t = String(text || '');
   return (
     /track down that exact coordinate/i.test(t) ||
-    /slide the dial right over to track down/i.test(t) ||
-    /comes straight from/i.test(t)
+    /slide the dial right over to track down/i.test(t)
   );
 }
 
@@ -123,21 +127,26 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
     // Resolve Thinkific owned vs membership for everyone so Source lines can link
     // to the appropriate class page (classroom when enrolled, otherwise purchase).
     const linkVariant = useDb ? await resolveCourseLinkVariant(userId, email) : null;
-    const storedExcerpts =
-      useDb && threadId
-        ? await threadDb.getThreadSourceExcerpts(threadId)
-        : getStoredExcerpts(sessionKey);
+    const catalog = await loadCourseCatalog();
+    let storedExcerpts =
+      useDb && threadId ? await threadDb.getThreadSourceExcerpts(threadId) : null;
+    if (!(storedExcerpts || '').trim()) {
+      storedExcerpts = getStoredExcerpts(sessionKey);
+    }
     let styleExcerpts = '';
-    if (citationAsk && parseSourceCites(storedExcerpts || '').length) {
+    if (citationAsk && String(storedExcerpts || '').trim()) {
       styleExcerpts = storedExcerpts || '';
     } else {
       styleExcerpts = await retrieve(retrievalQuery, DEFAULT_RETRIEVE_TOP_K, {
         linkVariant,
         sourceDetail,
       });
-      if (citationAsk && !parseSourceCites(styleExcerpts || '').length) {
+      if (citationAsk && !parseSourceCites(styleExcerpts || '', catalog).length) {
         const ctx = citationRetrievalContext(history);
-        const retryQuery = [...ctx.quotes, ctx.userTopic].filter(Boolean).join('\n\n').trim();
+        const retryQuery = [...ctx.quotes, ctx.userTopic, ctx.teachingText]
+          .filter(Boolean)
+          .join('\n\n')
+          .trim();
         if (retryQuery && retryQuery !== retrievalQuery) {
           styleExcerpts = await retrieve(retryQuery, DEFAULT_RETRIEVE_TOP_K, {
             linkVariant,
@@ -153,13 +162,15 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
       userPreferencesBlock,
       userMemoryBlock
     );
-    const reply = sanitizeReplyCitations(result.text, styleExcerpts || '', message);
-    if (!citationAsk && parseSourceCites(styleExcerpts || '').length) {
+    const reply = sanitizeReplyCitations(result.text, styleExcerpts || '', message, catalog);
+    if (citationAsk && !parseSourceCites(styleExcerpts || '', catalog).length) {
+      console.warn('Citation ask had no catalog cite to inject');
+    }
+    if (!citationAsk && String(styleExcerpts || '').trim()) {
       if (useDb && threadId) {
         await threadDb.setThreadSourceExcerpts(threadId, styleExcerpts);
-      } else {
-        setStoredExcerpts(sessionKey, styleExcerpts);
       }
+      setStoredExcerpts(sessionKey, styleExcerpts);
     }
     const thoughtSignature = result.thoughtSignature;
     let threadTitle = null;

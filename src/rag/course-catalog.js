@@ -466,6 +466,61 @@ function formatDetailForCite(detail) {
     .trim();
 }
 
+/**
+ * Build a catalog cite from a Source label or transcript filename when `cite:` is missing.
+ * @param {string} labelLine
+ * @param {CourseCatalog | null | undefined} catalog
+ * @param {CourseLinkVariant | null} [linkVariant]
+ * @returns {{ title: string; url: string; detail: string; access: string; isBook: boolean } | null}
+ */
+export function citeFromSourceLabel(labelLine, catalog, linkVariant = 'owned') {
+  const label = String(labelLine || '').trim();
+  if (!label || !catalog) return null;
+
+  const filename = basename(label);
+  const source =
+    parseCourseSourceFromPath(filename) ||
+    parseCourseSourceFromPath(label) ||
+    null;
+  if (source?.sessionKey) {
+    const unit = lookupCatalogUnit(catalog, source.sessionKey);
+    const title = getLinkableCourseTitle(source, catalog);
+    let link = resolveLinkForSource(unit, linkVariant, catalog, source);
+    if (!link.url) link = resolveLinkForSource(unit, 'owned', catalog, source);
+    const url = link.url || resolvePurchaseUrlForSource(catalog, source, unit);
+    if (title && url) {
+      const fullLabel = formatCourseSourceLabelWithCatalog(source, catalog) || label;
+      return {
+        title,
+        url,
+        detail: formatDetailForCite(getLocationDetailAfterCourseTitle(fullLabel, title) || ''),
+        access: link.kind === 'purchase' ? 'purchase' : 'classroom',
+        isBook: source.unitType === 'book' || String(source.sessionKey).startsWith('book:'),
+      };
+    }
+  }
+
+  const levels = catalog.levels && typeof catalog.levels === 'object' ? Object.values(catalog.levels) : [];
+  const lower = label.toLowerCase();
+  for (const entry of levels) {
+    const title = String(entry?.title || '').trim();
+    if (!title || !lower.includes(title.toLowerCase())) continue;
+    const url =
+      String(entry?.variants?.owned?.courseUrl || '').trim() ||
+      String(entry?.variants?.membership?.courseUrl || '').trim() ||
+      String(entry?.purchaseUrl || '').trim();
+    if (!url) continue;
+    return {
+      title,
+      url,
+      detail: formatDetailForCite(getLocationDetailAfterCourseTitle(label, title) || ''),
+      access: 'classroom',
+      isBook: false,
+    };
+  }
+  return null;
+}
+
 /** @typedef {'full' | 'course'} SourceDetail */
 
 /**
@@ -489,7 +544,10 @@ export function formatRetrievedChunkWithCatalog(chunk, catalog, linkVariant = nu
   if (!body) return '';
 
   // Prefer owned/membership classroom URL when known; otherwise purchase/product page.
-  const link = resolveLinkForSource(unit, linkVariant, catalog, source);
+  let link = resolveLinkForSource(unit, linkVariant, catalog, source);
+  if (!link.url) {
+    link = resolveLinkForSource(unit, 'owned', catalog, source);
+  }
   const courseTitle = getLinkableCourseTitle(source, catalog);
   const sourceIndex =
     Number.isFinite(options.sourceIndex) && options.sourceIndex > 0
