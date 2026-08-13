@@ -1,0 +1,3116 @@
+{
+  "siteBaseUrl": "https://courses.masteringalchemy.com",
+  "levels": {
+    "L1": {
+      "title": "Energy Essentials - Level 1",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/energyessentials-level1",
+      "variants": {
+        "owned": {
+          "courseSlug": "energyessentials-level1",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/take/energyessentials-level1/texts/53406938-welcome"
+        },
+        "membership": {
+          "courseSlug": "energy-essentials-l1",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/take/energy-essentials-l1/texts/59555211-welcome"
+        }
+      }
+    },
+    "L2": {
+      "title": "Core - Level 2",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/level-2-program",
+      "variants": {
+        "owned": {
+          "courseSlug": "level-2-program",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/take/level-2-program/texts/63628124-welcome"
+        },
+        "membership": {
+          "courseSlug": "core-l2",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/take/core-l2/texts/63629061-welcome"
+        }
+      }
+    },
+    "L3": {
+      "title": "Rewire - Level 3",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/rewire-level-3",
+      "variants": {
+        "owned": {
+          "courseSlug": "rewire-level-3",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/take/rewire-level-3"
+        },
+        "membership": {
+          "courseSlug": "rewire-l3",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/take/rewire-l3/texts/59629787-level-3-course-logistics"
+        }
+      }
+    },
+    "L4": {
+      "title": "Connect - Level 4",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/connect-level-4",
+      "variants": {
+        "owned": {
+          "courseSlug": "connect-level-4",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/take/connect-level-4/texts/58076006-welcome-and-logistics"
+        },
+        "membership": {
+          "courseSlug": "connect-l4",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/take/connect-l4/texts/59629320-welcome-and-logistics"
+        }
+      }
+    },
+    "L5": {
+      "title": "Living Lightbody - Level 5",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/living-lightbody-level-5",
+      "variants": {
+        "owned": {
+          "courseSlug": "living-lightbody-level-5",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/take/living-lightbody-level-5/texts/58313924-welcome-to-our-next-adventure-together"
+        },
+        "membership": {
+          "courseSlug": "living-lightbody-l5",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/take/living-lightbody-l5/texts/59628986-welcome-to-our-next-adventure-together"
+        }
+      }
+    },
+    "ETPF": {
+      "title": "Enter the Present Future",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/enter-the-present-future",
+      "variants": {
+        "owned": {
+          "courseSlug": "enter-the-present-future",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/enter-the-present-future"
+        }
+      }
+    },
+    "CFWATI": {
+      "title": "Creating From Within All That Is",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/creating-from-within-all-that-is",
+      "variants": {
+        "owned": {
+          "courseSlug": "creating-from-within-all-that-is",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/creating-from-within-all-that-is"
+        }
+      }
+    },
+    "LWTLB": {
+      "title": "Living Within The Light Body",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/living-within-the-lightbody",
+      "variants": {
+        "owned": {
+          "courseSlug": "living-within-the-lightbody",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/living-within-the-lightbody"
+        }
+      }
+    },
+    "R3": {
+      "title": "Reset 3",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/reset-3",
+      "variants": {
+        "owned": {
+          "courseSlug": "reset-3",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/reset-3"
+        }
+      }
+    },
+    "R2": {
+      "title": "Reset 2",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/reset-2",
+      "variants": {
+        "owned": {
+          "courseSlug": "reset-2",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/reset-2"
+        }
+      }
+    },
+    "R1": {
+      "title": "Reset 1",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/reset-1",
+      "variants": {
+        "owned": {
+          "courseSlug": "reset-1",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/reset-1"
+        }
+      }
+    },
+    "ML1": {
+      "title": "Mastery Live 1",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/mastery-live-1",
+      "variants": {
+        "owned": {
+          "courseSlug": "mastery-live-1",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/mastery-live-1"
+        }
+      }
+    },
+    "ML2": {
+      "title": "Mastery Live 2",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/mastery-live-2",
+      "variants": {
+        "owned": {
+          "courseSlug": "mastery-live-2",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/mastery-live-2"
+        }
+      }
+    },
+    "ML3": {
+      "title": "Mastery Live 3",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/mastery-live-3",
+      "variants": {
+        "owned": {
+          "courseSlug": "mastery-live-3",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/mastery-live-3"
+        }
+      }
+    },
+    "ML4": {
+      "title": "Mastery Live 4",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/mastery-live-4",
+      "variants": {
+        "owned": {
+          "courseSlug": "mastery-live-4",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/mastery-live-4"
+        }
+      }
+    },
+    "ML5": {
+      "title": "Mastery Live 5",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/mastery-live-5",
+      "variants": {
+        "owned": {
+          "courseSlug": "mastery-live-5",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/mastery-live-5"
+        }
+      }
+    },
+    "ML6": {
+      "title": "Mastery Live 6",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/mastery-live-6",
+      "variants": {
+        "owned": {
+          "courseSlug": "mastery-live-6",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/mastery-live-6"
+        }
+      }
+    },
+    "ML7": {
+      "title": "Mastery Live 7",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/mastery-live-7",
+      "variants": {
+        "owned": {
+          "courseSlug": "mastery-live-7",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/mastery-live-7"
+        }
+      }
+    },
+    "ML8": {
+      "title": "Mastery Live 8",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/mastery-live-8",
+      "variants": {
+        "owned": {
+          "courseSlug": "mastery-live-8",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/mastery-live-8"
+        }
+      }
+    },
+    "Conf2011": {
+      "title": "Conference 2011 - The Christ Consciousness Returns",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/11-11conference",
+      "variants": {
+        "owned": {
+          "courseSlug": "11-11conference",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/11-11conference"
+        }
+      }
+    },
+    "Conf2012": {
+      "title": "Conference 2012 - The End of Separation",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/12-12conference",
+      "variants": {
+        "owned": {
+          "courseSlug": "12-12conference",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/12-12conference"
+        }
+      }
+    },
+    "Conf2023": {
+      "title": "Conference 2023 - Step into the Octave",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/mastering-alchemy-conference-2023",
+      "variants": {
+        "owned": {
+          "courseSlug": "mastering-alchemy-conference-2023",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/mastering-alchemy-conference-2023"
+        }
+      }
+    },
+    "Conf2024A": {
+      "title": "Conference 2024 Phoenix Arizona",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/conference-2024-phoenix",
+      "variants": {
+        "owned": {
+          "courseSlug": "conference-2024-phoenix",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/conference-2024-phoenix"
+        }
+      }
+    },
+    "Conf2024B": {
+      "title": "Conference 2024 Bristol England",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/bristol-conference-2024",
+      "variants": {
+        "owned": {
+          "courseSlug": "bristol-conference-2024",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/bristol-conference-2024"
+        }
+      }
+    },
+    "Conf2025": {
+      "title": "Conference 2025 San Diego",
+      "purchaseUrl": "https://courses.masteringalchemy.com/courses/conference-2025-sandiego-ca",
+      "variants": {
+        "owned": {
+          "courseSlug": "conference-2025-sandiego-ca",
+          "courseUrl": "https://courses.masteringalchemy.com/courses/conference-2025-sandiego-ca"
+        }
+      }
+    }
+  },
+  "chapters": {
+    "L1-C1": {
+      "title": "Your energetic systems"
+    },
+    "L1-C2": {
+      "title": "How did I get here?"
+    },
+    "L1-C3": {
+      "title": "The Rose, Aura & Octahedron"
+    },
+    "L1-C4": {
+      "title": "Building your Personal Power Field"
+    },
+    "L1-C5": {
+      "title": "Sacred Heart and Pink Diamond"
+    },
+    "L1-C6": {
+      "title": "Your Platform of Words"
+    },
+    "L1-C7": {
+      "title": "Putting It All Together"
+    },
+    "L2-S1": {
+      "title": "Meet the Teachers"
+    },
+    "L2-S2": {
+      "title": "Be The Word"
+    },
+    "L2-S3": {
+      "title": "Orange Dragonfly"
+    },
+    "L2-S4": {
+      "title": "Merlin's Crystal Ball"
+    },
+    "L2-S5": {
+      "title": "Clearing Aspects of Past Lifetimes"
+    },
+    "L2-S6": {
+      "title": "Clearing the Veils"
+    },
+    "L2-S7": {
+      "title": "Transforming the Octahedron"
+    },
+    "L2-S8": {
+      "title": "Seven Layers of Thought"
+    },
+    "L2-S9": {
+      "title": "Rays of Creation"
+    },
+    "L2-S10": {
+      "title": "4th, 5th, 6th Rays"
+    },
+    "L2-S11": {
+      "title": "Wellbeing Platform"
+    },
+    "L2-S12": {
+      "title": "Triads"
+    },
+    "L2-S13": {
+      "title": "Compressing Light"
+    },
+    "L2-S14": {
+      "title": "Blending First and Second Triads"
+    },
+    "L2-S15": {
+      "title": "The Cube"
+    },
+    "L2-S16": {
+      "title": "Success Strings"
+    },
+    "L2-S17": {
+      "title": "Eighth and Ninth Rays of Creation"
+    },
+    "L2-S18": {
+      "title": "A Beach in the Cube and Eighth Ray"
+    },
+    "L2-S19": {
+      "title": "Eighth Ray #1"
+    },
+    "L2-S20": {
+      "title": "Eighth Ray #2"
+    },
+    "L2-S21": {
+      "title": "Eighth Ray #3"
+    },
+    "L2-S22": {
+      "title": "Eighth Ray #4"
+    },
+    "L2-S23": {
+      "title": "Spinning the Triads"
+    },
+    "L2-S24": {
+      "title": "Optimum Balanced Health"
+    },
+    "L2-S25": {
+      "title": "Holy Spirit, Permission, Curiosity"
+    },
+    "L2-S26": {
+      "title": "Reconfigure the Lower Three Chakras"
+    },
+    "L2-S27": {
+      "title": "El Shaddai"
+    },
+    "L2-S28": {
+      "title": "Clear Survival, Separation, Not Accepted"
+    },
+    "L2-S29": {
+      "title": "Clearing Limitations and Being Denied"
+    },
+    "L2-S30": {
+      "title": "Clear Bloodstream and Agreements"
+    },
+    "L2-S31": {
+      "title": "Merge Mental and Emotional Bodies"
+    },
+    "L2-S32": {
+      "title": "Disrupt First Chakra and Rational Mind"
+    },
+    "L2-S33": {
+      "title": "First Chakra, Wellbeing, Red"
+    },
+    "L2-S34": {
+      "title": "Eye of Horus"
+    },
+    "L2-S35": {
+      "title": "Holy Spirit into the Eye of Horus"
+    },
+    "L2-S36": {
+      "title": "Red and the First Three Rays"
+    },
+    "L3-S1": {
+      "title": "Ehyeh Asher Ehyeh"
+    },
+    "L3-S2": {
+      "title": "Beauty. Cube in Lower Chakras"
+    },
+    "L3-S3": {
+      "title": "Using the Cube for Creation"
+    },
+    "L3-S4": {
+      "title": "Unimpaired Comprehension as Creator Intended"
+    },
+    "L3-S5": {
+      "title": "Tenth Ray of Creation"
+    },
+    "L3-S6": {
+      "title": "Multiple Attention Points. Chair Exercise. Soul Star."
+    },
+    "L3-S7": {
+      "title": "Tenth Ray - Unlimited Possibilities"
+    },
+    "L3-S8": {
+      "title": "Tenth Ray to Organize in the Non-Physical"
+    },
+    "L3-S9": {
+      "title": "The Icosahedron and Magnetic Fields"
+    },
+    "L3-S10": {
+      "title": "Taking Density Out of the Physical"
+    },
+    "L3-S11": {
+      "title": "Add Tones to Lower Four Chakras. Breathing"
+    },
+    "L3-S12": {
+      "title": "Unified Field Within Lower Four Chakras"
+    },
+    "L3-S13": {
+      "title": "Sound Currents of Lower Four Chakras"
+    },
+    "L3-S14": {
+      "title": "Restoring the Christed Matrix"
+    },
+    "L3-S15": {
+      "title": "Environment in the Cube"
+    },
+    "L3-S16": {
+      "title": "First Ray of Will and Power"
+    },
+    "L3-S17": {
+      "title": "Intwine Will and Power with the Unified Field"
+    },
+    "L3-S18": {
+      "title": "The Five Elements"
+    },
+    "L3-S19": {
+      "title": "Using the Five Elements"
+    },
+    "L3-S20": {
+      "title": "The Pineal Gland is Key to Consciousness"
+    },
+    "L3-S21": {
+      "title": "Ignite the Pilot Light in the Pineal Gland"
+    },
+    "L3-S22": {
+      "title": "Three Still Points: Heart, Pineal, Soul Star"
+    },
+    "L3-S23": {
+      "title": "Yellow Unifies the Emotional-Mental-Physical"
+    },
+    "L3-S24": {
+      "title": "Triangle of Yellow"
+    },
+    "L3-S25": {
+      "title": "Work With the Yellow Color Coding. Stability."
+    },
+    "L3-S26": {
+      "title": "With Tenth Ray - Open the Eye of Horus Further"
+    },
+    "L3-S27": {
+      "title": "Multi-Dimensional Fractals of You as Soul"
+    },
+    "L3-S28": {
+      "title": "Blue Coding"
+    },
+    "L3-S29": {
+      "title": "Blue Coding - Stable and Fluid"
+    },
+    "L3-S30": {
+      "title": "Play with Yellow and Blue, the Rays and Chakras"
+    },
+    "L3-S31": {
+      "title": "Green Coding"
+    },
+    "L3-S32": {
+      "title": "Red and Yellow Codes, the Chakras, Triads and Rays"
+    },
+    "L3-S33": {
+      "title": "Bring the Lower Chakras into a Cohesive State"
+    },
+    "L3-S34": {
+      "title": "More Play with Coding. You are the Creator."
+    },
+    "L3-S35": {
+      "title": "Blue Code to Smooth Emotional Scars and Self-Doubt"
+    },
+    "L3-S36": {
+      "title": "Green Code in Heart Chamber. New Human."
+    },
+    "L3-S37": {
+      "title": "Cell Within the Wall, Molecule, Atom, God Particle"
+    },
+    "L4-S1": {
+      "title": "First Two God Particles"
+    },
+    "L4-S2": {
+      "title": "Third God Particle"
+    },
+    "L4-S3": {
+      "title": "Alternate Scenes, Fourth Particle"
+    },
+    "L4-S4": {
+      "title": "Bridging to Experience the Physical in the Fifth Dimension"
+    },
+    "L4-S5": {
+      "title": "Blend with Uriel, Raphael, Metatron. Know What They Know."
+    },
+    "L4-S6": {
+      "title": "As a Group, We Alter Mass Consciousness"
+    },
+    "L4-S7": {
+      "title": "Loop a Word Through Triads, Chakras"
+    },
+    "L4-S8": {
+      "title": "Christed Matrix, Yellow Code, Tetrahedron Loop"
+    },
+    "L4-S9": {
+      "title": "Intend to be a Fully Christed Being"
+    },
+    "L4-S10": {
+      "title": "Looping to Allow the Christed Matrix Within You"
+    },
+    "L4-S11": {
+      "title": "Balance and Unity of Divine Feminine and Masculine"
+    },
+    "L4-S12": {
+      "title": "Clear Distorted Patterns of Feminine and Masculine"
+    },
+    "L4-S13": {
+      "title": "Feminine and Masculine Triads"
+    },
+    "L4-S14": {
+      "title": "Holy Spirit Initiation"
+    },
+    "L4-S15": {
+      "title": "Rest"
+    },
+    "L4-S16": {
+      "title": "Consistency"
+    },
+    "L4-S17": {
+      "title": "Match Yeshua, Kuthumi Within the Sacred Heart"
+    },
+    "L4-S18": {
+      "title": "Multiple Ways to Access the Living Light"
+    },
+    "L4-S19": {
+      "title": "Creating New Reference Points"
+    },
+    "L4-S20": {
+      "title": "Compression of Golden Liquid Light"
+    },
+    "L4-S21": {
+      "title": "Light Radiation Through All Your Bodies"
+    },
+    "L4-S22": {
+      "title": "Ecstasy"
+    },
+    "L4-S23": {
+      "title": "Ecstasy Through the Bodies"
+    },
+    "L4-S24": {
+      "title": "Integrate within the Unified Field, Christed Consciousness, Over Soul, Christed Body"
+    },
+    "L4-S25": {
+      "title": "Glands, Chakras and the Crystalline body"
+    },
+    "L4-S26": {
+      "title": "The Breath Through the Sacred Heart"
+    },
+    "L4-S27": {
+      "title": "Directing Light into Organs, Glands, Cells. Tone."
+    },
+    "L4-S28": {
+      "title": "The Eighth and Ninth Chakras"
+    },
+    "L4-S29": {
+      "title": "All 14 Chakras"
+    },
+    "L4-S30": {
+      "title": "Absorption"
+    },
+    "L4-S31": {
+      "title": "More Work with the 14 Chakras"
+    },
+    "L4-S32": {
+      "title": "Creative Applications of the Eighth Ray"
+    },
+    "L4-S33": {
+      "title": "Light Within a Single Cell of Blood"
+    },
+    "L4-S34": {
+      "title": "Deflate Nodule in the Reptilian Brain"
+    },
+    "L4-S35": {
+      "title": "Electrical Impulse into the Brain"
+    },
+    "L4-S36": {
+      "title": "Activate the Lobes of Your Brain"
+    },
+    "L4-S37": {
+      "title": "Morphic Fields"
+    },
+    "L4-S38": {
+      "title": "Draw the Etheric Body to the Physical"
+    },
+    "L4-S39": {
+      "title": "The Neuron Within the Cell"
+    },
+    "L4-S40": {
+      "title": "ADP into ATP"
+    },
+    "L4-S41": {
+      "title": "Neutrality"
+    },
+    "L4-S42": {
+      "title": "Five Elements and Seeing vs Looking"
+    },
+    "L4-S43": {
+      "title": "Elementals"
+    },
+    "L4-S44": {
+      "title": "Light Body"
+    },
+    "L4-S45": {
+      "title": "Integrate Light Body's Axiatonal Lines and Axial Spin Points"
+    },
+    "L4-S46": {
+      "title": "Meridians"
+    },
+    "L5-S1": {
+      "title": "Practice with Axiatonal Lines"
+    },
+    "L5-S2": {
+      "title": "More Practice with Meridians"
+    },
+    "L5-S3": {
+      "title": "Lower Four Chakras and Axiatonal Light"
+    },
+    "L5-S4": {
+      "title": "See, Hear, Feel Through the Eye of Horus"
+    },
+    "L5-S5": {
+      "title": "The Ego Rests"
+    },
+    "L5-S6": {
+      "title": "Color Codes to Ease Transformation"
+    },
+    "L5-S7": {
+      "title": "A New Direction"
+    },
+    "L5-S8": {
+      "title": "First Layer of the Light Body"
+    },
+    "L5-S9": {
+      "title": "Second Layer of the Light Body"
+    },
+    "L5-S10": {
+      "title": "Undifferentiated Light"
+    },
+    "L5-S11": {
+      "title": "Fifth and Sixth Layers of Thought"
+    },
+    "L5-S12": {
+      "title": "Two New Strands of DNA"
+    },
+    "L5-S13": {
+      "title": "Two-Way Communication Between Cells"
+    },
+    "L5-S14": {
+      "title": "Opening the Third Layer of the Light Body"
+    },
+    "L5-S15": {
+      "title": "Fourth Strand of DNA"
+    },
+    "L5-S16": {
+      "title": "Eighth Chakra and Christed Mind Looping"
+    },
+    "L5-S17": {
+      "title": "Fourth Layer, Self Love"
+    },
+    "L5-S18": {
+      "title": "Align Layers of the Light Body"
+    },
+    "L5-S19": {
+      "title": "Fourth Eye, Fifth Strand"
+    },
+    "L5-S20": {
+      "title": "Fourth Layer Completion"
+    },
+    "L5-S21": {
+      "title": "Release Disappointment"
+    },
+    "L5-S22": {
+      "title": "Intention in Etheric Then Physical Thymus"
+    },
+    "L5-S23": {
+      "title": "More with Etheric and Physical Thymus"
+    },
+    "L5-S24": {
+      "title": "Bridge the Eighth, Ninth, and Tenth Chakras"
+    },
+    "L5-S25": {
+      "title": "Eleventh Chakra, Sixth Strand of DNA"
+    },
+    "L5-S26": {
+      "title": "Embrace Your Will and Power"
+    },
+    "L5-S27": {
+      "title": "The Holy Spirit Tetrahedron"
+    },
+    "L5-S28": {
+      "title": "Remove Separation, Powerlessness, Victim"
+    },
+    "L5-S29": {
+      "title": "Collective Nature of You"
+    },
+    "L5-S30": {
+      "title": "Arc of the Covenant, Sixth Layer"
+    },
+    "L5-S31": {
+      "title": "Spiritual Autonomic System"
+    },
+    "L5-S32": {
+      "title": "Ze and Zeon Particles"
+    },
+    "L5-S33": {
+      "title": "Allowing the Activations"
+    },
+    "L5-S34": {
+      "title": "Merge Soul, Oversoul, Christed Oversoul, Soul-Spirit"
+    },
+    "L5-S35": {
+      "title": "Dismantle Lower Level of Mental/Emotional Body"
+    },
+    "L5-S36": {
+      "title": "Merge the Oversoul into Your Body"
+    },
+    "L5-S37": {
+      "title": "Anchor and Stabilize What We Have Done"
+    },
+    "L5-S38": {
+      "title": "Table of Thanks and Receiving"
+    },
+    "L5-S39": {
+      "title": "A Gathering of Masters"
+    },
+    "L5-S40": {
+      "title": "Activation of Seventh Strand of DNA"
+    },
+    "L5-S41": {
+      "title": "Next Activation of Seventh Layer"
+    },
+    "L5-S42": {
+      "title": "Our Divine Unity of Spirit"
+    },
+    "L5-S43": {
+      "title": "The Beginning of Your Personal Journey"
+    }
+  },
+  "units": {
+    "L1-C1-T1": {
+      "title": "The Mechanics of You",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/energyessentials-level1/audio/73577231-track-1-the-mechanics-of-you-18-24",
+        "membership": "https://courses.masteringalchemy.com/courses/take/energy-essentials-l1/audio/73573462-track-1-the-mechanics-of-you-18-24"
+      }
+    },
+    "L1-C1-T2": {
+      "title": "Clear Your Energy",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/energyessentials-level1/audio/73577233-track-2-clear-your-energy-come-back-to-you-15-19",
+        "membership": "https://courses.masteringalchemy.com/courses/take/energy-essentials-l1/audio/73573466-track-2-clear-your-energy-come-back-to-you-15-19"
+      }
+    },
+    "L1-C1-T3": {
+      "title": "Energy Flows Where You Are Present",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/energyessentials-level1/audio/73577235-track-3-energy-flows-where-you-are-present-37-27",
+        "membership": "https://courses.masteringalchemy.com/courses/take/energy-essentials-l1/audio/73573495-track-3-energy-flows-where-you-are-present-37-27"
+      }
+    },
+    "L1-C1-T4": {
+      "title": "In the World Not of It",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/energyessentials-level1/audio/73577236-track-4-in-the-world-not-of-it-11-44",
+        "membership": "https://courses.masteringalchemy.com/courses/take/energy-essentials-l1/audio/73573497-track-4-in-the-world-not-of-it-11-44"
+      }
+    },
+    "L1-C1-V": {
+      "title": "Grounding Cord",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/energyessentials-level1/lessons/65582936-reclaiming-your-grounded-presence",
+        "membership": "https://courses.masteringalchemy.com/courses/take/energy-essentials-l1/lessons/63751006-reclaiming-your-grounded-presence"
+      }
+    },
+    "L1-C2": {
+      "title": "How did I get here?",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/energyessentials-level1/audio/73577346-track-1-from-inherited-rules-to-conscious-creation-24-13",
+        "membership": "https://courses.masteringalchemy.com/courses/take/energy-essentials-l1/audio/64059403-track-1-from-inherited-rules-to-conscious-creation-24-13"
+      }
+    },
+    "L1-C2-V": {
+      "title": "The Center of Your Head",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/energyessentials-level1/lessons/57304010-the-center-of-your-head",
+        "membership": "https://courses.masteringalchemy.com/courses/take/energy-essentials-l1/lessons/59555215-the-center-of-your-head"
+      }
+    },
+    "L1-C3": {
+      "title": "The Rose, Aura & Octahedron",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/energyessentials-level1/audio/74037077-track-1-the-simplicity-of-being-you-16-20",
+        "membership": "https://courses.masteringalchemy.com/courses/take/energy-essentials-l1/audio/74035340-track-1-the-simplicity-of-being-you-16-20"
+      }
+    },
+    "L1-C3-V": {
+      "title": "The Rose Tool",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/energyessentials-level1/lessons/53974661-the-rose-tool",
+        "membership": "https://courses.masteringalchemy.com/courses/take/energy-essentials-l1/lessons/59555217-the-rose-tool"
+      }
+    },
+    "L1-C4": {
+      "title": "Building your Personal Power Field",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/energyessentials-level1/audio/74497086-track-1-realigning-your-signal-14-31",
+        "membership": "https://courses.masteringalchemy.com/courses/take/energy-essentials-l1/audio/74501938-track-1-realigning-your-signal-14-31"
+      }
+    },
+    "L1-C4-V": {
+      "title": "Animation of Your Field",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/energyessentials-level1/lessons/67452944-animation-of-your-field",
+        "membership": "https://courses.masteringalchemy.com/courses/take/energy-essentials-l1/lessons/67451684-animation-of-your-field"
+      }
+    },
+    "L1-C5": {
+      "title": "Sacred Heart and Pink Diamond",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/energyessentials-level1/audio/74723446-track-1-from-reaction-to-choice-10-01",
+        "membership": "https://courses.masteringalchemy.com/courses/take/energy-essentials-l1/audio/74724245-track-1-from-reaction-to-choice-10-01"
+      }
+    },
+    "L1-C6": {
+      "title": "Your Platform of Words",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/energyessentials-level1/audio/75245531-track-1-observing-without-reacting-14-06",
+        "membership": "https://courses.masteringalchemy.com/courses/take/energy-essentials-l1/audio/75245311-track-1-observing-without-reacting-14-06"
+      }
+    },
+    "L1-C6-V": {
+      "title": "The Layers of Thought",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/energyessentials-level1/lessons/67452934-the-layers-of-thought",
+        "membership": "https://courses.masteringalchemy.com/courses/take/energy-essentials-l1/lessons/74501909-the-layers-of-thought"
+      }
+    },
+    "L1-C7": {
+      "title": "Putting It All Together",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/energyessentials-level1/audio/74810974-track-1-beyond-old-patterns-13-40",
+        "membership": "https://courses.masteringalchemy.com/courses/take/energy-essentials-l1/audio/74809639-track-1-beyond-old-patterns-13-40"
+      }
+    },
+    "L2-S1": {
+      "title": "Meet the Teachers",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/37911821-complete-session-1-23-22",
+        "membership": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/37911821-complete-session-1-23-22"
+      }
+    },
+    "L2-S2": {
+      "title": "Be The Word",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/37911994-complete-session-1-38-25",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40885999-complete-session-1-38-25"
+      }
+    },
+    "L2-S3": {
+      "title": "Orange Dragonfly",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38134337-complete-class-01-37-17",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886008-complete-class-01-37-17"
+      }
+    },
+    "L2-S3-QA": {
+      "title": "Q&A Clairvoyance",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38134892-q-a-clairvoyance-04-03",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886013-q-a-clairvoyance-04-03"
+      }
+    },
+    "L2-S4": {
+      "title": "Merlin's Crystal Ball",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38136594-complete-class-not-chair-exercise-01-23-51",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886017-chair-exercise-18-12"
+      }
+    },
+    "L2-S4-ChairExercise": {
+      "title": "Chair Exercise",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38135395-chair-exercise-18-12",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886018-complete-class-not-chair-exercise-01-23-51"
+      }
+    },
+    "L2-S4-QA": {
+      "title": "Q&A",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38157960-q-a-complete-call-01-19-01",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886023-q-a-complete-call-01-19-01"
+      }
+    },
+    "L2-S5": {
+      "title": "Clearing Aspects of Past Lifetimes",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38158052-complete-class-01-21-51",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886026-complete-class-01-21-51"
+      }
+    },
+    "L2-S5-ExtraPracticeCompleteClass": {
+      "title": "Extra Practice Complete Class",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38158071-extra-practice-complete-class-01-21-29",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886030-extra-practice-complete-class-01-21-29"
+      }
+    },
+    "L2-S5-AnotherQACall": {
+      "title": "Another Q&A Call",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38158203-another-q-a-call-01-34-34",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886034-another-q-a-call-01-34-34"
+      }
+    },
+    "L2-S6": {
+      "title": "Clearing the Veils",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38158346-complete-class-01-29-45",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886039-complete-class-01-29-45"
+      }
+    },
+    "L2-S7": {
+      "title": "Transforming the Octahedron",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38158901-complete-class-01-28-34",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886047-complete-class-01-28-34"
+      }
+    },
+    "L2-S8": {
+      "title": "Seven Layers of Thought",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38169426-complete-class-01-21-47",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886055-complete-class-01-21-47"
+      }
+    },
+    "L2-S8-SevenLayersofThoughtExtraClass": {
+      "title": "Seven Layers of Thought - Extra Class",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38169530-seven-layers-of-thought-track-1-10-10",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886059-seven-layers-of-thought-extra-class-01-43-08"
+      }
+    },
+    "L2-S8-QA": {
+      "title": "Q&A",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38169590-q-a-complete-call-1-41-55",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886063-q-a-complete-call-01-41-55"
+      }
+    },
+    "L2-S9": {
+      "title": "Rays of Creation",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38170137-complete-class-01-37-20",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886066-complete-class-01-37-20"
+      }
+    },
+    "L2-S9-QA": {
+      "title": "Q&A",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38170163-q-a-call-01-10-50",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886070-q-a-call-01-10-50"
+      }
+    },
+    "L2-S10": {
+      "title": "4th, 5th, 6th Rays",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38170483-complete-class-01-27-26",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886076-complete-class-01-27-26"
+      }
+    },
+    "L2-S11": {
+      "title": "Wellbeing Platform",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38170689-complete-class-01-16-12",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886085-complete-class-01-16-12"
+      }
+    },
+    "L2-S11-ExtraPlay": {
+      "title": "Extra Play",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38170720-extra-play-complete-01-10-48",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886089-extra-play-complete-01-10-48"
+      }
+    },
+    "L2-S11-WellbeingPlatform": {
+      "title": "Wellbeing Platform",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38170750-wellbeing-platform-complete-26-59",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886092-wellbeing-platform-complete-26-59"
+      }
+    },
+    "L2-S12": {
+      "title": "Triads",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38171566-complete-class-01-07-26",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886105-complete-class-01-07-26"
+      }
+    },
+    "L2-S13": {
+      "title": "Compressing Light",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38171724-complete-class-01-08-34",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886114-complete-class-01-08-34"
+      }
+    },
+    "L2-S13-QA1": {
+      "title": "Q&A 1",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38171754-q-a-with-previous-class-1-01-29-41",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886117-q-a-with-previous-class-1-01-29-41"
+      }
+    },
+    "L2-S13-QA2": {
+      "title": "Q&A 2",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38171763-q-a-with-previous-class-2-01-20-43",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886118-q-a-with-previous-class-2-01-20-43"
+      }
+    },
+    "L2-S13-KuthumiontheSecondTriad": {
+      "title": "Kuthumi on the Second Triad",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/pdfs/38171692-kuthumi-on-the-second-triad",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/pdfs/40886119-kuthumi-on-the-second-triad"
+      }
+    },
+    "L2-S14": {
+      "title": "Blending First and Second Triads",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38171815-complete-class-01-21-13",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886124-complete-class-01-21-13"
+      }
+    },
+    "L2-S15": {
+      "title": "The Cube",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38172048-complete-class-01-08-11",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886131-complete-class-01-08-11"
+      }
+    },
+    "L2-S15-QA": {
+      "title": "Q&A",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38172085-q-a-with-previous-class-01-14-35",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886137-q-a-with-previous-class-01-14-35"
+      }
+    },
+    "L2-S16": {
+      "title": "Success Strings",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38172243-complete-session-01-26-05",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886143-complete-session-01-26-05"
+      }
+    },
+    "L2-S17": {
+      "title": "Eighth and Ninth Rays of Creation",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38172417-complete-class-01-18-22",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886151-complete-class-01-18-22"
+      }
+    },
+    "L2-S17-Metatron": {
+      "title": "Metatron",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38172851-metatron-15-51",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886156-metatron-15-51"
+      }
+    },
+    "L2-S17-ZadkielThirdRay": {
+      "title": "Zadkiel Third Ray",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38172709-zadkiel-third-ray-19-12",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886155-zadkiel-third-ray-19-12"
+      }
+    },
+    "L2-S18": {
+      "title": "The Five Elements",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38172961-complete-class-01-11-55",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886160-complete-class-01-11-55"
+      }
+    },
+    "L2-S18-ThoughtStringsHomePlay": {
+      "title": "Thought Strings Home-Play",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/pdfs/38172953-thought-strings",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/pdfs/40886163-thought-strings"
+      }
+    },
+    "L2-S19": {
+      "title": "Using the Five Elements",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38173163-complete-class-01-34-25",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886167-complete-class-01-34-25"
+      }
+    },
+    "L2-S19-PreviousGroup": {
+      "title": "Previous Group",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38173335-previous-group-complete-call-01-40-02",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886172-previous-group-complete-call-01-40-02"
+      }
+    },
+    "L2-S19-AbsorbingTemplates1": {
+      "title": "Absorbing Templates 1",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/39026433-absorbing-templates-1-01-01-52",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886179-absorbing-templates-1-01-01-52"
+      }
+    },
+    "L2-S19-AbsorbingTemplates2": {
+      "title": "Absorbing Templates 2",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/39026439-absorbing-templates-2-01-03-30",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886178-absorbing-templates-2-01-03-30"
+      }
+    },
+    "L2-S19-MonitorRays": {
+      "title": "Monitor Rays",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/39026442-monitor-rays-01-05-37",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886180-monitor-rays-01-05-37"
+      }
+    },
+    "L2-S20": {
+      "title": "Eighth Ray #2",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38173632-complete-class-01-36-51",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886183-complete-class-01-36-51"
+      }
+    },
+    "L2-S20-PreviousGroup": {
+      "title": "Previous Group",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38173697-previous-group-complete-class-01-35-30",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886192-previous-group-complete-class-01-35-30"
+      }
+    },
+    "L2-S20-Zadkiel": {
+      "title": "Zadkiel",
+      "thinkificUrls": {
+        "owned": "https://courses.masteringalchemy.com/courses/take/level-2-program/audio/38173641-zadkiel-complete-conversation-57-49",
+        "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886187-zadkiel-complete-conversation-57-49"
+      }
+    },
+    "L2-S21-T8Ray3Fullv2": {
+      "title": "Eighth Ray #3"
+    },
+    "L2-S21-TPrev8Ray3Full": {
+      "title": "Previous Class"
+    },
+    "L2-S21-TZadkielWavesand8Ray": {
+      "title": "Zadkiel - Waves and Eighth Ray"
+    },
+    "ETPF-S1-StarTetrahedronElectricBlue": {
+      "title": "Setting the Energy - Star Tetrahedron-Electric Blue"
+    },
+    "ETPF-S2-ABlending": {
+      "title": "A Blending"
+    },
+    "ETPF-S3-ArcofCovenant": {
+      "title": "Etheric Body and Arc of the Covenant"
+    },
+    "ETPF-S3-HellofromJimVideo": {
+      "title": "Hello from Jim - Video"
+    },
+    "ETPF-SuggestedClasses-ArcoftheCovenantComplete": {
+      "title": "Arc of the Covenant"
+    },
+    "ETPF-SuggestedClasses-SpiritualAutonomicSystemComplete": {
+      "title": "Spiritual Autonomic System"
+    },
+    "ETPF-SuggestedClasses-ZeandZeonComplete": {
+      "title": "Ze and Ze-on"
+    },
+    "ETPF-SuggestedClasses-Metatron": {
+      "title": "Metatron"
+    },
+    "ETPF-SuggestedClasses-MetatronTrack1": {
+      "title": "Metatron Track 1"
+    },
+    "ETPF-SuggestedClasses-MetatronTrack2": {
+      "title": "Metatron Track 2"
+    },
+    "ETPF-S4-CreatingthePlatformofLove": {
+      "title": "Creating the Platform of Love"
+    },
+    "ETPF-S4-Level5QA1": {
+      "title": "Level 5 Q&A 1"
+    },
+    "ETPF-S4-Level5QA2": {
+      "title": "Level 5 Q&A 2"
+    },
+    "ETPF-S4-Level5QA3": {
+      "title": "Level 5 Q&A 3"
+    },
+    "ETPF-S5-GardenintheSphere": {
+      "title": "Garden in the Sphere"
+    },
+    "ETPF-S5-TwoAdditionalQACompleteDay": {
+      "title": "Complete Day Call"
+    },
+    "ETPF-S5-TwoAdditionalQACompleteEvening": {
+      "title": "Complete Evening Call"
+    },
+    "ETPF-S6-AnchoringMagenta": {
+      "title": "Anchoring Magenta"
+    },
+    "ETPF-S7-Death": {
+      "title": "Death"
+    },
+    "CFWATI-BONUS-EthericBodyComplete": {
+      "title": "Experiencing the Etheric Body"
+    },
+    "CFWATI-ListenBefore-Boredom2": {
+      "title": "Boredom 2"
+    },
+    "CFWATI-ListenBefore-BoredomIntoCreativeOpportunity": {
+      "title": "Boredom Into Creative Opportunity"
+    },
+    "CFWATI-ListenBefore-BoredomQA": {
+      "title": "Boredom Q&A Session"
+    },
+    "CFWATI-ListenBefore-DoYouUseCubetoCreateLectureintoMeitation": {
+      "title": "Do you Use Cube to Create?"
+    },
+    "CFWATI-ListenBefore-DoYouUseCubetoCreateQA": {
+      "title": "Do You Use Cube to Create - Questions"
+    },
+    "CFWATI-S1-BeingConsciousintheCellandParticle": {
+      "title": "Being Conscious in the Cell and Particle"
+    },
+    "CFWATI-S2-AxiatonalLinesandSpinPoints": {
+      "title": "Axiatonal Lines and Spin Points"
+    },
+    "CFWATI-S2-GroupConversation1": {
+      "title": "Group Conversation 1"
+    },
+    "CFWATI-S3-ElevatetheLightofSource": {
+      "title": "Elevate the Light of Source"
+    },
+    "CFWATI-S4-JumpOfftheCliffandFLY": {
+      "title": "Jump Off the Cliff and Fly!"
+    },
+    "CFWATI-S4-GroupConversation2": {
+      "title": "Group Conversation 2"
+    },
+    "CFWATI-S5-GoldenNectarComplete": {
+      "title": "Golden Nectar Spinning Pineal"
+    },
+    "CFWATI-S6-QuantumFieldandtheEgoComplete": {
+      "title": "Quantum Field and the Ego"
+    },
+    "CFWATI-S7-ColorCodesandMergingwithOversoul": {
+      "title": "Color Codes and Merging with Oversoul"
+    },
+    "CFWATI-S7-GroupConversation3": {
+      "title": "Group Conversation 3"
+    },
+    "CFWATI-S8-DoorwayWhereMagicHappens": {
+      "title": "Doorway Where Magic Happens"
+    },
+    "CFWATI-S9-FifthSixthSeventhDimensions": {
+      "title": "Fifth, Sixth and Seventh Dimensions"
+    },
+    "CFWATI-S11-BridgingwithUniversalMind": {
+      "title": "Bridging with Universal Mind"
+    },
+    "CFWATI-S11-ConversationwithElMoryaPDF": {
+      "title": "Conversation with El Morya PDF"
+    },
+    "CFWATI-S12-DoorwayofLoveandWill": {
+      "title": "Doorway of Love and Will"
+    },
+    "CFWATI-S12-GroupConversation4": {
+      "title": "Group Conversation 4"
+    },
+    "CFWATI-S13-Permission": {
+      "title": "Permission"
+    },
+    "CFWATI-S13-GroupConversation5": {
+      "title": "Group Conversation 5"
+    },
+    "CFWATI-S14-Shekhinah": {
+      "title": "Shekhinah"
+    },
+    "LWTLB-BonusMaterial-ExperiencingtheEthericBodyComplete": {
+      "title": "Experiencing the Etheric Body"
+    },
+    "LWTLB-SettingtheFoundation-ApplicationoftheGreenColorCodeComplete": {
+      "title": "Application of the Green Color Code"
+    },
+    "LWTLB-SettingtheFoundation-MessagefromJim": {
+      "title": "Message from Jim"
+    },
+    "LWTLB-SettingtheFoundation-ThePoweroftheFeminineAttentionPointWithinYouComplete": {
+      "title": "The Power of the Feminine Attention Point Within You"
+    },
+    "LWTLB-S1-Complete": {
+      "title": "Dying Without Losing the Body"
+    },
+    "LWTLB-S2-Complete": {
+      "title": "Conscious Thinking"
+    },
+    "LWTLB-S3-Complete": {
+      "title": "I Got a Lightbody - Now What?"
+    },
+    "LWTLB-S4-Complete": {
+      "title": "Indigo Color Coding"
+    },
+    "LWTLB-S5-Complete": {
+      "title": "Indigo and Magenta Color Codes"
+    },
+    "LWTLB-S6-Complete": {
+      "title": "Upgrading the Geometric Fields"
+    },
+    "LWTLB-S7-Complete": {
+      "title": "Utilizing the Rays in Expanded Ways"
+    },
+    "LWTLB-S8-Complete": {
+      "title": "Questions and Answers"
+    },
+    "LWTLB-S8-SupportingMaterial-ArcComplete": {
+      "title": "Supporting Material - Arc of the Covenant"
+    },
+    "LWTLB-S8-SupportingMaterial-MetatronTrack1": {
+      "title": "Supporting Material - Metatron Track 1"
+    },
+    "LWTLB-S8-SupportingMaterial-MetatronTrack2": {
+      "title": "Supporting Material - Metatron Track 2"
+    },
+    "LWTLB-S8-SupportingMaterial-ZeComplete": {
+      "title": "Supporting Material - Ze"
+    },
+    "LWTLB-S9-Complete": {
+      "title": "Thinking as the Soul"
+    },
+    "LWTLB-S10-Complete": {
+      "title": "New Magnetics and Merging the Eighth Chakra"
+    },
+    "LWTLB-S11-Complete": {
+      "title": "Drawing the Non-physical into the Physical"
+    },
+    "LWTLB-S12-Complete": {
+      "title": "Questions and Answers"
+    },
+    "LWTLB-S13-Complete": {
+      "title": "Engaging your Soul Extensions"
+    },
+    "LWTLB-S13-InstructionalConversationwiththeWe": {
+      "title": "Instructional Conversation with the We"
+    },
+    "LWTLB-S14-Complete": {
+      "title": "Clearing the Veils to the Causal Body"
+    },
+    "LWTLB-S15-Complete": {
+      "title": "Creating the New Human"
+    },
+    "LWTLB-S15-QA1": {
+      "title": "Q&A Call 1"
+    },
+    "LWTLB-S15-QA2": {
+      "title": "Q&A Call 2"
+    },
+    "LWTLB-S16-Complete": {
+      "title": "Experiencing Joy from within the Causal Body"
+    },
+    "LWTLB-S17-Complete": {
+      "title": "Elevating the Christ within you"
+    },
+    "LWTLB-S17-MoreoftheEthericBody": {
+      "title": "More of the Etheric Body"
+    },
+    "R3-S1-LoveintheStarTetrahedron": {
+      "title": "Love in the StarTetrahedron"
+    },
+    "R3-S2-StructuringtheOctave": {
+      "title": "Structuring the Octave"
+    },
+    "R3-S2-CallwithLevel5": {
+      "title": "Call with Level 5"
+    },
+    "R3-S3-OutsideofTime": {
+      "title": "Outside of Time"
+    },
+    "R3-S3-ExtraCall": {
+      "title": "Extra Call"
+    },
+    "R3-S4-MergingYourNeurology": {
+      "title": "Merging Your Neurology"
+    },
+    "R3-S5-CommandingPresence": {
+      "title": "Commanding Presence"
+    },
+    "R3-S6-LeveragingtheSleepSpace": {
+      "title": "Leveraging the Sleep Space"
+    },
+    "R3-S7-DissolvingDarkness": {
+      "title": "Dissolving Darkness"
+    },
+    "R3-S7-MoreAbouttheOctaveComplete": {
+      "title": "More About the Octave Complete"
+    },
+    "R3-S8-TakeTwoStepsBack": {
+      "title": "Take Two Steps Back"
+    },
+    "R3-S8-SpecialWebinarLecturetoMeditation": {
+      "title": "Special Webinar Lecture to Meditation"
+    },
+    "R3-S8-SpecialWebinarMeditation": {
+      "title": "Special Webinar Meditation"
+    },
+    "R3-S8-SpecialWebinarQA1": {
+      "title": "Special Webinar QA 1"
+    },
+    "R3-S8-SpecialWebinarQA2": {
+      "title": "Special Webinar QA 2"
+    },
+    "R3-S9-LivingatHome": {
+      "title": "Living at Home"
+    },
+    "R3-S10-TheBeginning": {
+      "title": "The Beginning"
+    },
+    "R2-Special-Track1LecturetoMeditation": {
+      "title": "Special Reset Webinar"
+    },
+    "R2-Special-Track2QA1": {
+      "title": "Special Reset Webinar"
+    },
+    "R2-Special-Track3Meditation": {
+      "title": "Special Reset Webinar"
+    },
+    "R2-Special-Track4QA2": {
+      "title": "Special Reset Webinar"
+    },
+    "R2-S1-Imagination": {
+      "title": "Imagination"
+    },
+    "R2-S1-JimandRoxaneConversation": {
+      "title": "Jim and Roxane Conversation"
+    },
+    "R2-S2-ConsciousCreationin45D": {
+      "title": "Conscious Creation in 4-5D"
+    },
+    "R2-S2-JimandRoxaneConversation": {
+      "title": "Jim and Roxane Conversation"
+    },
+    "R2-S3-MergingwiththeHigherSelf": {
+      "title": "Merging with the Higher Self"
+    },
+    "R2-S3-GroupConversation1": {
+      "title": "Group Conversation 1"
+    },
+    "R2-S3-PresentQuietAwareLecture": {
+      "title": "Present-Quiet-Aware Lecture"
+    },
+    "R2-S3-PresentQuietAwareMeditation": {
+      "title": "Present-Quiet-Aware Meditation"
+    },
+    "R2-S3-RoxaneandJimConversation": {
+      "title": "Roxane and Jim Conversation"
+    },
+    "R2-S4-ArchangelsMichaelandUriel": {
+      "title": "Archangels Michael and Uriel"
+    },
+    "R2-S4-GroupConversation2": {
+      "title": "Group Conversation 2"
+    },
+    "R2-S4-RoxaneandJimConversation": {
+      "title": "Roxane and Jim Conversation"
+    },
+    "R2-S5-ARoomintheSixthDimension": {
+      "title": "A Room in the Sixth Dimension"
+    },
+    "R2-S5-GroupConversation3": {
+      "title": "Group Conversation 3"
+    },
+    "R2-S6-SimultaneousTimeChoices": {
+      "title": "Simultaneous Time Choices"
+    },
+    "R2-S6-ExtracallHelloandQA": {
+      "title": "Extra call - Hello and QA"
+    },
+    "R2-S6-ExtracallLecture1": {
+      "title": "Extra call - Lecture 1"
+    },
+    "R2-S6-ExtracallLecture2": {
+      "title": "Extra call - Lecture 2"
+    },
+    "R2-S6-ExtracallMeditation1": {
+      "title": "Extra call - Meditation 1"
+    },
+    "R2-S6-ExtracallMeditation2": {
+      "title": "Extra call - Meditation 2"
+    },
+    "R2-S7-DownloadingSourceCode": {
+      "title": "Downloading Source Code"
+    },
+    "R2-S8-ElevatingtheChakras": {
+      "title": "Elevating the Chakras"
+    },
+    "R2-S8-GroupConversation4": {
+      "title": "Group Conversation 4"
+    },
+    "R2-S9-TheOtherSideoftheLine": {
+      "title": "The Other Side of the Line"
+    },
+    "R2-S10-ImaginationandtheSixthDimension": {
+      "title": "Imagination and the Sixth Dimension"
+    },
+    "R2-S10-CallwithLevel5": {
+      "title": "Call with Level 5"
+    },
+    "R2-S10-QA1": {
+      "title": "QA 1"
+    },
+    "R2-S10-QA2": {
+      "title": "QA 2"
+    },
+    "R1-Welcome-SpecialWinterSolstice": {
+      "title": "Welcome"
+    },
+    "R1-Welcome-WhatIsThisNewCrystallizedPinkLightofLove": {
+      "title": "Welcome"
+    },
+    "R1-BonusMaterial-ExperiencingtheEthericBody": {
+      "title": "Experiencing the Etheric Body"
+    },
+    "R1-AdditionalMaterial-LecturetoMeditation": {
+      "title": "Special Reset Webinar"
+    },
+    "R1-AdditionalMaterial-Meditation": {
+      "title": "Special Reset Webinar"
+    },
+    "R1-AdditionalMaterial-QuestionsandAnswers1": {
+      "title": "Special Reset Webinar"
+    },
+    "R1-AdditionalMaterial-QuestionsandAnswers2": {
+      "title": "Special Reset Webinar"
+    },
+    "R1-S1-FirstTwoGodParticles": {
+      "title": "First Two God Particles"
+    },
+    "R1-S1-MergingLayersofConsciousness": {
+      "title": "Merging Layers of Consciousness"
+    },
+    "R1-S1-PracticewithAxiatonalLines": {
+      "title": "Practice with Axiatonal Lines"
+    },
+    "R1-S2-CanYouAcceptYou": {
+      "title": "Can You Accept You?"
+    },
+    "R1-S2-CompleteArcofCovenant": {
+      "title": "Supporting Material for S2 - Complete Arc of Covenant"
+    },
+    "R1-S2-CompleteZeZeon": {
+      "title": "Supporting Material for S2 - Complete Ze Ze-on"
+    },
+    "R1-S2-ListenFirstMetatron": {
+      "title": "Supporting Material for S2 - Listen First - Metatron"
+    },
+    "R1-S2-MetatronTrack1": {
+      "title": "Supporting Material for S2 - Metatron Track 1"
+    },
+    "R1-S2-MetatronTrack2": {
+      "title": "Supporting Material for S2 - Metatron Track 2"
+    },
+    "R1-S3-AllowIttoCometoYou": {
+      "title": "Allow It to Come to You"
+    },
+    "R1-S3-JimandRoxaneConversation": {
+      "title": "Jim and Roxane Conversation"
+    },
+    "R1-S3-SupportingMaterialCompleteClass": {
+      "title": "Supporting Material for Session 3"
+    },
+    "R1-S3-SupportingMaterialJimandRoxaneConversation": {
+      "title": "Supporting Material for S3 - Conversation between Jim and Roxane"
+    },
+    "R1-S3-SupportingMaterialQAwithPreviousL5Class": {
+      "title": "Supporting Material for S3 - QA with Previous L5 Class"
+    },
+    "R1-S4-CrystalizingLove": {
+      "title": "Crystalizing Love"
+    },
+    "R1-S5-BetheMolecule": {
+      "title": "Be the Molecule"
+    },
+    "R1-S5-Level5QA": {
+      "title": "Level 5 QA"
+    },
+    "R1-S6-GroupConversation1": {
+      "title": "Group Conversation 1"
+    },
+    "R1-S6-GroupConversation2": {
+      "title": "Group Conversation 2"
+    },
+    "R1-S6-TasteofaStrawberry": {
+      "title": "Taste of a Strawberry"
+    },
+    "R1-S7-ChangingYourDefaultPatterns": {
+      "title": "Changing Your Default Patterns"
+    },
+    "R1-S7-GroupConversation3": {
+      "title": "Group Conversation 3"
+    },
+    "R1-S8-GroupConversation4": {
+      "title": "Group Conversation 4"
+    },
+    "R1-S8-IncrementsofAwareness": {
+      "title": "Increments of Awareness"
+    },
+    "R1-S9-YouandSimultaneousTime": {
+      "title": "You and Simultaneous Time"
+    },
+    "R1-S10-CallwithLevel5": {
+      "title": "Call with Level 5"
+    },
+    "R1-S10-FindingYourWayHome": {
+      "title": "Finding Your Way Home"
+    },
+    "R1-S10-GroupConversation5": {
+      "title": "Group Conversation 5"
+    },
+    "R1-S10-QAwithaPreviousGroup": {
+      "title": "QA with a Previous Group"
+    },
+    "R1-S10-SaturdayHelloandQA": {
+      "title": "Saturday - Hello and QA"
+    },
+    "R1-S10-SaturdayLecture1": {
+      "title": "Saturday - Lecture 1"
+    },
+    "R1-S10-SaturdayLecture2": {
+      "title": "Saturday - Lecture 2"
+    },
+    "R1-S10-SaturdayMeditation1": {
+      "title": "Saturday - Meditation 1"
+    },
+    "R1-S10-SaturdayMeditation2": {
+      "title": "Saturday - Meditation 2"
+    },
+    "R1-S10-SundayAfternoonQA": {
+      "title": "Sunday Afternoon QA"
+    },
+    "R1-S10-SundayMorningQA": {
+      "title": "Sunday Morning QA"
+    },
+    "ML1-C1-S1": {
+      "title": "Stepping Beyond 3D"
+    },
+    "ML1-C1-S2": {
+      "title": "Creating Your 5D Default"
+    },
+    "ML1-C2-S1": {
+      "title": "Changing the Game Board"
+    },
+    "ML1-C2-S2": {
+      "title": "Thought Into Form"
+    },
+    "ML1-C3-S1": {
+      "title": "Living Beyond the Physical"
+    },
+    "ML1-C3-S2": {
+      "title": "The Artist and the Experience"
+    },
+    "ML1-C4-S1": {
+      "title": "Returning Home"
+    },
+    "ML1-C5-S1": {
+      "title": "Stability in the Shift"
+    },
+    "ML1-C5-S2": {
+      "title": "Give to Yourself"
+    },
+    "ML2-C1-S1": {
+      "title": "Stepping Into the Cloud: The Park Bench as Your Anchor"
+    },
+    "ML2-C1-S2": {
+      "title": "Entering the New Realm of Consciousness"
+    },
+    "ML2-C2-S1": {
+      "title": "Becoming Conscious in Simultaneous Time"
+    },
+    "ML2-C2-S2": {
+      "title": "Magnetics, Geometry, and the New Human Alignment"
+    },
+    "ML2-C3-S1": {
+      "title": "From Thinking to Experiencing"
+    },
+    "ML2-C3-S2": {
+      "title": "Streaming Intelligence & the State of Comfortable Being"
+    },
+    "ML2-C4-S1": {
+      "title": "Consciousness As Intelligence"
+    },
+    "ML2-C4-S2": {
+      "title": "Living Light Intelligence: Knowledge, Time, and New Awareness"
+    },
+    "ML2-C5-S1": {
+      "title": "Expanding into Multidimensional Consciousness"
+    },
+    "ML2-C5-S2": {
+      "title": "The Slower You Go..."
+    },
+    "ML3-C1-S1": {
+      "title": "Entering the Octave: Releasing Old Patterns"
+    },
+    "ML3-C1-S2": {
+      "title": "Finding Stability in Change "
+    },
+    "ML3-C2-S1": {
+      "title": "The Power of Smoothness"
+    },
+    "ML3-C2-S2": {
+      "title": "The 90-Degree Shift"
+    },
+    "ML3-C3-S1": {
+      "title": "Creating Through Light"
+    },
+    "ML3-C3-S2": {
+      "title": "Attention Shapes Reality"
+    },
+    "ML3-C4-S1": {
+      "title": "Holding the Door"
+    },
+    "ML3-C4-S2": {
+      "title": "Confusion to Creation"
+    },
+    "ML3-C5-S1": {
+      "title": "From Imagination to Reality"
+    },
+    "ML3-C5-S2": {
+      "title": "Oneness with Source: The Creator Within"
+    },
+    "ML4-C1-S1": {
+      "title": "Awakening the Living Light Within"
+    },
+    "ML4-C1-S2": {
+      "title": "Stability in a Changing Energy Field"
+    },
+    "ML4-C2-S1": {
+      "title": "Stepping Into a New Reality"
+    },
+    "ML4-C2-S2": {
+      "title": "Choosing Your Path of Creation"
+    },
+    "ML4-C3-S1": {
+      "title": "The Shift Into Higher Intelligence"
+    },
+    "ML4-C3-S2": {
+      "title": "Entering the Field of Illumination"
+    },
+    "ML4-C4-S1": {
+      "title": "Owning Your Presence in a New Landscape"
+    },
+    "ML4-C4-S2": {
+      "title": "Living in the Space of Creation"
+    },
+    "ML4-C5-S1": {
+      "title": "I Am the Creator"
+    },
+    "ML4-C5-S2": {
+      "title": "Building a New Reality Together"
+    },
+    "ML5-C1-S1": {
+      "title": "Creating from Clarity"
+    },
+    "ML5-C1-S2": {
+      "title": "The Power of Observation"
+    },
+    "ML5-C2-S1": {
+      "title": "Creating Your Atmosphere"
+    },
+    "ML5-C2-S2": {
+      "title": "Midwives of the New Realm"
+    },
+    "ML5-C3-S1": {
+      "title": "The Sacred Heart Awakens"
+    },
+    "ML5-C3-S2": {
+      "title": "Beyond the Edge"
+    },
+    "ML5-C4-S1": {
+      "title": "Stabilizing the New You"
+    },
+    "ML5-C4-S2": {
+      "title": "Remembering Who You Are"
+    },
+    "ML5-C4-S3": {
+      "title": "How Are You Dressed?"
+    },
+    "ML5-C5-S1": {
+      "title": "Creating from the Heart"
+    },
+    "ML6-C1-S1": {
+      "title": "Entering the Field of Creation"
+    },
+    "ML6-C1-S2": {
+      "title": "The Mechanics of Instant Creation"
+    },
+    "ML6-C2-S1": {
+      "title": "Stabilizing Awareness in a Shifting Reality"
+    },
+    "ML6-C2-S2": {
+      "title": "From Confusion to Mastery"
+    },
+    "ML6-C3-S1": {
+      "title": "Choosing Reality Through Frequency"
+    },
+    "ML6-C3-S2": {
+      "title": "The Architecture of Experience"
+    },
+    "ML6-C4-S1": {
+      "title": "The Power of Intentional Attention"
+    },
+    "ML6-C4-S2": {
+      "title": "Embodying the Creator State"
+    },
+    "ML6-C5-S1": {
+      "title": "Integration and Effortless Flow"
+    },
+    "ML6-C5-S2": {
+      "title": "Living in the Created Reality"
+    },
+    "ML7-C1-S1": {
+      "title": "From Wanting to Having: Becoming the Creator"
+    },
+    "ML7-C1-S2": {
+      "title": "Being Seen and Creating Effortlessly"
+    },
+    "ML7-C2-S1": {
+      "title": "Stability in the Mush: Holding Your Point of Reference"
+    },
+    "ML7-C3-S2": {
+      "title": "Alignment, Color, and Living Creation"
+    },
+    "ML7-C4-S2": {
+      "title": "The Power of Yes"
+    },
+    "ML7-C5-S1": {
+      "title": "Living in the 0.01 Field"
+    },
+    "ML7-C5-S2": {
+      "title": "Rewriting Reality Through Awareness"
+    },
+    "ML8-C1-S1": {
+      "title": "Entering Point 0.01"
+    },
+    "ML8-C1-S2": {
+      "title": "Commanding Presence"
+    },
+    "ML8-C2-S1": {
+      "title": "The Golden Thread of Creation"
+    },
+    "ML8-C2-S2": {
+      "title": "Weaving Love and Intelligence: Stepping Beyond 3D Awareness"
+    },
+    "ML8-C3-S1": {
+      "title": "Choice Point: Entering Coherent Awareness"
+    },
+    "ML8-C3-S2": {
+      "title": "Embodying the New Human"
+    },
+    "Conf2011-D1AM": {
+      "title": "Day 1 AM"
+    },
+    "Conf2011-D1PM": {
+      "title": "Day 1 PM"
+    },
+    "Conf2011-D1QA": {
+      "title": "Day 1 QA"
+    },
+    "Conf2011-D2AM": {
+      "title": "Day 2 AM"
+    },
+    "Conf2011-D2PM": {
+      "title": "Day 2 PM"
+    },
+    "Conf2011-D3Full": {
+      "title": "Day 3 Full"
+    },
+    "Conf2012-D1AM": {
+      "title": "Day 1 AM"
+    },
+    "Conf2012-D1PM": {
+      "title": "Day 1 PM"
+    },
+    "Conf2012-D2AM": {
+      "title": "Day 2 AM"
+    },
+    "Conf2012-D2PM": {
+      "title": "Day 2 PM"
+    },
+    "Conf2012-D2QA": {
+      "title": "Day 2 QA"
+    },
+    "Conf2012-D3AM": {
+      "title": "Day 3 AM"
+    },
+    "Conf2012-D3PM": {
+      "title": "Day 3 PM"
+    },
+    "Conf2023-D1AM": {
+      "title": "Day 1 AM"
+    },
+    "Conf2023-D1PM": {
+      "title": "Day 1 PM"
+    },
+    "Conf2023-D2AM": {
+      "title": "Day 2 AM"
+    },
+    "Conf2023-D2PMQA": {
+      "title": "Day 2 PM QA"
+    },
+    "Conf2023-D2PM": {
+      "title": "Day 2 PM"
+    },
+    "Conf2023-D3AM": {
+      "title": "Day 3 AM"
+    },
+    "Conf2023-D3PM": {
+      "title": "Day 3 PM"
+    },
+    "Conf2023-FollowUpFull": {
+      "title": "Follow-Up Full"
+    },
+    "Conf2024A-D1AM1": {
+      "title": "Day 1 AM1"
+    },
+    "Conf2024A-D1AM2": {
+      "title": "Day 1 AM2"
+    },
+    "Conf2024A-D1PM1": {
+      "title": "Day 1 PM1"
+    },
+    "Conf2024A-D1PM2": {
+      "title": "Day 1 PM2"
+    },
+    "Conf2024A-D2AM1": {
+      "title": "Day 2 AM1"
+    },
+    "Conf2024A-D2AM2": {
+      "title": "Day 2 AM2"
+    },
+    "Conf2024A-D2PM1": {
+      "title": "Day 2 PM1"
+    },
+    "Conf2024A-D2PM2": {
+      "title": "Day 2 PM2"
+    },
+    "Conf2024A-D3AM1": {
+      "title": "Day 3 AM1"
+    },
+    "Conf2024A-D3AM2": {
+      "title": "Day 3 AM2"
+    },
+    "Conf2024A-D3PMQA": {
+      "title": "Day 3 PM QA"
+    },
+    "Conf2024B-D1AM1": {
+      "title": "Day 1 AM1"
+    },
+    "Conf2024B-D1AM2": {
+      "title": "Day 1 AM2"
+    },
+    "Conf2024B-D1PM1": {
+      "title": "Day 1 PM1"
+    },
+    "Conf2024B-D1PM2": {
+      "title": "Day 1 PM2"
+    },
+    "Conf2024B-D2AM1": {
+      "title": "Day 2 AM1"
+    },
+    "Conf2024B-D2AM2": {
+      "title": "Day 2 AM2"
+    },
+    "Conf2024B-D2AM3": {
+      "title": "Day 2 AM3"
+    },
+    "Conf2024B-D2PM1": {
+      "title": "Day 2 PM1"
+    },
+    "Conf2024B-D2PM2": {
+      "title": "Day 2 PM2"
+    },
+    "Conf2024B-D3AM1": {
+      "title": "Day 3 AM1"
+    },
+    "Conf2024B-D3AM2": {
+      "title": "Day 3 AM2"
+    },
+    "Conf2024B-D3AM3": {
+      "title": "Day 3 AM3"
+    },
+    "Conf2024B-D3PM1": {
+      "title": "Day 3 PM1"
+    },
+    "Conf2024B-D3PM2": {
+      "title": "Day 3 PM2"
+    },
+    "Conf2025-D1PM2": {
+      "title": "Day 1 PM2"
+    },
+    "Conf2025-D1AM1": {
+      "title": "Day 1 AM1"
+    },
+    "Conf2025-D1AM2": {
+      "title": "Day 1 AM2"
+    },
+    "Conf2025-D1PM1": {
+      "title": "Day 1 PM1"
+    },
+    "Conf2025-D2AM1": {
+      "title": "Day 2 AM1"
+    },
+    "Conf2025-D2AM2": {
+      "title": "Day 2 AM2"
+    },
+    "Conf2025-D2PM1": {
+      "title": "Day 2 PM1"
+    },
+    "Conf2025-D2QA": {
+      "title": "Day 2 QA"
+    },
+    "Conf2025-D3AM1": {
+      "title": "Day 3 AM1"
+    },
+    "Conf2025-D3AM2": {
+      "title": "Day 3 AM2"
+    },
+    "Conf2025-D3PM": {
+      "title": "Day 3 PM"
+    },
+    "Conf2025-PreConf1": {
+      "title": "Pre-Conference 1"
+    },
+    "Conf2025-PreConf2": {
+      "title": "Pre-Conference 2"
+    },
+    "L3-S1-TExtraEnergyWork": {
+      "title": "Extra Energy Work"
+    },
+    "L3-S1-TExtraUriel": {
+      "title": "Extra Uriel"
+    },
+    "L3-S1": {
+      "title": "Ehyeh Asher Ehyeh"
+    },
+    "L3-S1-TKuthumi": {
+      "title": "Kuthumi"
+    },
+    "L3-S1-TQA": {
+      "title": "Q&A"
+    },
+    "L3-S2": {
+      "title": "Beauty. Cube in Lower Chakras"
+    },
+    "L3-S2-TMetatron": {
+      "title": "Metatron"
+    },
+    "L3-S3": {
+      "title": "Using the Cube for Creation"
+    },
+    "L3-S3-TZadkiel": {
+      "title": "Zadkiel"
+    },
+    "L3-S4": {
+      "title": "Unimpaired Comprehension as Creator Intended"
+    },
+    "L3-S4-TQA": {
+      "title": "Q&A"
+    },
+    "L3-S5": {
+      "title": "Tenth Ray of Creation"
+    },
+    "L3-S5-TUriel": {
+      "title": "Uriel"
+    },
+    "L3-S6": {
+      "title": "Multiple Attention Points. Chair Exercise. Soul Star."
+    },
+    "L3-S7": {
+      "title": "Tenth Ray - Unlimited Possibilities"
+    },
+    "L3-S7-TKuthumi": {
+      "title": "Kuthumi"
+    },
+    "L3-S8": {
+      "title": "Tenth Ray to Organize in the Non-Physical"
+    },
+    "L3-S9": {
+      "title": "The Icosahedron and Magnetic Fields"
+    },
+    "L3-S10": {
+      "title": "Taking Density Out of the Physical"
+    },
+    "L3-S10-TUriel": {
+      "title": "Uriel"
+    },
+    "L3-S11": {
+      "title": "Add Tones to Lower Four Chakras. Breathing"
+    },
+    "L3-S12": {
+      "title": "Unified Field Within Lower Four Chakras"
+    },
+    "L3-S12-TKuthumi": {
+      "title": "Kuthumi"
+    },
+    "L3-S13": {
+      "title": "Sound Currents of Lower Four Chakras"
+    },
+    "L3-S14": {
+      "title": "Restoring the Christed Matrix"
+    },
+    "L3-S15": {
+      "title": "Environment in the Cube"
+    },
+    "L3-S16-TElMorya": {
+      "title": "El Morya"
+    },
+    "L3-S16": {
+      "title": "First Ray of Will and Power"
+    },
+    "L3-S17-TElMorya1": {
+      "title": "El Morya 1"
+    },
+    "L3-S17-TElMorya2": {
+      "title": "El Morya 2"
+    },
+    "L3-S17": {
+      "title": "Intwine Will and Power with the Unified Field"
+    },
+    "L3-S18": {
+      "title": "The Five Elements"
+    },
+    "L3-S19": {
+      "title": "Using the Five Elements"
+    },
+    "L3-S19-TKuthumi": {
+      "title": "Kuthumi"
+    },
+    "L3-S20": {
+      "title": "The Pineal Gland is Key to Consciousness"
+    },
+    "L3-S20-TMetatron": {
+      "title": "Metatron"
+    },
+    "L3-S20-TQA": {
+      "title": "Q&A"
+    },
+    "L3-S21": {
+      "title": "Ignite the Pilot Light in the Pineal Gland"
+    },
+    "L3-S21-TMetatron": {
+      "title": "Metatron"
+    },
+    "L3-S21-TQA": {
+      "title": "Q&A"
+    },
+    "L3-S22": {
+      "title": "Three Still Points: Heart, Pineal, Soul Star"
+    },
+    "L3-S23": {
+      "title": "Yellow Unifies the Emotional-Mental-Physical"
+    },
+    "L3-S23-TYeshua": {
+      "title": "Yeshua"
+    },
+    "L3-S24": {
+      "title": "Triangle of Yellow"
+    },
+    "L3-S24-TYeshua": {
+      "title": "Yeshua"
+    },
+    "L3-S25": {
+      "title": "Work With the Yellow Color Coding. Stability."
+    },
+    "L3-S25-TJimRoxane": {
+      "title": "Jim Roxane"
+    },
+    "L3-S25-TQA": {
+      "title": "Q&A"
+    },
+    "L3-S25-TYeshua": {
+      "title": "Yeshua"
+    },
+    "L3-S26": {
+      "title": "With Tenth Ray - Open the Eye of Horus Further"
+    },
+    "L3-S26-TMetatron": {
+      "title": "Metatron"
+    },
+    "L3-S27": {
+      "title": "Multi-Dimensional Fractals of You as Soul"
+    },
+    "L3-S27-TKuthumi": {
+      "title": "Kuthumi"
+    },
+    "L3-S28": {
+      "title": "Blue Coding"
+    },
+    "L3-S28-TMetatron": {
+      "title": "Metatron"
+    },
+    "L3-S29-TBlueCoding": {
+      "title": "Blue Coding"
+    },
+    "L3-S29": {
+      "title": "Blue Coding - Stable and Fluid"
+    },
+    "L3-S29-TYeshua": {
+      "title": "Yeshua"
+    },
+    "L3-S30": {
+      "title": "Play with Yellow and Blue, the Rays and Chakras"
+    },
+    "L3-S30-TMetatron": {
+      "title": "Metatron"
+    },
+    "L3-S31": {
+      "title": "Green Coding"
+    },
+    "L3-S31-TJimJoan": {
+      "title": "Jim Joan"
+    },
+    "L3-S31-TJimJoanMetatronFull": {
+      "title": "Jim Joan Metatron Full"
+    },
+    "L3-S31-TJimMetatron": {
+      "title": "Jim Metatron"
+    },
+    "L3-S32": {
+      "title": "Red and Yellow Codes, the Chakras, Triads and Rays"
+    },
+    "L3-S33": {
+      "title": "Bring the Lower Chakras into a Cohesive State"
+    },
+    "L3-S33-TQA": {
+      "title": "Q&A"
+    },
+    "L3-S33-TYeshua": {
+      "title": "Yeshua"
+    },
+    "L3-S34": {
+      "title": "More Play with Coding. You are the Creator."
+    },
+    "L3-S34-TKuthumi": {
+      "title": "Kuthumi"
+    },
+    "L3-S35": {
+      "title": "Blue Code to Smooth Emotional Scars and Self-Doubt"
+    },
+    "L3-S35-TQA": {
+      "title": "Q&A"
+    },
+    "L3-S35-TRaphael": {
+      "title": "Raphael"
+    },
+    "L3-S36": {
+      "title": "Green Code in Heart Chamber. New Human."
+    },
+    "L3-S36-TRaphael": {
+      "title": "Raphael"
+    },
+    "L3-S37": {
+      "title": "Cell Within the Wall, Molecule, Atom, God Particle"
+    },
+    "L3-S37-TQA": {
+      "title": "Q&A"
+    },
+    "L3-S37-TRaphael": {
+      "title": "Raphael"
+    },
+    "L4-S1": {
+      "title": "First Two God Particles"
+    },
+    "L4-S1-TGroupCallFull": {
+      "title": "Group Call Full"
+    },
+    "L4-S1-TRaphael": {
+      "title": "Raphael"
+    },
+    "L4-S2-TColorCodingCall1": {
+      "title": "Color Coding Call 1"
+    },
+    "L4-S2-TColorCodingCall2": {
+      "title": "Color Coding Call 2"
+    },
+    "L4-S2": {
+      "title": "Third God Particle"
+    },
+    "L4-S2-TRaphael": {
+      "title": "Raphael"
+    },
+    "L4-S3": {
+      "title": "Alternate Scenes, Fourth Particle"
+    },
+    "L4-S3-TUriel": {
+      "title": "Uriel"
+    },
+    "L4-S4": {
+      "title": "Bridging to Experience the Physical in the Fifth Dimension"
+    },
+    "L4-S4-TUriel": {
+      "title": "Uriel"
+    },
+    "L4-S5": {
+      "title": "Blend with Uriel, Raphael, Metatron. Know What They Know."
+    },
+    "L4-S5-TMetatron": {
+      "title": "Metatron"
+    },
+    "L4-S5-TQAFull": {
+      "title": "Q&A Full"
+    },
+    "L4-S6": {
+      "title": "As a Group, We Alter Mass Consciousness"
+    },
+    "L4-S6-TQA": {
+      "title": "Q&A"
+    },
+    "L4-S6-TZadkiel": {
+      "title": "Zadkiel"
+    },
+    "L4-S7-TCorrectionfromJim": {
+      "title": "Correctionfrom Jim"
+    },
+    "L4-S7": {
+      "title": "Loop a Word Through Triads, Chakras"
+    },
+    "L4-S7-TZadkiel": {
+      "title": "Zadkiel"
+    },
+    "L4-S8": {
+      "title": "Christed Matrix, Yellow Code, Tetrahedron Loop"
+    },
+    "L4-S8-TYeshua": {
+      "title": "Yeshua"
+    },
+    "L4-S9": {
+      "title": "Intend to be a Fully Christed Being"
+    },
+    "L4-S9-TYeshua": {
+      "title": "Yeshua"
+    },
+    "L4-S10": {
+      "title": "Looping to Allow the Christed Matrix Within You"
+    },
+    "L4-S10-TYeshuaFull": {
+      "title": "Yeshua Full"
+    },
+    "L4-S11-Newperspectiveondeath": {
+      "title": "New perspective on death"
+    },
+    "L4-S11": {
+      "title": "Balance and Unity of Divine Feminine and Masculine"
+    },
+    "L4-S11-TYeshuaAnna": {
+      "title": "Yeshua Anna"
+    },
+    "L4-S12": {
+      "title": "Clear Distorted Patterns of Feminine and Masculine"
+    },
+    "L4-S12-TMotherMary": {
+      "title": "Mother Mary"
+    },
+    "L4-S13-TFeminineTriad": {
+      "title": "Feminine Triad"
+    },
+    "L4-S13": {
+      "title": "Feminine and Masculine Triads"
+    },
+    "L4-S15": {
+      "title": "Rest"
+    },
+    "L4-S15-TYeshua": {
+      "title": "Yeshua"
+    },
+    "L4-S16": {
+      "title": "Consistency"
+    },
+    "L4-S16-TQA": {
+      "title": "Q&A"
+    },
+    "L4-S17": {
+      "title": "Match Yeshua, Kuthumi Within the Sacred Heart"
+    },
+    "L4-S17-TQA": {
+      "title": "Q&A"
+    },
+    "L4-S17-TYeshua": {
+      "title": "Yeshua"
+    },
+    "L4-S18": {
+      "title": "Multiple Ways to Access the Living Light"
+    },
+    "L4-S18-TKuthumi": {
+      "title": "Kuthumi"
+    },
+    "L4-S18-TQA": {
+      "title": "Q&A"
+    },
+    "L4-S19-TConversationJimRoxane": {
+      "title": "Conversation Jim Roxane"
+    },
+    "L4-S19-TQA": {
+      "title": "Q&A"
+    },
+    "L4-S19-TYeshua": {
+      "title": "Yeshua"
+    },
+    "L4-S20": {
+      "title": "Compression of Golden Liquid Light"
+    },
+    "L4-S20-TQA": {
+      "title": "Q&A"
+    },
+    "L4-S20-TYeshua": {
+      "title": "Yeshua"
+    },
+    "L4-S21": {
+      "title": "Light Radiation Through All Your Bodies"
+    },
+    "L4-S21-TMetatron": {
+      "title": "Metatron"
+    },
+    "L4-S21-TQA": {
+      "title": "Q&A"
+    },
+    "L4-S22": {
+      "title": "Ecstasy"
+    },
+    "L4-S22-TMetatron": {
+      "title": "Metatron"
+    },
+    "L4-S22-TQA": {
+      "title": "Q&A"
+    },
+    "L4-S23": {
+      "title": "Ecstasy Through the Bodies"
+    },
+    "L4-S23-TMetatron": {
+      "title": "Metatron"
+    },
+    "L4-S24": {
+      "title": "Integrate within the Unified Field, Christed Consciousness, Over Soul, Christed Body"
+    },
+    "L4-S24-TYeshua": {
+      "title": "Yeshua"
+    },
+    "L4-S25": {
+      "title": "Glands, Chakras and the Crystalline body"
+    },
+    "L4-S25-TKuthumi": {
+      "title": "Kuthumi"
+    },
+    "L4-S25-TQA": {
+      "title": "Q&A"
+    },
+    "L4-S26": {
+      "title": "The Breath Through the Sacred Heart"
+    },
+    "L4-S26-TYeshua": {
+      "title": "Yeshua"
+    },
+    "L4-S27": {
+      "title": "Directing Light into Organs, Glands, Cells. Tone."
+    },
+    "L4-S27-TQA": {
+      "title": "Q&A"
+    },
+    "L4-S27-TYeshua": {
+      "title": "Yeshua"
+    },
+    "L4-S28": {
+      "title": "The Eighth and Ninth Chakras"
+    },
+    "L4-S28-TKuthumi": {
+      "title": "Kuthumi"
+    },
+    "L4-S29": {
+      "title": "All 14 Chakras"
+    },
+    "L4-S29-TMetatron": {
+      "title": "Metatron"
+    },
+    "L4-S29-TQA": {
+      "title": "Q&A"
+    },
+    "L4-S30": {
+      "title": "Absorption"
+    },
+    "L4-S30-TQA": {
+      "title": "Q&A"
+    },
+    "L4-S30-TYeshua": {
+      "title": "Yeshua"
+    },
+    "L4-S31": {
+      "title": "More Work with the 14 Chakras"
+    },
+    "L4-S31-TKuthumi": {
+      "title": "Kuthumi"
+    },
+    "L4-S32": {
+      "title": "Creative Applications of the Eighth Ray"
+    },
+    "L4-S32-TMetatron": {
+      "title": "Metatron"
+    },
+    "L4-S32-TUriel": {
+      "title": "Uriel"
+    },
+    "L4-S33-TEnergyPractice": {
+      "title": "Energy Practice"
+    },
+    "L4-S33": {
+      "title": "Light Within a Single Cell of Blood"
+    },
+    "L4-S34": {
+      "title": "Deflate Nodule in the Reptilian Brain"
+    },
+    "L4-S34-TTarsisMetatron": {
+      "title": "Tarsis Metatron"
+    },
+    "L4-S35": {
+      "title": "Electrical Impulse into the Brain"
+    },
+    "L4-S35-TMetatron": {
+      "title": "Metatron"
+    },
+    "L4-S36": {
+      "title": "Activate the Lobes of Your Brain"
+    },
+    "L4-S36-TMetatron": {
+      "title": "Metatron"
+    },
+    "L4-S37": {
+      "title": "Morphic Fields"
+    },
+    "L4-S37-TMetatron": {
+      "title": "Metatron"
+    },
+    "L4-S38": {
+      "title": "Draw the Etheric Body to the Physical"
+    },
+    "L4-S38-TMetatron": {
+      "title": "Metatron"
+    },
+    "L4-S39": {
+      "title": "The Neuron Within the Cell"
+    },
+    "L4-S39-TMetatron": {
+      "title": "Metatron"
+    },
+    "L4-S39-TQA": {
+      "title": "Q&A"
+    },
+    "L4-S40": {
+      "title": "ADP into ATP"
+    },
+    "L4-S40-TIntroADPTintoATP": {
+      "title": "Intro ADP Tinto ATP"
+    },
+    "L4-S40-TMetatron": {
+      "title": "Metatron"
+    },
+    "L4-S41": {
+      "title": "Neutrality"
+    },
+    "L4-S41-TMetatron": {
+      "title": "Metatron"
+    },
+    "L4-S42-Seg1TFull": {
+      "title": "Segment 1 Full"
+    },
+    "L4-S42-Seg2TFull": {
+      "title": "Segment 2 Full"
+    },
+    "L4-S43": {
+      "title": "Elementals"
+    },
+    "L4-S43-TMelchizedek": {
+      "title": "Melchizedek"
+    },
+    "L4-S44-Seg1TFull": {
+      "title": "Segment 1 Full"
+    },
+    "L4-S44-Seg1TMelchizedek": {
+      "title": "Segment 1: Melchizedek"
+    },
+    "L4-S44-Seg2TFull": {
+      "title": "Segment 2 Full"
+    },
+    "L4-S44-Seg2TMetatron": {
+      "title": "Segment 2: Metatron"
+    },
+    "L4-S44-Seg3TFull": {
+      "title": "Segment 3 Full"
+    },
+    "L4-S44": {
+      "title": "Light Body"
+    },
+    "L4-S45": {
+      "title": "Integrate Light Body's Axiatonal Lines and Axial Spin Points"
+    },
+    "L4-S45-TMelchizedek": {
+      "title": "Melchizedek"
+    },
+    "L4-S45-TQA": {
+      "title": "Q&A"
+    },
+    "L4-S46": {
+      "title": "Meridians"
+    },
+    "L4-S46-TMelchizedek": {
+      "title": "Melchizedek"
+    },
+    "L4-S46-TWhereisLevel3Going": {
+      "title": "Whereis Level 3 Going"
+    },
+    "L5-S1": {
+      "title": "Practice with Axiatonal Lines"
+    },
+    "L5-S1-TMelchizedek": {
+      "title": "Melchizedek"
+    },
+    "L5-S1-TQA": {
+      "title": "Q&A"
+    },
+    "L5-S2-EarlyMorningMessagefromMetatron": {
+      "title": "Early Morning Messagefrom Metatron"
+    },
+    "L5-S2": {
+      "title": "More Practice with Meridians"
+    },
+    "L5-S2-TMelchizedek": {
+      "title": "Melchizedek"
+    },
+    "L5-S3": {
+      "title": "Lower Four Chakras and Axiatonal Light"
+    },
+    "L5-S3-TMelchizedek": {
+      "title": "Melchizedek"
+    },
+    "L5-S3-TQA1": {
+      "title": "Q&A 1"
+    },
+    "L5-S3-TQA2": {
+      "title": "Q&A 2"
+    },
+    "L5-S4": {
+      "title": "See, Hear, Feel Through the Eye of Horus"
+    },
+    "L5-S5": {
+      "title": "The Ego Rests"
+    },
+    "L5-S5-TMelchizedek": {
+      "title": "Melchizedek"
+    },
+    "L5-S6": {
+      "title": "Color Codes to Ease Transformation"
+    },
+    "L5-S6-TKuthumi": {
+      "title": "Kuthumi"
+    },
+    "L5-S7": {
+      "title": "A New Direction"
+    },
+    "L5-S7-TMetatron": {
+      "title": "Metatron"
+    },
+    "L5-S7-TQA": {
+      "title": "Q&A"
+    },
+    "L5-S8": {
+      "title": "First Layer of the Light Body"
+    },
+    "L5-S8-TJimRoxane": {
+      "title": "Jim Roxane"
+    },
+    "L5-S8-TMetatron": {
+      "title": "Metatron"
+    },
+    "L5-S9": {
+      "title": "Second Layer of the Light Body"
+    },
+    "L5-S9-TMelchizedek": {
+      "title": "Melchizedek"
+    },
+    "L5-S10": {
+      "title": "Undifferentiated Light"
+    },
+    "L5-S10-TMetatron": {
+      "title": "Metatron"
+    },
+    "L5-S11": {
+      "title": "Fifth and Sixth Layers of Thought"
+    },
+    "L5-S11-TMetatron": {
+      "title": "Metatron"
+    },
+    "L5-S11-TQA": {
+      "title": "Q&A"
+    },
+    "L5-S12-TConversationJimRoxane": {
+      "title": "Conversation Jim Roxane"
+    },
+    "L5-S12": {
+      "title": "Two New Strands of DNA"
+    },
+    "L5-S12-TMetatron": {
+      "title": "Metatron"
+    },
+    "L5-S13": {
+      "title": "Two-Way Communication Between Cells"
+    },
+    "L5-S13-TUriel": {
+      "title": "Uriel"
+    },
+    "L5-S14": {
+      "title": "Opening the Third Layer of the Light Body"
+    },
+    "L5-S14-TUriel": {
+      "title": "Uriel"
+    },
+    "L5-S15": {
+      "title": "Fourth Strand of DNA"
+    },
+    "L5-S15-TUriel": {
+      "title": "Uriel"
+    },
+    "L5-S16": {
+      "title": "Eighth Chakra and Christed Mind Looping"
+    },
+    "L5-S16-TUriel": {
+      "title": "Uriel"
+    },
+    "L5-S17": {
+      "title": "Fourth Layer, Self Love"
+    },
+    "L5-S17-TMetatron": {
+      "title": "Metatron"
+    },
+    "L5-S18": {
+      "title": "Align Layers of the Light Body"
+    },
+    "L5-S18-TQA": {
+      "title": "Q&A"
+    },
+    "L5-S18-TRaphael": {
+      "title": "Raphael"
+    },
+    "L5-S19": {
+      "title": "Fourth Eye, Fifth Strand"
+    },
+    "L5-S19-TRaphael": {
+      "title": "Raphael"
+    },
+    "L5-S20": {
+      "title": "Fourth Layer Completion"
+    },
+    "L5-S20-TRaphael": {
+      "title": "Raphael"
+    },
+    "L5-S21": {
+      "title": "Release Disappointment"
+    },
+    "L5-S21-TQA": {
+      "title": "Q&A"
+    },
+    "L5-S22": {
+      "title": "Intention in Etheric Then Physical Thymus"
+    },
+    "L5-S22-TUriel": {
+      "title": "Uriel"
+    },
+    "L5-S23": {
+      "title": "More with Etheric and Physical Thymus"
+    },
+    "L5-S23-TMichael": {
+      "title": "Michael"
+    },
+    "L5-S24": {
+      "title": "Bridge the Eighth, Ninth, and Tenth Chakras"
+    },
+    "L5-S24-TMetatron": {
+      "title": "Metatron"
+    },
+    "L5-S24-TQA": {
+      "title": "Q&A"
+    },
+    "L5-S25-TArchangels": {
+      "title": "Archangels"
+    },
+    "L5-S25-TConversationJimRoxane": {
+      "title": "Conversation Jim Roxane"
+    },
+    "L5-S25-TQA": {
+      "title": "Q&A"
+    },
+    "L5-S26-TElMorya": {
+      "title": "El Morya"
+    },
+    "L5-S26": {
+      "title": "Embrace Your Will and Power"
+    },
+    "L5-S27": {
+      "title": "The Holy Spirit Tetrahedron"
+    },
+    "L5-S27-TMotherMary": {
+      "title": "Mother Mary"
+    },
+    "L5-S28-TConversationJimRoxane": {
+      "title": "Conversation Jim Roxane"
+    },
+    "L5-S28": {
+      "title": "Remove Separation, Powerlessness, Victim"
+    },
+    "L5-S28-TUriel": {
+      "title": "Uriel"
+    },
+    "L5-S29": {
+      "title": "Collective Nature of You"
+    },
+    "L5-S29-TMetatron": {
+      "title": "Metatron"
+    },
+    "L5-S30": {
+      "title": "Arc of the Covenant, Sixth Layer"
+    },
+    "L5-S30-TMetatron1": {
+      "title": "Metatron 1"
+    },
+    "L5-S30-TMetatron2": {
+      "title": "Metatron 2"
+    },
+    "L5-S31": {
+      "title": "Spiritual Autonomic System"
+    },
+    "L5-S32": {
+      "title": "Ze and Zeon Particles"
+    },
+    "L5-S32-TMetatron": {
+      "title": "Metatron"
+    },
+    "L5-S33-TConversationJimRoxane": {
+      "title": "Conversation Jim Roxane"
+    },
+    "L5-S33-TQA": {
+      "title": "Q&A"
+    },
+    "L5-S34-TConversationJimRoxane": {
+      "title": "Conversation Jim Roxane"
+    },
+    "L5-S34": {
+      "title": "Merge Soul, Oversoul, Christed Oversoul, Soul-Spirit"
+    },
+    "L5-S34-TMetatron1": {
+      "title": "Metatron 1"
+    },
+    "L5-S34-TMetatron2": {
+      "title": "Metatron 2"
+    },
+    "L5-S35-TClipsfromaphonecallJim": {
+      "title": "Clipsfromaphonecall Jim"
+    },
+    "L5-S35": {
+      "title": "Dismantle Lower Level of Mental/Emotional Body"
+    },
+    "L5-S35-TMetatron": {
+      "title": "Metatron"
+    },
+    "L5-S36": {
+      "title": "Merge the Oversoul into Your Body"
+    },
+    "L5-S36-TUriel": {
+      "title": "Uriel"
+    },
+    "L5-S37": {
+      "title": "Anchor and Stabilize What We Have Done"
+    },
+    "L5-S37-TMetatron": {
+      "title": "Metatron"
+    },
+    "L5-S38": {
+      "title": "Table of Thanks and Receiving"
+    },
+    "L5-S38-TMetatron": {
+      "title": "Metatron"
+    },
+    "L5-S39-TConversationJimRoxane1": {
+      "title": "Conversation Jim Roxane 1"
+    },
+    "L5-S39-TConversationJimRoxane2": {
+      "title": "Conversation Jim Roxane 2"
+    },
+    "L5-S39": {
+      "title": "A Gathering of Masters"
+    },
+    "L5-S39-TMetatron": {
+      "title": "Metatron"
+    },
+    "L5-S40": {
+      "title": "Activation of Seventh Strand of DNA"
+    },
+    "L5-S40-TMetatron": {
+      "title": "Metatron"
+    },
+    "L5-S40-TQA": {
+      "title": "Q&A"
+    },
+    "L5-S41": {
+      "title": "Next Activation of Seventh Layer"
+    },
+    "L5-S41-TMetatron": {
+      "title": "Metatron"
+    },
+    "L5-S41-TQA": {
+      "title": "Q&A"
+    },
+    "L5-S42-TAllThatIs": {
+      "title": "All That Is"
+    },
+    "L5-S42": {
+      "title": "Our Divine Unity of Spirit"
+    },
+    "L5-S43-TFullV2": {
+      "title": "Complete Class V2"
+    },
+    "L5-S43-TMetatronV2": {
+      "title": "Metatron V 2"
+    },
+    "L5-S43-TQA": {
+      "title": "Q&A"
+    },
+    "L2-S22-T8Ray4Fullv2": {
+      "title": "Eighth Ray #4 Full v2"
+    },
+    "L2-S22-THiderNeutralv2": {
+      "title": "Hider Neutral v2"
+    },
+    "L2-S22-TLackv2": {
+      "title": "Lack v2"
+    },
+    "L2-S22-TMetatron": {
+      "title": "Metatron"
+    },
+    "L2-S22-TPrev8Ray4Full": {
+      "title": "Previous Eighth Ray #4 Full"
+    },
+    "L2-S23": {
+      "title": "Spinning the Triads"
+    },
+    "L2-S24": {
+      "title": "Optimum Balanced Health"
+    },
+    "L2-S25": {
+      "title": "Holy Spirit, Permission, Curiosity"
+    },
+    "L2-S25-TQA1": {
+      "title": "Q&A 1"
+    },
+    "L2-S25-TQA2": {
+      "title": "Q&A 2"
+    },
+    "L2-S25-TWhatIsLight": {
+      "title": "What Is Light"
+    },
+    "L2-S26": {
+      "title": "Reconfigure the Lower Three Chakras"
+    },
+    "L2-S26-TQA": {
+      "title": "Q&A"
+    },
+    "L2-S27": {
+      "title": "El Shaddai"
+    },
+    "L2-S28-T4QA": {
+      "title": "Q&A 4"
+    },
+    "L2-S28": {
+      "title": "Clear Survival, Separation, Not Accepted"
+    },
+    "L2-S29": {
+      "title": "Clearing Limitations and Being Denied"
+    },
+    "L2-S29-TMetatronFull": {
+      "title": "Metatron Full"
+    },
+    "L2-S29-TQA": {
+      "title": "Q&A"
+    },
+    "L2-S30": {
+      "title": "Clear Bloodstream and Agreements"
+    },
+    "L2-S30-TKuthumi": {
+      "title": "Kuthumi"
+    },
+    "L2-S30-TKuthumiQA": {
+      "title": "Kuthumi Q&A"
+    },
+    "L2-S30-TQA": {
+      "title": "Q&A"
+    },
+    "L2-S31": {
+      "title": "Merge Mental and Emotional Bodies"
+    },
+    "L2-S31-TMichael": {
+      "title": "Michael"
+    },
+    "L2-S31-TQAFull": {
+      "title": "Q&A Full"
+    },
+    "L2-S32": {
+      "title": "Disrupt First Chakra and Rational Mind"
+    },
+    "L2-S32-TKuthumi": {
+      "title": "Kuthumi"
+    },
+    "L2-S32-TQAWhatToolsToUse": {
+      "title": "Q&A What Tools To Use"
+    },
+    "L2-S33-SummaryoftheTwelveRaysofCreation": {
+      "title": "Summary of the Twelve Rays of Creation"
+    },
+    "L2-S33": {
+      "title": "First Chakra, Wellbeing, Red"
+    },
+    "L2-S33-TMetatronenhanced80p": {
+      "title": "Metatron Enhanced 80p"
+    },
+    "L2-S33-TQA": {
+      "title": "Q&A"
+    },
+    "L2-S34": {
+      "title": "Eye of Horus"
+    },
+    "L2-S34-TQA": {
+      "title": "Q&A"
+    },
+    "L2-S34-TUriel": {
+      "title": "Uriel"
+    },
+    "L2-S35": {
+      "title": "Holy Spirit into the Eye of Horus"
+    },
+    "L2-S35-TMeditation": {
+      "title": "Meditation"
+    },
+    "L2-S35-TMetatron": {
+      "title": "Metatron"
+    },
+    "L2-S36": {
+      "title": "Red and the First Three Rays"
+    },
+    "L2-S36-TUriel": {
+      "title": "Uriel"
+    },
+    "L1-Extra-YourPersonalEvolutionQandA": {
+      "title": "Your Personal Evolution Q&A"
+    },
+    "book:ACIMA-final": {
+      "title": "A Course in Mastering Alchemy Book",
+      "purchaseUrl": "https://www.amazon.com/dp/1786780143"
+    }
+  }
+}

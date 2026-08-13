@@ -6,13 +6,16 @@
  * Run from repo root: node scripts/build-chunk-source-index.js
  */
 import { createHash } from 'crypto';
-import { readFile, writeFile } from 'fs/promises';
+import { mkdir, readFile, writeFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const EMBEDDINGS_PATH = join(ROOT, 'data', 'embeddings.json');
-const OUT_PATH = join(ROOT, 'data', 'chunk-source-index.json');
+const OUT_PATHS = [
+  join(ROOT, 'src', 'config', 'chunk-source-index.json'),
+  join(ROOT, 'data', 'chunk-source-index.json'),
+];
 
 function normalize(text) {
   return String(text || '')
@@ -77,7 +80,11 @@ for (const chunk of chunks) {
 }
 
 const out = { v: 2, h: byHash, p: byPrefix, k: byFingerprint, a: paths };
-await writeFile(OUT_PATH, JSON.stringify(out), 'utf-8');
-console.log(
-  `Wrote ${OUT_PATH} (${withPath} paths, ${Object.keys(byHash).length} hashes, ${Object.keys(byPrefix).length} prefixes, ${Object.keys(byFingerprint).length} fingerprints, ${paths.length} ordered, skipped ${skipped})`
-);
+const payload = JSON.stringify(out);
+for (const outPath of OUT_PATHS) {
+  await mkdir(dirname(outPath), { recursive: true });
+  await writeFile(outPath, payload);
+  console.log(
+    `Wrote ${outPath} (${withPath} paths, ${Object.keys(byHash).length} hashes, ${Object.keys(byPrefix).length} prefixes, ${Object.keys(byFingerprint).length} fingerprints, ${paths.length} ordered, skipped ${skipped})`
+  );
+}

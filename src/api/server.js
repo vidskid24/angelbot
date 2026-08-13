@@ -14,7 +14,7 @@ import { createInternalJobsRouter } from './routes/internal-jobs.js';
 import { createInternalTierDebugRouter } from './routes/internal-tier-debug.js';
 import { requireSession } from './middleware/require-session.js';
 import { isDbEnabled, pingDb } from '../db/pool.js';
-import { loadCourseCatalog } from '../rag/course-catalog.js';
+import { loadCourseCatalog, getCourseCatalogStatus } from '../rag/course-catalog.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WIDGET_PATH = path.join(__dirname, '../../embed/omi-chat-widget.js');
@@ -58,12 +58,16 @@ export function startWebServer() {
       }
     }
     try {
-      const catalog = await loadCourseCatalog();
-      payload.catalogLevels = Object.keys(catalog?.levels || {}).length;
-      payload.catalogUnits = Object.keys(catalog?.units || {}).length;
-    } catch {
+      await loadCourseCatalog();
+      const status = getCourseCatalogStatus();
+      payload.catalogLevels = status.levels;
+      payload.catalogUnits = status.units;
+      payload.catalogPath = status.path;
+      if (status.error) payload.catalogError = status.error;
+    } catch (err) {
       payload.catalogLevels = 0;
       payload.catalogUnits = 0;
+      payload.catalogError = err?.message || String(err);
     }
     res.status(payload.ok ? 200 : 503).json(payload);
   });

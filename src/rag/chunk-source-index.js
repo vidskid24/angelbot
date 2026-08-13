@@ -7,12 +7,16 @@
 
 import { createHash } from 'crypto';
 import { readFile } from 'fs/promises';
+import { createRequire } from 'module';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { parseCourseSourceLoose } from './course-source.js';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
-const INDEX_PATH = join(ROOT, 'data', 'chunk-source-index.json');
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const ROOT = join(__dirname, '../..');
+const MODULE_INDEX_PATH = join(__dirname, '../config/chunk-source-index.json');
+const DATA_INDEX_PATH = join(ROOT, 'data', 'chunk-source-index.json');
+const requireJson = createRequire(import.meta.url);
 
 /** @typedef {{ byHash: Record<string, string>; byPrefix: Record<string, string>; byFingerprint: Record<string, string>; paths: string[] }} ChunkSourceIndex */
 
@@ -82,28 +86,68 @@ export async function loadChunkSourceIndex() {
 
   indexLoadPromise = (async () => {
     try {
-      const raw = await readFile(INDEX_PATH, 'utf-8');
-      const data = JSON.parse(raw);
-      indexCache = {
-        byHash: data?.h && typeof data.h === 'object' ? data.h : {},
-        byPrefix: data?.p && typeof data.p === 'object' ? data.p : {},
-        byFingerprint: data?.k && typeof data.k === 'object' ? data.k : {},
-        paths: Array.isArray(data?.a) ? data.a.map((p) => String(p || '').trim()) : [],
-      };
-      console.info(
-        `[rag] Chunk source index loaded (${Object.keys(indexCache.byHash).length} hashes, ${indexCache.paths.length} ordered paths)`
-      );
-    } catch (err) {
-      if (err?.code === 'ENOENT') {
-        indexCache = { byHash: {}, byPrefix: {}, byFingerprint: {}, paths: [] };
-        console.warn('[rag] data/chunk-source-index.json missing; catalog cites need chunk metadata');
-      } else {
-        throw err;
+      const candidates = [
+        process.env.CHUNK_SOURCE_INDEX_PATH,
+        MODULE_INDEX_PATH,
+        join(ROOT, 'src', 'config', 'chunk-source-index.json'),
+        join(process.cwd(), 'src', 'config', 'chunk-source-index.json'),
+        DATA_INDEX_PATH,
+        join(process.cwd(), 'data', 'chunk-source-index.json'),
+      ].filter(Boolean);
+
+      /** @type {Error | null} */
+      let lastErr = null;
+      for (const indexPath of candidates) {
+        try {
+          const raw = await readFile(indexPath, 'utf-8');
+          const data = JSON.parse(raw);
+          const byHash = data?.h && typeof data.h === 'object' ? data.h : {};
+          const hashCount = Object.keys(byHash).length;
+          if (!hashCount) {
+            lastErr = new Error(`chunk source index at ${indexPath} is empty`);
+            continue;
+          }
+          indexCache = {
+            byHash,
+            byPrefix: data?.p && typeof data.p === 'object' ? data.p : {},
+            byFingerprint: data?.k && typeof data.k === 'object' ? data.k : {},
+            paths: Array.isArray(data?.a) ? data.a.map((p) => String(p || '').trim()) : [],
+          };
+          console.info(
+            `[rag] Chunk source index loaded from ${indexPath} (${hashCount} hashes, ${indexCache.paths.length} ordered paths)`
+          );
+          return indexCache;
+        } catch (err) {
+          lastErr = err instanceof Error ? err : new Error(String(err));
+        }
       }
+
+      try {
+        const data = requireJson('../config/chunk-source-index.json');
+        const byHash = data?.h && typeof data.h === 'object' ? data.h : {};
+        indexCache = {
+          byHash,
+          byPrefix: data?.p && typeof data.p === 'object' ? data.p : {},
+          byFingerprint: data?.k && typeof data.k === 'object' ? data.k : {},
+          paths: Array.isArray(data?.a) ? data.a.map((p) => String(p || '').trim()) : [],
+        };
+        console.info(
+          `[rag] Chunk source index loaded via require (${Object.keys(indexCache.byHash).length} hashes)`
+        );
+        return indexCache;
+      } catch (err) {
+        lastErr = err instanceof Error ? err : new Error(String(err));
+      }
+
+      indexCache = { byHash: {}, byPrefix: {}, byFingerprint: {}, paths: [] };
+      console.warn(
+        '[rag] chunk-source-index.json missing; catalog cites need chunk metadata:',
+        lastErr?.message || lastErr
+      );
+      return indexCache;
     } finally {
       indexLoadPromise = null;
     }
-    return indexCache;
   })();
 
   return indexLoadPromise;

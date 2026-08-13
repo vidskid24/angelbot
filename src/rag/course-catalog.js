@@ -6,6 +6,7 @@
  */
 
 import { readFile } from 'fs/promises';
+import { createRequire } from 'module';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { basename } from 'path';
@@ -17,7 +18,9 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '../..');
+const MODULE_CATALOG_PATH = join(__dirname, '../config/course-catalog.json');
 const DEFAULT_CATALOG_PATH = join(ROOT, 'data', 'course-catalog.json');
+const requireJson = createRequire(import.meta.url);
 
 /**
  * @typedef {{
@@ -46,46 +49,10 @@ const DEFAULT_CATALOG_PATH = join(ROOT, 'data', 'course-catalog.json');
 
 /** @type {CourseCatalog | null} */
 let catalogCache = null;
-
-/**
- * @returns {Promise<CourseCatalog>}
- */
-export async function loadCourseCatalog() {
-  if (catalogCache) return catalogCache;
-
-  const candidates = [
-    process.env.COURSE_CATALOG_PATH,
-    DEFAULT_CATALOG_PATH,
-    join(process.cwd(), 'data', 'course-catalog.json'),
-  ].filter(Boolean);
-
-  let lastErr = null;
-  for (const catalogPath of candidates) {
-    try {
-      const raw = await readFile(catalogPath, 'utf-8');
-      catalogCache = normalizeCatalog(JSON.parse(raw));
-      const levels = Object.keys(catalogCache.levels || {}).length;
-      const units = Object.keys(catalogCache.units || {}).length;
-      console.info(`[rag] Course catalog loaded from ${catalogPath} (${levels} levels, ${units} units)`);
-      if (!units) {
-        console.warn('[rag] Course catalog has no units; Source links will be weak');
-      }
-      return catalogCache;
-    } catch (err) {
-      lastErr = err;
-      if (err?.code !== 'ENOENT') throw err;
-    }
-  }
-
-  console.warn('[rag] Course catalog not found:', lastErr?.message || lastErr);
-  catalogCache = normalizeCatalog({});
-  return catalogCache;
-}
-
-/** Clear cached catalog (tests). */
-export function clearCourseCatalogCache() {
-  catalogCache = null;
-}
+/** @type {string | null} */
+let catalogLoadedFrom = null;
+/** @type {string | null} */
+let catalogLoadError = null;
 
 /**
  * @param {unknown} raw
@@ -99,6 +66,109 @@ function normalizeCatalog(raw) {
     levels: data.levels && typeof data.levels === 'object' ? data.levels : {},
     chapters: data.chapters && typeof data.chapters === 'object' ? data.chapters : {},
     units: data.units && typeof data.units === 'object' ? data.units : {},
+  };
+}
+
+/**
+ * @param {CourseCatalog} catalog
+ * @returns {{ levels: number; units: number }}
+ */
+function catalogCounts(catalog) {
+  return {
+    levels: Object.keys(catalog?.levels || {}).length,
+    units: Object.keys(catalog?.units || {}).length,
+  };
+}
+
+/**
+ * @param {string} label
+ * @param {unknown} raw
+ * @returns {CourseCatalog | null}
+ */
+function acceptCatalog(label, raw) {
+  const catalog = normalizeCatalog(raw);
+  const { levels, units } = catalogCounts(catalog);
+  if (!levels && !units) return null;
+  catalogCache = catalog;
+  catalogLoadedFrom = label;
+  catalogLoadError = null;
+  console.info(`[rag] Course catalog loaded from ${label} (${levels} levels, ${units} units)`);
+  return catalog;
+}
+
+/**
+ * @returns {Promise<CourseCatalog>}
+ */
+export async function loadCourseCatalog() {
+  if (catalogCache) return catalogCache;
+
+  const candidates = [
+    process.env.COURSE_CATALOG_PATH,
+    // Prefer paths outside data/ — Render often mounts a disk over data/ for embeddings.
+    MODULE_CATALOG_PATH,
+    join(ROOT, 'src', 'config', 'course-catalog.json'),
+    join(process.cwd(), 'src', 'config', 'course-catalog.json'),
+    DEFAULT_CATALOG_PATH,
+    join(process.cwd(), 'data', 'course-catalog.json'),
+  ].filter(Boolean);
+
+  /** @type {Error | null} */
+  let lastErr = null;
+  for (const catalogPath of candidates) {
+    try {
+      const raw = await readFile(catalogPath, 'utf-8');
+      const accepted = acceptCatalog(catalogPath, JSON.parse(raw));
+      if (accepted) return accepted;
+      lastErr = new Error(`catalog at ${catalogPath} has no levels/units`);
+    } catch (err) {
+      lastErr = err instanceof Error ? err : new Error(String(err));
+      if (err?.code && err.code !== 'ENOENT') {
+        console.warn(`[rag] Course catalog read failed for ${catalogPath}:`, err.message || err);
+      }
+    }
+  }
+
+  try {
+    const bundled = requireJson('../config/course-catalog.json');
+    const accepted = acceptCatalog('require:../config/course-catalog.json', bundled);
+    if (accepted) return accepted;
+  } catch (err) {
+    lastErr = err instanceof Error ? err : new Error(String(err));
+  }
+
+  try {
+    const bundled = requireJson('../../data/course-catalog.json');
+    const accepted = acceptCatalog('require:../../data/course-catalog.json', bundled);
+    if (accepted) return accepted;
+  } catch (err) {
+    lastErr = err instanceof Error ? err : new Error(String(err));
+  }
+
+  catalogLoadError = lastErr?.message || String(lastErr || 'catalog not found');
+  console.warn('[rag] Course catalog not found or empty:', catalogLoadError);
+  catalogCache = normalizeCatalog({});
+  catalogLoadedFrom = null;
+  return catalogCache;
+}
+
+/** Clear cached catalog (tests). */
+export function clearCourseCatalogCache() {
+  catalogCache = null;
+  catalogLoadedFrom = null;
+  catalogLoadError = null;
+}
+
+/**
+ * Diagnostics for /healthz.
+ * @returns {{ path: string | null; levels: number; units: number; error: string | null }}
+ */
+export function getCourseCatalogStatus() {
+  const counts = catalogCounts(catalogCache || normalizeCatalog({}));
+  return {
+    path: catalogLoadedFrom,
+    levels: counts.levels,
+    units: counts.units,
+    error: catalogLoadError,
   };
 }
 
