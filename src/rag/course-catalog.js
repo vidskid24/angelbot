@@ -383,6 +383,52 @@ export function formatCourseNameOnlyLabel(source, catalog) {
   return null;
 }
 
+/**
+ * Course / level / book title suitable for a citation markdown link.
+ * @param {import('./course-source.js').CourseSource | null | undefined} source
+ * @param {CourseCatalog | null | undefined} catalog
+ * @returns {string}
+ */
+function getLinkableCourseTitle(source, catalog) {
+  if (!source?.sessionKey) return '';
+
+  if (source.unitType === 'book' || source.sessionKey.startsWith('book:')) {
+    const unit = catalog ? lookupCatalogUnit(catalog, source.sessionKey) : null;
+    return resolveDisplayTitle(source, unit);
+  }
+
+  const levelLabel = formatLevelLabel(catalog, source.levelCode, source.level);
+  if (levelLabel) return levelLabel;
+
+  if (source.level != null) return `Level ${source.level}`;
+  return String(source.levelCode || '').trim();
+}
+
+/**
+ * Embed `[Course Title](url)` once in the Source label so the model can copy it.
+ * @param {string} label
+ * @param {string} courseTitle
+ * @param {string} url
+ * @returns {string}
+ */
+function embedCourseTitleMarkdownLink(label, courseTitle, url) {
+  const text = String(label || '').trim();
+  const title = String(courseTitle || '').trim();
+  const href = String(url || '').trim();
+  if (!text || !title || !href) return text;
+
+  if (text.startsWith(title)) {
+    return `[${title}](${href})${text.slice(title.length)}`;
+  }
+
+  const bookForm = `Book — "${title}"`;
+  if (text.startsWith(bookForm)) {
+    return `[${title}](${href})${text.slice(bookForm.length)}`;
+  }
+
+  return `[${title}](${href}) — ${text}`;
+}
+
 /** @typedef {'full' | 'course'} SourceDetail */
 
 /**
@@ -398,7 +444,7 @@ export function formatRetrievedChunkWithCatalog(chunk, catalog, linkVariant = nu
     (chunk.sourcePath ? parseCourseSourceFromPath(chunk.sourcePath) : null);
   const unit = catalog && source?.sessionKey ? lookupCatalogUnit(catalog, source.sessionKey) : null;
   const sourceDetail = options.sourceDetail === 'course' ? 'course' : 'full';
-  const label =
+  let label =
     sourceDetail === 'course'
       ? formatCourseNameOnlyLabel(source, catalog)
       : formatCourseSourceLabelWithCatalog(source, catalog);
@@ -406,8 +452,16 @@ export function formatRetrievedChunkWithCatalog(chunk, catalog, linkVariant = nu
   if (!body) return '';
 
   // Prefer owned/membership classroom URL when known; otherwise purchase/product page.
-  // Free and paid both get a URL whenever the catalog has one.
   const link = resolveLinkForSource(unit, linkVariant, catalog, source);
+  const courseTitle = getLinkableCourseTitle(source, catalog);
+
+  if (label && link.url && courseTitle) {
+    label = embedCourseTitleMarkdownLink(label, courseTitle, link.url);
+    if (link.kind === 'purchase') {
+      return `--- Source: ${label} | access: purchase ---\n${body}`;
+    }
+    return `--- Source: ${label} ---\n${body}`;
+  }
 
   if (label && link.url && link.kind === 'purchase') {
     return `--- Source: ${label} | purchase: ${link.url} ---\n${body}`;
