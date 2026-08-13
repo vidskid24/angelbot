@@ -176,9 +176,9 @@ export function buildDynamicContextBlock(
       `## MA framework and content (source material)\nThe following excerpts are Mastering Alchemy source material. ${toneNote}\n` +
         'Each excerpt begins with a numbered Source header (`--- Source 1 ---`, `--- Source 2 ---`, …) that may include `cite:`, `detail:`, and `access:`. Use the excerpts for content, facts, quotes, and practices. ' +
         'Course names (for your understanding only — never write them as links or invent URLs): Energy Essentials - Level 1; Core - Level 2; Rewire - Level 3; Connect - Level 4; Living Lightbody - Level 5; A Course in Mastering Alchemy Book. ' +
-        '**Citations are added by the chat system, not by you.** Do not write markdown links, Thinkific/Amazon URLs, or course titles like "Level 4 - Core Program". ' +
-        'If the user asks where something comes from, where to find it, or for a source/reference/citation, you may include a single marker `[[source:N]]` using the Source number of the excerpt you actually used. Prefer a coursework Source (`access: classroom`) over the book when the same teaching appears in both. ' +
-        'If they only ask to explain, expand, or "tell me more," do not mention class/session locations and do not include `[[source:N]]`. ' +
+        '**Citations are added by the chat system, not by you.** Never write markdown links, Thinkific/Amazon URLs, course titles, `[[source:…]]` markers, or location labels like Level N / Session N. ' +
+        'If the user asks where something comes from or where to find it, just answer the question in prose. Prefer using a coursework excerpt (`access: classroom`) over the book when the same teaching appears in both. ' +
+        'If they only ask to explain, expand, or "tell me more," do not mention class or session locations. ' +
         'Never invent codes like TQ&A, TMetatron, TFull, or sessionKeys. Never expose internal file codes (for example TQA1, L5-S3-TQA1, ML6-C1-S1). ' +
         'If `access: purchase`, do not imply the user can open a classroom lesson now. ' +
         'Use this source material precisely. When summarizing, stay close to the wording and meaning of the excerpts; do not add claims, locations, or terms that are not supported by the source material. ' +
@@ -191,7 +191,7 @@ export function buildDynamicContextBlock(
         'Do not invent a class or session location if no Source header supports it. ' +
         'Do not refuse quote requests by saying you are only a synthesizing companion or not a searchable library — when source material is present, use it.\n\n' +
         styleExcerpts.trim() +
-        '\n\nCitation reminder: do not write course names or URLs; if the user asked where to find this, you may add [[source:N]] for the excerpt you used.'
+        '\n\nCitation reminder: do not write course names, URLs, or [[source:…]] markers; the chat system adds citations when the user asks where something comes from.'
     );
   }
 

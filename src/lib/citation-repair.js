@@ -125,7 +125,7 @@ function extractLevelFromCourseName(text) {
  */
 function extractCiteHints(text) {
   const s = String(text || '');
-  const sourceMatch = s.match(/\[\[\s*source:\s*(\d+)\s*\]\]/i);
+  const sourceMatch = s.match(/\[\[\s*source:\s*(\d+)\s*\]\]/i) || s.match(/\[source:\s*(\d+)\s*\]/i);
   const sourceIndex = sourceMatch ? Number(sourceMatch[1]) : null;
   const levelNum = extractLevelNumber(s) || extractLevelFromCourseName(s);
   return {
@@ -180,7 +180,8 @@ function pickCite(cites, hint, userMessage) {
 function stripModelCitations(text) {
   let s = String(text || '');
 
-  s = s.replace(/\[\[\s*source:\s*\d+\s*\]\]/gi, '');
+  s = s.replace(/\[\[\s*source\s*:\s*[^\]\n]*\]\]/gi, '');
+  s = s.replace(/\[source\s*:\s*[^\]]+\]/gi, '');
 
   // Parenthesized markdown cite + optional location detail.
   s = s.replace(
