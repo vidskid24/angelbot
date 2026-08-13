@@ -146,7 +146,10 @@ export function formatChatTextHtml(text) {
       const cls = ordered ? 'omibot-list omibot-list-ol' : 'omibot-list omibot-list-ul';
       parts.push(
         `<${tag} class="${cls}">${items
-          .map((item) => `<li>${formatInlineHtml(item)}</li>`)
+          .map((item, idx) => {
+            const marker = ordered ? `${idx + 1}.` : '\u2022';
+            return `<li><span class="omibot-list-marker" aria-hidden="true">${marker}</span><span class="omibot-list-text">${formatInlineHtml(item)}</span></li>`;
+          })
           .join('')}</${tag}>`
       );
       continue;

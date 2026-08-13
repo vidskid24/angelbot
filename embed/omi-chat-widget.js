@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=74
+ * OMIBOT_WIDGET_VERSION=75
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -14,7 +14,7 @@
   }
 
   const API_BASE = API.replace(/\/$/, '');
-  const WIDGET_VERSION = '74';
+  const WIDGET_VERSION = '75';
   const STORAGE_KEY = 'omibot_access_token';
   const STORAGE_KEY_LEGACY = 'angelbot_access_token';
   const TIER_STORAGE_KEY = 'omibot_tier';
@@ -419,7 +419,15 @@
     list.className = 'omibot-list ' + (ordered ? 'omibot-list-ol' : 'omibot-list-ul');
     for (let i = 0; i < items.length; i++) {
       const li = document.createElement('li');
-      appendInlineFormatted(li, items[i]);
+      const marker = document.createElement('span');
+      marker.className = 'omibot-list-marker';
+      marker.setAttribute('aria-hidden', 'true');
+      marker.textContent = ordered ? i + 1 + '.' : '\u2022';
+      li.appendChild(marker);
+      const body = document.createElement('span');
+      body.className = 'omibot-list-text';
+      appendInlineFormatted(body, items[i]);
+      li.appendChild(body);
       list.appendChild(li);
     }
     parent.appendChild(list);
@@ -568,10 +576,10 @@
       '.omibot-msg-bot{margin:16px 0;line-height:1.55;max-width:100%}' +
       '.omibot-msg-bot .omibot-message-body{white-space:normal}' +
       '.omibot-msg-bot .omibot-prose{white-space:pre-wrap}' +
-      '.omibot-shell .omibot-msg-bot ul.omibot-list,.omibot-shell .omibot-msg-bot ol.omibot-list{display:block!important;margin:0.55em 0 0.85em!important;padding:0 0 0 1.65em!important;list-style-position:outside!important;white-space:normal!important}' +
-      '.omibot-shell .omibot-msg-bot ul.omibot-list{list-style-type:disc!important}' +
-      '.omibot-shell .omibot-msg-bot ol.omibot-list{list-style-type:decimal!important}' +
-      '.omibot-shell .omibot-msg-bot .omibot-list li{display:list-item!important;margin:0.4em 0!important;padding-left:0.35em!important;line-height:1.55;white-space:normal!important}' +
+      '.omibot-shell .omibot-msg-bot ul.omibot-list,.omibot-shell .omibot-msg-bot ol.omibot-list{display:block!important;margin:0.55em 0 0.85em!important;padding:0!important;list-style:none!important;white-space:normal!important}' +
+      '.omibot-shell .omibot-msg-bot .omibot-list li{display:flex!important;align-items:flex-start!important;gap:0.55em!important;margin:0.45em 0 0.45em 0.15em!important;padding:0!important;line-height:1.55;white-space:normal!important;list-style:none!important}' +
+      '.omibot-shell .omibot-msg-bot .omibot-list-marker{flex:0 0 auto!important;display:inline-block!important;width:1em!important;margin:0!important;padding:0!important;color:#1a1a1a!important;font-weight:700!important;line-height:1.55!important}' +
+      '.omibot-shell .omibot-msg-bot .omibot-list-text{flex:1 1 auto!important;min-width:0!important;display:block!important}' +
       '.omibot-msg-system{margin:12px 0;padding:10px 12px;border-radius:8px;background:#f0ebe3;color:#5c5348;font-size:0.9rem;line-height:1.45}' +
       '.omibot-msg-system a.omibot-tier-link{color:#7a5c1e;text-decoration:none;border-bottom:1px solid rgba(122,92,30,.45)}' +
       '.omibot-msg-system a.omibot-tier-link:hover{color:#1a1a1a;border-bottom-color:#1a1a1a}' +
