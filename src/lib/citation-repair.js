@@ -54,10 +54,16 @@ export function userAskedForCitation(message) {
   const t = String(message || '');
   return (
     /\b(where\s+(is|did|does|was|came|come)|source|citation|cite|reference|references)\b/i.test(t) ||
-    /\b(which|what)\s+(class|course|session|level|lesson|book)\b/i.test(t) ||
+    /\b(which|what)\s+(class|course|session|level|lesson|book|chapter)\b/i.test(t) ||
     /\bfrom\s+which\b/i.test(t) ||
-    /\bwhere\s+can\s+i\s+(find|read|listen|watch)\b/i.test(t) ||
-    /\blink\s+to\s+(the\s+)?(class|course|lesson|session|book)\b/i.test(t)
+    /\bwhere\s+(?:can|could|do|would|might)\s+i\s+(?:find|read|listen|watch|get|see|locate)\b/i.test(t) ||
+    /\bwhere\s+(?:to\s+)?find\b/i.test(t) ||
+    /\bwhere\s+(?:in\s+)?(?:the\s+)?(?:coursework|course|class|material|transcript)\b/i.test(t) ||
+    /\bfind\s+(?:this|that|it|more|the\s+answer|that\s+answer)\b.*\b(?:coursework|course|class|session|level)\b/i.test(
+      t
+    ) ||
+    /\blink\s+to\s+(the\s+)?(class|course|lesson|session|book)\b/i.test(t) ||
+    /\bin\s+(?:which|what)\s+(?:part\s+of\s+)?(?:the\s+)?(?:coursework|course|class)\b/i.test(t)
   );
 }
 
@@ -72,6 +78,60 @@ function preferredCite(cites) {
   const course = cites.find((c) => !c.isBook);
   if (course) return course;
   return cites[0];
+}
+
+/**
+ * Format a canonical citation markdown snippet from a Source cite.
+ * @param {SourceCite} cite
+ * @returns {string}
+ */
+function formatCiteMarkdown(cite) {
+  if (!cite?.title || !cite?.url) return '';
+  const detail = String(cite.detail || '').trim();
+  return detail ? `[${cite.title}](${cite.url}), ${detail}` : `[${cite.title}](${cite.url})`;
+}
+
+/**
+ * If the user asked for a source but the model only wrote plain/bold "Level N, Chapter X",
+ * replace that with the real catalog cite link (+ detail when available).
+ * @param {string} reply
+ * @param {string} styleExcerpts
+ * @returns {string}
+ */
+function ensureProperCitation(reply, styleExcerpts) {
+  const cites = parseSourceCites(styleExcerpts);
+  if (!cites.length) return reply;
+
+  const hasValidCiteLink = cites.some(
+    (c) =>
+      reply.includes(`](${c.url})`) ||
+      reply.includes(`[${c.title}](`)
+  );
+
+  // Replace plain or bold Level/location phrases with a proper cite when possible.
+  const locationRe =
+    /(\*{1,2})?(?:in\s+)?Level\s+(\d+)\s*,\s*(Chapter|Session|Track|Lesson)\s+(\d+)(?:\s*[—\-–:]\s*[^*\n.,]+)?\1?/gi;
+
+  let text = String(reply || '');
+  let replaced = false;
+  text = text.replace(locationRe, (full, _wrap, levelNum) => {
+    const cite =
+      findCiteForLevel(cites, Number(levelNum)) ||
+      preferredCite(cites.filter((c) => !c.isBook)) ||
+      preferredCite(cites);
+    if (!cite) return full;
+    replaced = true;
+    return formatCiteMarkdown(cite);
+  });
+
+  if (hasValidCiteLink || replaced) return text;
+
+  // No location phrase and no cite link — append the best coursework cite.
+  const fallback = preferredCite(cites.filter((c) => !c.isBook)) || preferredCite(cites);
+  if (!fallback) return text;
+  const snippet = formatCiteMarkdown(fallback);
+  if (!snippet) return text;
+  return `${text.trim()} You can find this in ${snippet}.`;
 }
 
 /**
@@ -292,6 +352,7 @@ export function sanitizeReplyCitations(reply, styleExcerpts, userMessage) {
 
   if (userAskedForCitation(userMessage)) {
     text = repairCitationMarkdown(text, styleExcerpts);
+    text = ensureProperCitation(text, styleExcerpts);
     text = stripBareLocationBrackets(text);
     text = cleanupCitationProse(text);
     return tidyAfterCitationStrip(text);
