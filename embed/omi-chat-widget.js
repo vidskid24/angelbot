@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=73
+ * OMIBOT_WIDGET_VERSION=74
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -14,7 +14,7 @@
   }
 
   const API_BASE = API.replace(/\/$/, '');
-  const WIDGET_VERSION = '73';
+  const WIDGET_VERSION = '74';
   const STORAGE_KEY = 'omibot_access_token';
   const STORAGE_KEY_LEGACY = 'angelbot_access_token';
   const TIER_STORAGE_KEY = 'omibot_tier';
@@ -220,31 +220,36 @@
     return String(s)
       .replace(/[\u200B-\u200D\uFEFF]/g, '')
       .replace(/[\u2217\uFF0A\u2055]/g, '*')
+      .replace(/\uFF3F/g, '_')
       .replace(/\\\*\\\*/g, '**');
   }
 
   function isValidItalicContent(inner) {
     const t = String(inner || '').trim();
-    if (!t || t.length > 40) return false;
-    if (/\n/.test(t)) return false;
-    if (t.split(/\s+/).length > 4) return false;
+    if (!t || /\n/.test(t)) return false;
+    return true;
+  }
+
+  function appendEmphasisMatch(parent, inner) {
+    if (!isValidItalicContent(inner)) return false;
+    const em = document.createElement('em');
+    em.className = 'omibot-italic';
+    em.textContent = inner;
+    parent.appendChild(em);
     return true;
   }
 
   function appendItalicInTextChunk(parent, chunk) {
-    const italicRe = /(?<!\*)\*(?!\*)(?!\s)([^*\n]{1,40}?)(?<!\s)\*(?!\*)/g;
+    const italicRe =
+      /(?<!\*)\*(?!\*)(?!\s)([^*\n]+?)(?<!\s)\*(?!\*)|(?<!_)_(?!_)(?!\s)([^_\n]+?)(?<!\s)_(?!_)/g;
     let lastIndex = 0;
     let match;
     while ((match = italicRe.exec(chunk)) !== null) {
       if (match.index > lastIndex) {
         parent.appendChild(document.createTextNode(chunk.slice(lastIndex, match.index)));
       }
-      if (isValidItalicContent(match[1])) {
-        const em = document.createElement('em');
-        em.className = 'omibot-italic';
-        em.textContent = match[1];
-        parent.appendChild(em);
-      } else {
+      const inner = match[1] != null && match[1] !== '' ? match[1] : match[2];
+      if (!appendEmphasisMatch(parent, inner)) {
         parent.appendChild(document.createTextNode(match[0]));
       }
       lastIndex = italicRe.lastIndex;
@@ -390,6 +395,36 @@
     return straight % 2 === 1 || left > right;
   }
 
+  function parseListLine(line) {
+    const m = String(line || '').match(/^(\s*)([-*•]|\d+[.)])\s+(\S.*)$/);
+    if (!m) return null;
+    return {
+      indent: m[1].length,
+      ordered: /^\d+[.)]$/.test(m[2]),
+      text: m[3],
+    };
+  }
+
+  function appendProseBlock(parent, lines) {
+    if (!lines.length) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'omibot-prose';
+    appendInlineFormatted(wrap, lines.join('\n'));
+    parent.appendChild(wrap);
+  }
+
+  function appendListBlock(parent, items, ordered) {
+    if (!items.length) return;
+    const list = document.createElement(ordered ? 'ol' : 'ul');
+    list.className = 'omibot-list ' + (ordered ? 'omibot-list-ol' : 'omibot-list-ul');
+    for (let i = 0; i < items.length; i++) {
+      const li = document.createElement('li');
+      appendInlineFormatted(li, items[i]);
+      list.appendChild(li);
+    }
+    parent.appendChild(list);
+  }
+
   function appendFormattedContent(parent, text) {
     const normalized = normalizeBoldMarkers(text);
     const lines = normalized.split('\n');
@@ -416,14 +451,36 @@
         continue;
       }
 
-      const normalLines = [];
-      while (i < lines.length && !isQuoteLine(lines[i])) {
-        normalLines.push(lines[i]);
+      const listLine = parseListLine(lines[i]);
+      if (listLine) {
+        const ordered = listLine.ordered;
+        const items = [listLine.text];
+        i += 1;
+        while (i < lines.length) {
+          if (!String(lines[i] || '').trim()) break;
+          const next = parseListLine(lines[i]);
+          if (next && next.ordered === ordered) {
+            items.push(next.text);
+            i += 1;
+            continue;
+          }
+          if (!next && /^\s{2,}\S/.test(lines[i]) && !isQuoteLine(lines[i])) {
+            items[items.length - 1] += ' ' + String(lines[i]).trim();
+            i += 1;
+            continue;
+          }
+          break;
+        }
+        appendListBlock(parent, items, ordered);
+        continue;
+      }
+
+      const proseLines = [];
+      while (i < lines.length && !isQuoteLine(lines[i]) && !parseListLine(lines[i])) {
+        proseLines.push(lines[i]);
         i += 1;
       }
-      if (normalLines.length) {
-        appendInlineFormatted(parent, normalLines.join('\n'));
-      }
+      if (proseLines.length) appendProseBlock(parent, proseLines);
     }
   }
 
@@ -438,7 +495,7 @@
       '<style>' +
       '.omibot-shell{font-family:system-ui,-apple-system,sans-serif;max-width:920px;width:100%;margin:0 auto;padding:0 16px;box-sizing:border-box;color:#1a1a1a}' +
       '.omibot-shell .omibot-bold{font-weight:700!important}' +
-      '.omibot-shell .omibot-italic{font-style:italic}' +
+      '.omibot-shell .omibot-italic,.omibot-shell em.omibot-italic{font-style:italic!important}' +
       '.omibot-shell .omibot-quote{display:block;margin:0.65em 0 0.65em 1rem;padding:0.15em 0 0.15em 0.95em;border:none;border-left:3px solid #8a8278!important;background:transparent;font-style:italic!important;font-weight:inherit;line-height:1.55;color:#1a1a1a!important}' +
       '.omibot-shell .omibot-quote .omibot-quote-body,.omibot-shell .omibot-quote .omibot-quote-body *{font-style:italic!important;color:#1a1a1a!important}' +
       '.omibot-shell .omibot-cite{font-style:italic;color:#1a1a1a}' +
@@ -508,7 +565,13 @@
       '#omibot-log{min-height:0;overflow:visible;padding:0;margin:0 0 12px}' +
       '.omibot-msg-user{display:flex;justify-content:flex-end;margin:12px 0}' +
       '.omibot-msg-user .omibot-bubble{background:#e8e4dc;border-radius:14px;padding:12px 16px;max-width:85%;line-height:1.5;white-space:pre-wrap}' +
-      '.omibot-msg-bot{margin:16px 0;line-height:1.55;white-space:pre-wrap;max-width:100%}' +
+      '.omibot-msg-bot{margin:16px 0;line-height:1.55;max-width:100%}' +
+      '.omibot-msg-bot .omibot-message-body{white-space:normal}' +
+      '.omibot-msg-bot .omibot-prose{white-space:pre-wrap}' +
+      '.omibot-shell .omibot-msg-bot ul.omibot-list,.omibot-shell .omibot-msg-bot ol.omibot-list{display:block!important;margin:0.55em 0 0.85em!important;padding:0 0 0 1.65em!important;list-style-position:outside!important;white-space:normal!important}' +
+      '.omibot-shell .omibot-msg-bot ul.omibot-list{list-style-type:disc!important}' +
+      '.omibot-shell .omibot-msg-bot ol.omibot-list{list-style-type:decimal!important}' +
+      '.omibot-shell .omibot-msg-bot .omibot-list li{display:list-item!important;margin:0.4em 0!important;padding-left:0.35em!important;line-height:1.55;white-space:normal!important}' +
       '.omibot-msg-system{margin:12px 0;padding:10px 12px;border-radius:8px;background:#f0ebe3;color:#5c5348;font-size:0.9rem;line-height:1.45}' +
       '.omibot-msg-system a.omibot-tier-link{color:#7a5c1e;text-decoration:none;border-bottom:1px solid rgba(122,92,30,.45)}' +
       '.omibot-msg-system a.omibot-tier-link:hover{color:#1a1a1a;border-bottom-color:#1a1a1a}' +

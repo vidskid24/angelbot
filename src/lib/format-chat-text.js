@@ -7,14 +7,13 @@ export function normalizeBoldMarkers(text) {
   return String(text ?? '')
     .replace(/[\u200B-\u200D\uFEFF]/g, '')
     .replace(/[\u2217\uFF0A\u2055]/g, '*')
+    .replace(/\uFF3F/g, '_')
     .replace(/\\\*\\\*/g, '**');
 }
 
-const MAX_ITALIC_CHARS = 40;
-const MAX_ITALIC_WORDS = 4;
-
-/** Same-line italic only; opening * must not be followed by space (avoids "* bullet" lists). */
-const ITALIC_RE = /(?<!\*)\*(?!\*)(?!\s)([^*\n]{1,40}?)(?<!\s)\*(?!\*)/g;
+/** Same-line italic; opening marker must not be followed by space (avoids "* bullet" lists). */
+const ITALIC_RE =
+  /(?<!\*)\*(?!\*)(?!\s)([^*\n]+?)(?<!\s)\*(?!\*)|(?<!_)_(?!_)(?!\s)([^_\n]+?)(?<!\s)_(?!_)/g;
 
 /**
  * @param {string} inner
@@ -22,9 +21,7 @@ const ITALIC_RE = /(?<!\*)\*(?!\*)(?!\s)([^*\n]{1,40}?)(?<!\s)\*(?!\*)/g;
  */
 function isValidItalicContent(inner) {
   const t = String(inner || '').trim();
-  if (!t || t.length > MAX_ITALIC_CHARS) return false;
-  if (/\n/.test(t)) return false;
-  if (t.split(/\s+/).length > MAX_ITALIC_WORDS) return false;
+  if (!t || /\n/.test(t)) return false;
   return true;
 }
 
@@ -51,8 +48,9 @@ function parseItalicInTextChunk(chunk, segments) {
     if (match.index > lastIndex) {
       segments.push({ type: 'text', content: chunk.slice(lastIndex, match.index) });
     }
-    if (isValidItalicContent(match[1])) {
-      segments.push({ type: 'italic', content: match[1] });
+    const inner = match[1] != null && match[1] !== '' ? match[1] : match[2];
+    if (isValidItalicContent(inner)) {
+      segments.push({ type: 'italic', content: inner });
     } else {
       segments.push({ type: 'text', content: match[0] });
     }
@@ -64,7 +62,7 @@ function parseItalicInTextChunk(chunk, segments) {
 }
 
 /**
- * Split message into plain, bold (**), and safe italic (*) segments.
+ * Split message into plain, bold (**), and italic (* or _) segments.
  * @param {string} text
  * @returns {Array<{ type: 'text' | 'bold' | 'italic'; content: string }>}
  */
@@ -89,11 +87,10 @@ export function parseChatMarkdownSegments(text) {
 }
 
 /**
- * Web chat display: escape HTML and render **bold** and *italic* markers.
  * @param {string} text
- * @returns {string} Safe HTML fragment
+ * @returns {string}
  */
-export function formatChatTextHtml(text) {
+function formatInlineHtml(text) {
   return parseChatMarkdownSegments(text)
     .map((seg) => {
       const esc = escapeHtml(seg.content);
@@ -102,4 +99,64 @@ export function formatChatTextHtml(text) {
       return esc;
     })
     .join('');
+}
+
+/**
+ * @param {string} line
+ * @returns {{ ordered: boolean; text: string } | null}
+ */
+function parseListLine(line) {
+  const m = String(line || '').match(/^\s*([-*•]|\d+[.)])\s+(\S.*)$/);
+  if (!m) return null;
+  return { ordered: /^\d+[.)]$/.test(m[1]), text: m[2] };
+}
+
+/**
+ * Web chat display: escape HTML and render bold, italic, and lists.
+ * @param {string} text
+ * @returns {string} Safe HTML fragment
+ */
+export function formatChatTextHtml(text) {
+  const normalized = normalizeBoldMarkers(text);
+  const lines = normalized.split(/\r?\n/);
+  const parts = [];
+  let i = 0;
+  while (i < lines.length) {
+    const listLine = parseListLine(lines[i]);
+    if (listLine) {
+      const ordered = listLine.ordered;
+      const items = [listLine.text];
+      i += 1;
+      while (i < lines.length) {
+        if (!String(lines[i] || '').trim()) break;
+        const next = parseListLine(lines[i]);
+        if (next && next.ordered === ordered) {
+          items.push(next.text);
+          i += 1;
+          continue;
+        }
+        if (!next && /^\s{2,}\S/.test(lines[i])) {
+          items[items.length - 1] += ` ${String(lines[i]).trim()}`;
+          i += 1;
+          continue;
+        }
+        break;
+      }
+      const tag = ordered ? 'ol' : 'ul';
+      const cls = ordered ? 'omibot-list omibot-list-ol' : 'omibot-list omibot-list-ul';
+      parts.push(
+        `<${tag} class="${cls}">${items
+          .map((item) => `<li>${formatInlineHtml(item)}</li>`)
+          .join('')}</${tag}>`
+      );
+      continue;
+    }
+    const prose = [];
+    while (i < lines.length && !parseListLine(lines[i])) {
+      prose.push(lines[i]);
+      i += 1;
+    }
+    if (prose.length) parts.push(formatInlineHtml(prose.join('\n')));
+  }
+  return parts.join('');
 }
