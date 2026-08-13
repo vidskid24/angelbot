@@ -76,12 +76,13 @@ function preferredCite(cites) {
 
 /**
  * Remove bare [Level …] / [Mastery Live …] brackets that are not markdown links.
+ * Important: do not match the label of a real `[Title](url)` citation link.
  * @param {string} text
  * @returns {string}
  */
 function stripBareLocationBrackets(text) {
   return String(text || '').replace(
-    /\s*\[(?:Level\s+\d+|Mastery Live\s*\d*|Book|A Course in Mastering Alchemy)[^\]]*\]/gi,
+    /\s*\[(?:Level\s+\d+|Mastery Live\s*\d*|Book|A Course in Mastering Alchemy)[^\]]*\](?!\()/gi,
     ''
   );
 }
