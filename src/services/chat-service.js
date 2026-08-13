@@ -11,7 +11,11 @@ import { buildUserPreferencesPromptBlock } from '../lib/user-preferences.js';
 import { buildUserMemoryPromptBlock } from '../lib/user-memory.js';
 import { retrieve } from '../rag/retrieve.js';
 import { resolveCourseLinkVariant } from '../lib/course-access.js';
-import { sanitizeReplyCitations, userAskedForCitation } from '../lib/citation-repair.js';
+import {
+  sanitizeReplyCitations,
+  userAskedForCitation,
+  parseSourceCites,
+} from '../lib/citation-repair.js';
 
 const DEFAULT_RETRIEVE_TOP_K = 8;
 
@@ -25,12 +29,14 @@ function isContextDependentFollowup(message) {
 function extractAssistantQuotes(text) {
   const s = String(text || '');
   const quotes = [];
-  const re = /(?:^>?\s*["“]([^"”\n]{20,})["”])/gm;
-  let match;
-  while ((match = re.exec(s)) !== null) {
-    quotes.push(match[1].trim());
+  const patterns = [/^>\s*["“]([^"”\n]{20,})["”]/gm, /["“]([^"”\n]{40,})["”]/g];
+  for (const re of patterns) {
+    let match;
+    while ((match = re.exec(s)) !== null) {
+      quotes.push(match[1].trim());
+    }
   }
-  return quotes;
+  return [...new Set(quotes)];
 }
 
 function buildRetrievalQuery(message, history) {
@@ -48,9 +54,14 @@ function buildRetrievalQuery(message, history) {
   const assistantAnchor = citationAsk
     ? quotes.length
       ? quotes.join('\n')
-      : String(lastAssistant).slice(-1200)
+      : String(lastAssistant).slice(-1500)
     : String(lastAssistant).slice(0, 500);
   const userAnchor = String(lastTopicUser || '').slice(0, 400);
+  // Don't include the citation question itself — it dilutes RAG toward "where/coursework"
+  // instead of the quote or teaching being located.
+  if (citationAsk) {
+    return [userAnchor, assistantAnchor].filter(Boolean).join('\n\n') || current;
+  }
   return [userAnchor, assistantAnchor, current].filter(Boolean).join('\n\n');
 }
 
@@ -83,10 +94,22 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
     // Resolve Thinkific owned vs membership for everyone so Source lines can link
     // to the appropriate class page (classroom when enrolled, otherwise purchase).
     const linkVariant = useDb ? await resolveCourseLinkVariant(userId, email) : null;
-    const styleExcerpts = await retrieve(retrievalQuery, DEFAULT_RETRIEVE_TOP_K, {
+    let styleExcerpts = await retrieve(retrievalQuery, DEFAULT_RETRIEVE_TOP_K, {
       linkVariant,
       sourceDetail,
     });
+    if (userAskedForCitation(message) && !parseSourceCites(styleExcerpts || '').length) {
+      const lastAssistant =
+        [...history].reverse().find((t) => t.role === 'assistant' && t.content)?.content || '';
+      const quotes = extractAssistantQuotes(lastAssistant);
+      const retryQuery = (quotes.length ? quotes.join('\n') : String(lastAssistant).slice(-1500)).trim();
+      if (retryQuery && retryQuery !== retrievalQuery) {
+        styleExcerpts = await retrieve(retryQuery, DEFAULT_RETRIEVE_TOP_K, {
+          linkVariant,
+          sourceDetail,
+        });
+      }
+    }
     const result = await getWisdomReply(
       message,
       history,

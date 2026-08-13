@@ -26,7 +26,7 @@ export function parseSourceCites(excerpts) {
   /** @type {SourceCite[]} */
   const cites = [];
   const blockRe =
-    /---\s*Source\s+(\d+)\s*---\s*\r?\ncite:\s*\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)[ \t]*(?:\r?\n[ \t]*detail:\s*([^\n\r]+))?[ \t]*(?:\r?\n[ \t]*access:\s*(\w+))?/gi;
+    /---\s*Source\s+(\d+)\s*---\s*(?:\r?\n)+cite:\s*\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)[ \t]*(?:\r?\n[ \t]*detail:\s*([^\n\r]+))?[ \t]*(?:\r?\n[ \t]*access:\s*(\w+))?/gi;
   let match;
   while ((match = blockRe.exec(text)) !== null) {
     const title = String(match[2] || '').trim();
@@ -291,13 +291,13 @@ function attachCiteSnippet(text, snippet) {
   if (!t) return `You can find this in ${snippet}.`;
 
   const fromClause = t.replace(
-    /\bcomes?\s+(?:straight\s+)?from(?:\s+a\s+Q&A(?:\s+session)?)?\.?/gi,
+    /\bcomes?\s+(?:straight\s+)?from\b[^\n]*?(?=\n|$)/gi,
     `comes from ${snippet}`
   );
   if (fromClause !== t) return fromClause;
 
   const paraEnd = t.replace(
-    /\b(in|from)(?:\s+(?:the\s+)?(?:coursework|course|class|material|book)?)?\.?(?=\s*$|\s*\n)/gim,
+    /\b(in|from)(?:\s+(?:the\s+)?(?:coursework|course|class|material|book|T?Q&A|&A)?)?\.?(?=\s*$|\s*\n)/gim,
     `$1 ${snippet}`
   );
   if (paraEnd !== t) return paraEnd;
@@ -308,6 +308,20 @@ function attachCiteSnippet(text, snippet) {
   );
   if (spliced2 !== t) return spliced2;
 
+  return ensureCitePresent(t, snippet);
+}
+
+/**
+ * @param {string} text
+ * @param {string} snippet
+ * @returns {string}
+ */
+function ensureCitePresent(text, snippet) {
+  const t = String(text || '').trim();
+  const urlMatch = String(snippet || '').match(/\((https?:\/\/[^)\s]+)\)/);
+  const url = urlMatch ? urlMatch[1] : '';
+  if (url && t.includes(url)) return t;
+
   const gate = t.match(
     /(\n\n(?:Want to |Would you like |How would you like |Is there |Are you complete).*)\s*$/is
   );
@@ -315,7 +329,7 @@ function attachCiteSnippet(text, snippet) {
     const head = t.slice(0, t.length - gate[1].length).trim();
     return `${head} You can find this in ${snippet}.${gate[1]}`;
   }
-
+  if (!t) return `You can find this in ${snippet}.`;
   return `${t} You can find this in ${snippet}.`;
 }
 
@@ -342,5 +356,5 @@ export function sanitizeReplyCitations(reply, styleExcerpts, userMessage) {
   if (!cite) return tidyAfterCitationStrip(text);
 
   const snippet = formatCiteMarkdown(cite);
-  return tidyAfterCitationStrip(attachCiteSnippet(text, snippet));
+  return tidyAfterCitationStrip(ensureCitePresent(attachCiteSnippet(text, snippet), snippet));
 }
