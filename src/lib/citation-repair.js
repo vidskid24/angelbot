@@ -1,6 +1,7 @@
 /**
- * Keep citation markdown links aligned with RAG Source `cite:` values,
- * and strip unsolicited location brackets when the user did not ask for a source.
+ * Server-owned citations: catalog `cite:` / `detail:` are the only allowed
+ * course names and URLs. The model must not invent links; we strip any it
+ * writes and inject the matching Source header when the user asked for a source.
  */
 
 /**
@@ -12,6 +13,8 @@
  *   access: string;
  *   isBook: boolean;
  * }} SourceCite
+ *
+ * @typedef {{ sourceIndex: number | null; levelNum: number | null }} CiteHints
  */
 
 /**
@@ -81,178 +84,136 @@ function preferredCite(cites) {
 }
 
 /**
- * Turn stuffed link text / bare location into plain detail when Source has none.
- * "Level 1, Chapter 1, Track 1 — \"The Mechanics of You\"" →
- * "Chapter 1, Track 1 — The Mechanics of You"
- * @param {string} text
- * @returns {string}
- */
-function detailFromLocationText(text) {
-  let t = String(text || '').trim();
-  if (!t) return '';
-  t = t.replace(/^\*{1,2}|\*{1,2}$/g, '').trim();
-  t = t.replace(/^in\s+/i, '').trim();
-  t = t.replace(/^Level\s+\d+\s*,\s*/i, '').trim();
-  t = t
-    .replace(/\s*—\s*"([^"]+)"/g, ' — $1')
-    .replace(/"([^"]+)"/g, '$1')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (!/\b(?:Chapter|Session|Track|Lesson|Video)\b/i.test(t)) return '';
-  return t;
-}
-
-/**
- * Format a canonical citation markdown snippet from a Source cite.
  * @param {SourceCite} cite
- * @param {string} [fallbackDetail]
  * @returns {string}
  */
-function formatCiteMarkdown(cite, fallbackDetail = '') {
+function formatCiteMarkdown(cite) {
   if (!cite?.title || !cite?.url) return '';
-  const detail = String(cite.detail || fallbackDetail || '').trim();
+  const detail = String(cite.detail || '').trim();
   return detail ? `[${cite.title}](${cite.url}), ${detail}` : `[${cite.title}](${cite.url})`;
 }
 
 /**
- * Legacy location phrases the model invents instead of pasting `cite:` + `detail:`.
- * Covers: Level 1, Chapter 1, Track 1 — "The Mechanics of You"
- * and shorter forms like Level 1, Chapter 2 / Level 2, Session 8 — title
- * @type {RegExp}
+ * @param {string} text
+ * @returns {number | null}
  */
-const LOCATION_PHRASE_RE =
-  /(\*{1,2})?Level\s+(\d+)\s*,\s*(Chapter|Session|Track|Lesson)\s+(\d+)(?:\s*,\s*(Chapter|Session|Track|Lesson|Video)\s+(\d+))?(?:\s*[—\-–:]\s*(?:"[^"]+"|[^*\n,[\]"][^*\n[\]]*?))?(\*{1,2})?/gi;
-
-/**
- * True when markdown link text is a stuffed location, not a course/book title.
- * @param {string} linkText
- * @returns {boolean}
- */
-function linkTextLooksLikeLocation(linkText) {
-  const t = String(linkText || '').trim();
-  if (!t) return false;
-  if (/Level\s+\d+\s*,\s*(?:Chapter|Session|Track|Lesson)\b/i.test(t)) return true;
-  if (
-    /\b(?:Chapter|Session|Track|Lesson|Video)\s+\d+/i.test(t) &&
-    /(?:Level\s+\d+|Core|Rewire|Connect|Living Lightbody|Energy Essentials|Mastery Live)/i.test(t) &&
-    t.length > 48
-  ) {
-    return true;
-  }
-  return false;
+function extractLevelNumber(text) {
+  const m = String(text || '').match(/\bLevel\s+(\d+)\b/i);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return Number.isFinite(n) ? n : null;
 }
 
 /**
- * Pick the best Source cite for a Level N location phrase.
+ * Course-name hints only when no explicit "Level N" is present.
+ * @param {string} text
+ * @returns {number | null}
+ */
+function extractLevelFromCourseName(text) {
+  const t = String(text || '');
+  if (/\bEnergy Essentials\b/i.test(t)) return 1;
+  if (/\bRewire\b/i.test(t)) return 3;
+  if (/\bConnect\b/i.test(t)) return 4;
+  if (/\bLiving Lightbody\b/i.test(t)) return 5;
+  if (/\bCore\b/i.test(t)) return 2;
+  return null;
+}
+
+/**
+ * @param {string} text
+ * @returns {CiteHints}
+ */
+function extractCiteHints(text) {
+  const s = String(text || '');
+  const sourceMatch = s.match(/\[\[\s*source:\s*(\d+)\s*\]\]/i);
+  const sourceIndex = sourceMatch ? Number(sourceMatch[1]) : null;
+  const levelNum = extractLevelNumber(s) || extractLevelFromCourseName(s);
+  return {
+    sourceIndex: Number.isFinite(sourceIndex) ? sourceIndex : null,
+    levelNum: Number.isFinite(levelNum) ? levelNum : null,
+  };
+}
+
+/**
  * @param {SourceCite[]} cites
  * @param {number} levelNum
  * @returns {SourceCite | null}
  */
-function citeForLocation(cites, levelNum) {
-  return (
-    findCiteForLevel(cites, levelNum) ||
-    preferredCite(cites.filter((c) => !c.isBook)) ||
-    preferredCite(cites)
-  );
+function findCiteForLevel(cites, levelNum) {
+  if (!cites.length || levelNum == null) return null;
+  const levelRe = new RegExp(`\\bLevel\\s*${levelNum}\\b`, 'i');
+  return cites.find((c) => !c.isBook && levelRe.test(c.title)) || null;
 }
 
 /**
- * If the user asked for a source but the model only wrote plain/bold "Level N, Chapter X…",
- * replace that entire phrase with the real catalog cite link (+ detail when available).
- * @param {string} reply
- * @param {string} styleExcerpts
- * @returns {string}
+ * @param {SourceCite[]} cites
+ * @param {CiteHints} hint
+ * @param {string} userMessage
+ * @returns {SourceCite | null}
  */
-function ensureProperCitation(reply, styleExcerpts) {
-  const cites = parseSourceCites(styleExcerpts);
-  if (!cites.length) return reply;
+function pickCite(cites, hint, userMessage) {
+  if (!cites.length) return null;
 
-  const hasValidCiteLink = cites.some(
-    (c) => reply.includes(`](${c.url})`) || reply.includes(`[${c.title}](`)
-  );
+  if (hint?.sourceIndex != null) {
+    const byIndex = cites.find((c) => c.index === hint.sourceIndex);
+    if (byIndex) return byIndex;
+  }
 
-  let text = String(reply || '');
-  let replaced = false;
-  text = text.replace(LOCATION_PHRASE_RE, (full, _openWrap, levelNum, kind, num) => {
-    const cite = citeForLocation(cites, Number(levelNum));
-    if (!cite) return full;
-    replaced = true;
-    const fallback = detailFromLocationText(full) || `${kind} ${num}`;
-    return formatCiteMarkdown(cite, fallback);
-  });
+  const levelNum = hint?.levelNum || extractLevelNumber(userMessage) || extractLevelFromCourseName(userMessage);
+  const byLevel = findCiteForLevel(cites, levelNum);
+  if (byLevel) return byLevel;
 
-  if (hasValidCiteLink || replaced) return text;
+  const looksBook = /\b(book|acima|lesson)\b/i.test(String(userMessage || ''));
+  if (looksBook) {
+    const book = cites.find((c) => c.isBook);
+    if (book) return book;
+  }
 
-  const fallback = preferredCite(cites.filter((c) => !c.isBook)) || preferredCite(cites);
-  if (!fallback) return text;
-  const snippet = formatCiteMarkdown(fallback);
-  if (!snippet) return text;
-  return `${text.trim()} You can find this in ${snippet}.`;
+  return preferredCite(cites);
 }
 
 /**
- * @param {string} label
- * @param {string} url
- * @returns {boolean}
- */
-function isCourseCitationMarkdown(label, url) {
-  return (
-    /masteringalchemy|amazon\.com|thinkific/i.test(url) ||
-    /Level\s+\d+|Course|Mastery Live|Book|A Course in Mastering Alchemy|Core|Rewire|Connect|Living Lightbody|Energy Essentials/i.test(
-      label
-    )
-  );
-}
-
-/**
- * Remove bare [Level …] / [Mastery Live …] brackets that are not markdown links.
- * Important: do not match the label of a real `[Title](url)` citation link.
+ * Remove model-invented citation markup, location phrases, and source markers.
  * @param {string} text
  * @returns {string}
  */
-function stripBareLocationBrackets(text) {
-  return String(text || '').replace(
+function stripModelCitations(text) {
+  let s = String(text || '');
+
+  s = s.replace(/\[\[\s*source:\s*\d+\s*\]\]/gi, '');
+
+  // Parenthesized markdown cite + optional location detail.
+  s = s.replace(
+    /\(\s*\[[^\]]+\]\(https?:\/\/[^)\s]+\)\s*(?:,\s*(?:Session|Lesson|Chapter|Track|Video)\b[^)]*)?\s*\)/gi,
+    ''
+  );
+
+  // Inline markdown cite + optional location detail (course/book URLs or any http link
+  // whose label looks like a course/level/book title).
+  s = s.replace(
+    /\[[^\]]+\]\(https?:\/\/[^)\s]+\)\s*(?:,\s*(?:Session|Lesson|Chapter|Track|Video)\s+\d+(?:\s*[—\-–:]\s*[^.,!?\n(]{0,120})?)?/gi,
+    (full) => (/masteringalchemy|amazon\.com|thinkific|Level\s+\d+|Core|Rewire|Connect|Living Lightbody|Energy Essentials|Course in Mastering Alchemy|Mastery Live/i.test(full) ? '' : full)
+  );
+
+  // Bare [Level …] / [Course name …] brackets that are not markdown links.
+  s = s.replace(
     /\s*\[(?:Level\s+\d+|Mastery Live\s*\d*|Book|A Course in Mastering Alchemy|Core|Rewire|Connect|Living Lightbody|Energy Essentials)[^\]]*\](?!\()/gi,
     ''
   );
-}
 
-/**
- * Remove course/book markdown citation links from a reply.
- * Also removes wrapping parentheses and trailing Session/Lesson detail the model
- * often attaches, so we don't leave leftovers like `(, Session 1)`.
- * @param {string} text
- * @returns {string}
- */
-function stripCitationLinks(text) {
-  let s = String(text || '');
-
-  // Whole parenthesized cite + optional location detail:
-  // ([Course](url), Session 1 — Melchizedek)
+  // Invented or unlinked course titles: "Level 4 - Core Program", "Connect - Level 4".
   s = s.replace(
-    /\(\s*\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)\s*(?:,\s*(?:Session|Lesson|Chapter|Track|Video)\b[^)]*)?\s*\)/gi,
-    (full, label, url) => (isCourseCitationMarkdown(label, url) ? '' : full)
-  );
-
-  // Inline cite + optional location detail (no wrapping parens):
-  // [Course](url), Session 13 — Q&A-1
-  // Also stuffed locations: [Level 1, Chapter 1, Track 1 — "…"](url)
-  s = s.replace(
-    /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)\s*(?:,\s*(?:Session|Lesson|Chapter|Track|Video)\s+\d+(?:\s*[—\-–:]\s*[^.,!?\n(]{0,120})?)?/gi,
-    (full, label, url) => (isCourseCitationMarkdown(label, url) ? '' : full)
-  );
-
-  // Leftover bare legacy locations when cites were stripped or never linked.
-  s = s.replace(
-    /\s*(?:\*{1,2})?(?:in\s+)?Level\s+\d+\s*,\s*(?:Chapter|Session|Track|Lesson)\s+\d+(?:\s*,\s*(?:Chapter|Session|Track|Lesson|Video)\s+\d+)?(?:\s*[—\-–:]\s*(?:"[^"]+"|[^*\n.[,][^*\n.]*?))?(?:\*{1,2})?/gi,
+    /(?:\*{1,2})?(?:Level\s+\d+\s*[—\-–:]\s*(?:Core(?:\s+Program)?|Rewire|Connect|Living Lightbody|Energy Essentials|Program)|(?:Energy Essentials|Core|Rewire|Connect|Living Lightbody)\s*[—\-–:]\s*Level\s+\d+(?:\s+Program)?|Level\s+\d+\s+Program|A Course in Mastering Alchemy(?: Book)?)(?:\s*,\s*(?:Chapter|Session|Track|Lesson|Video)\s+\d+(?:\s*[—\-–:]\s*[^.,!?\n*]{0,80})?)?(?:\*{1,2})?/gi,
     ''
   );
 
-  // Leftover fragments after a partial strip: (, Session 1) or (, Chapter 1, Track 2 — ...)
+  // Legacy location phrases: Level 1, Chapter 1, Track 1 — "…".
   s = s.replace(
-    /\s*\(\s*,\s*(?:Session|Lesson|Chapter|Track|Video)\b[^)]*\)/gi,
+    /(?:\*{1,2})?Level\s+\d+\s*,\s*(?:Chapter|Session|Track|Lesson)\s+\d+(?:\s*,\s*(?:Chapter|Session|Track|Lesson|Video)\s+\d+)?(?:\s*[—\-–:]\s*(?:"[^"]+"|[^*\n.[,][^*\n.]*?))?(?:\*{1,2})?/gi,
     ''
   );
+
+  s = s.replace(/\s*\(\s*,\s*(?:Session|Lesson|Chapter|Track|Video)\b[^)]*\)/gi, '');
 
   return s;
 }
@@ -271,172 +232,62 @@ function tidyAfterCitationStrip(text) {
     .replace(/ +!/g, '!')
     .replace(/ +\?/g, '?')
     .replace(/ +:/g, ':')
+    .replace(/\bin\s+of\s+the\b/gi, 'in the')
+    .replace(/\bin\s+of\b/gi, 'in')
     .replace(/  +/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
 
 /**
- * Collapse duplicated session mentions the model often invents around cites.
+ * Splice a catalog cite into the reply, or append it.
  * @param {string} text
+ * @param {string} snippet
  * @returns {string}
  */
-function cleanupCitationProse(text) {
-  return String(text || '')
-    .replace(/\bSession\s+(\d+)\s*[,:]\s*Session\s+\1\b/gi, 'Session $1')
-    .replace(/\bSession\s+(\d+)\s+Session\s+\1\b/gi, 'Session $1')
-    // Drop quotation marks around track/lesson titles in citation tails.
-    .replace(/(\[\s*[^\]]+\]\(\s*https?:\/\/[^)]+\)\s*,\s[^"\n]*)\s*—\s*"([^"]+)"/g, '$1 — $2')
-    .replace(/(\[\s*[^\]]+\]\(\s*https?:\/\/[^)]+\)\s*,\s*(?:Session|Lesson|Chapter|Track|Video)\b[^"\n]*)"([^"\n]+)"/g, '$1$2');
-}
+function attachCiteSnippet(text, snippet) {
+  let t = tidyAfterCitationStrip(text);
+  if (!snippet) return t;
+  t = t.replace(/^(see|look(?:\s+here)?)\.?\s*$/i, '').trim();
+  if (!t) return `You can find this in ${snippet}.`;
 
-/**
- * Normalize URL keys so trailing slashes still match Source cites.
- * @param {string} url
- * @returns {string}
- */
-function normalizeCiteUrl(url) {
-  return String(url || '')
-    .trim()
-    .replace(/\/+$/, '');
-}
-
-/**
- * @param {string} url
- * @returns {boolean}
- */
-function isBrokenOrInventedCourseUrl(url) {
-  const u = String(url || '').toLowerCase();
-  if (/\/not-found\b/.test(u)) return true;
-  // Level 2's real Thinkific slug IS level-2-program. Do not flag it.
-  // Level 3+ do not use level-N-program (L3 current = rewire-level-3;
-  // level-3-program is a separate legacy course with different session numbering).
-  return /\/(?:take\/)?level-[1345]-program\b/.test(u);
-}
-
-/**
- * @param {string} text
- * @returns {number | null}
- */
-function extractLevelNumber(text) {
-  const s = String(text || '');
-  const m =
-    s.match(/\bLevel\s*(\d+)\b/i) ||
-    s.match(/\blevel-(\d+)-program\b/i) ||
-    s.match(/\brewire-level-(\d+)\b/i) ||
-    s.match(/\brewire-l(\d+)\b/i) ||
-    s.match(/\benergyessentials-level(\d+)\b/i) ||
-    s.match(/\benergy-essentials-l(\d+)\b/i) ||
-    s.match(/\bcore-l(\d+)\b/i) ||
-    s.match(/\bconnect-level-(\d+)\b/i) ||
-    s.match(/\bconnect-l(\d+)\b/i) ||
-    s.match(/\bliving-lightbody-level-(\d+)\b/i) ||
-    s.match(/\bliving-lightbody-l(\d+)\b/i) ||
-    s.match(/\bL(\d+)\b/i);
-  if (!m) return null;
-  const n = Number(m[1]);
-  return Number.isFinite(n) ? n : null;
-}
-
-/**
- * @param {SourceCite[]} cites
- * @param {number} levelNum
- * @returns {SourceCite | null}
- */
-function findCiteForLevel(cites, levelNum) {
-  if (!cites.length || levelNum == null) return null;
-  const levelRe = new RegExp(`\\bLevel\\s*${levelNum}\\b`, 'i');
-  const urlRe = new RegExp(
-    `(?:rewire-level-${levelNum}|rewire-l${levelNum}|level-${levelNum}-program|level-${levelNum}|/l${levelNum}\\b|mastery-live-${levelNum}|energyessentials-level${levelNum}|energy-essentials-l${levelNum}|core-l${levelNum}|connect-level-${levelNum}|connect-l${levelNum}|living-lightbody-level-${levelNum}|living-lightbody-l${levelNum})`,
-    'i'
+  const spliced = t.replace(
+    /\b(in|from)(?:\s+(?:the\s+)?(?:coursework|course|class|material|book)?)?\.?\s*$/i,
+    `$1 ${snippet}`
   );
-  return (
-    cites.find((c) => !c.isBook && levelRe.test(c.title)) ||
-    cites.find((c) => !c.isBook && urlRe.test(c.url)) ||
-    null
+  if (spliced !== t) return spliced;
+
+  const spliced2 = t.replace(
+    /\b(in|from)\s+(?:the\s+)?(?:coursework|course|class|material)\b/i,
+    `$1 ${snippet}`
   );
+  if (spliced2 !== t) return spliced2;
+
+  return `${t} You can find this in ${snippet}.`;
 }
 
 /**
- * Pick the Source cite that matches this markdown link.
- * @param {string} linkText
- * @param {string} url
- * @param {SourceCite[]} cites
- * @returns {SourceCite | null}
- */
-function resolveCiteForMarkdownLink(linkText, url, cites) {
-  if (!cites.length) return null;
-
-  const normalized = normalizeCiteUrl(url);
-  const byUrl = cites.find((c) => normalizeCiteUrl(c.url) === normalized);
-  if (byUrl && !isBrokenOrInventedCourseUrl(url)) return byUrl;
-
-  const looksBook =
-    /acima|course in mastering alchemy|lesson\s+\d+/i.test(linkText) ||
-    /amazon\.com/i.test(url);
-  if (looksBook) {
-    return cites.find((c) => c.isBook) || null;
-  }
-
-  const levelNum =
-    extractLevelNumber(linkText) ||
-    extractLevelNumber(url) ||
-    null;
-  const byLevel = findCiteForLevel(cites, levelNum);
-  if (byLevel) return byLevel;
-
-  // Invented/broken class URLs should never be kept.
-  if (isBrokenOrInventedCourseUrl(url) || /masteringalchemy\.com|thinkific/i.test(url)) {
-    return preferredCite(cites.filter((c) => !c.isBook)) || preferredCite(cites);
-  }
-
-  return preferredCite(cites.filter((c) => !c.isBook)) || preferredCite(cites);
-}
-
-/**
- * Force markdown citation links to use the exact course/book title for a known URL,
- * and replace unknown/invented URLs with the best matching Source cite.
- * Location-stuffed link text becomes a full cite + detail snippet.
- * @param {string} reply
- * @param {string} styleExcerpts
- * @returns {string}
- */
-export function repairCitationMarkdown(reply, styleExcerpts) {
-  const text = String(reply || '');
-  const cites = parseSourceCites(styleExcerpts);
-  if (!text || !cites.length) return text;
-
-  return text.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (full, linkText, url) => {
-    const replacement = resolveCiteForMarkdownLink(linkText, url, cites);
-    if (!replacement) return full;
-    if (linkTextLooksLikeLocation(linkText)) {
-      return formatCiteMarkdown(replacement, detailFromLocationText(linkText));
-    }
-    return `[${replacement.title}](${replacement.url})`;
-  });
-}
-
-/**
- * Repair links when citing was requested; otherwise strip unsolicited citation markup.
+ * Strip unsolicited cites, or replace them with the catalog Source cite.
  * @param {string} reply
  * @param {string} styleExcerpts
  * @param {string} userMessage
  * @returns {string}
  */
 export function sanitizeReplyCitations(reply, styleExcerpts, userMessage) {
-  let text = String(reply || '');
-  if (!text) return text;
+  const original = String(reply || '');
+  if (!original) return original;
 
-  if (userAskedForCitation(userMessage)) {
-    text = repairCitationMarkdown(text, styleExcerpts);
-    text = ensureProperCitation(text, styleExcerpts);
-    text = stripBareLocationBrackets(text);
-    text = cleanupCitationProse(text);
+  const cites = parseSourceCites(styleExcerpts);
+  const hint = extractCiteHints(original);
+  let text = stripModelCitations(original);
+
+  if (!userAskedForCitation(userMessage)) {
     return tidyAfterCitationStrip(text);
   }
 
-  text = stripCitationLinks(text);
-  text = stripBareLocationBrackets(text);
-  text = cleanupCitationProse(text);
-  return tidyAfterCitationStrip(text);
+  const cite = pickCite(cites, hint, userMessage);
+  if (!cite) return tidyAfterCitationStrip(text);
+
+  const snippet = formatCiteMarkdown(cite);
+  return tidyAfterCitationStrip(attachCiteSnippet(text, snippet));
 }

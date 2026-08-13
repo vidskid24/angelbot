@@ -174,25 +174,12 @@ export function buildDynamicContextBlock(
       : 'Use it for tone and content.';
     parts.push(
       `## MA framework and content (source material)\nThe following excerpts are Mastering Alchemy source material. ${toneNote}\n` +
-        'Each excerpt begins with a numbered Source header (`--- Source 1 ---`, `--- Source 2 ---`, …) that may include:\n' +
-        '- `cite:` the ONLY allowed markdown link for that excerpt — copy it character-for-character, including the link text inside `[...]` and the URL inside `(...)`\n' +
-        '- `detail:` plain-language location (lesson/session/chapter/track). Never put this text inside the markdown link brackets\n' +
-        '- `access:` `classroom` or `purchase`\n' +
-        'Use the excerpts for content, facts, quotes, and practices. ' +
-        '**Citations / references — only when asked:** Do not cite unless the user asks where something comes from, where to find it, for a reference, source, or citation. ' +
-        'If they only ask to explain, expand, or "tell me more," do not add any class/session brackets or links. ' +
-        'Never wrap locations in square brackets unless you are pasting an exact `cite:` markdown link. Never invent codes like TQ&A, TMetatron, TFull, or sessionKeys. ' +
-        'When they do ask about a quote or idea, use the Source header attached to the excerpt that actually contains that quote/idea — never mix `cite:` from one Source with `detail:` or wording from another Source. ' +
-        'Prefer a coursework Source (`access: classroom`) over the book when the same teaching appears in both. ' +
-        'Format: paste that Source\'s `cite:` markdown link exactly (course/book name only inside the brackets), then optionally add that same Source\'s `detail:` in plain words after a comma — detail is never part of the link and should not use quotation marks around titles. ' +
-        'The chat UI will italicize the whole citation and bold the course/book name in the link. ' +
-        'Book example: That comes from [A Course in Mastering Alchemy Book](https://www.amazon.com/dp/1786780143), Lesson 16 — Ascended Master Kuthumi introduces the Triads. ' +
-        'Course example: That comes from [Energy Essentials - Level 1](https://courses.masteringalchemy.com/courses/take/energyessentials-level1/texts/53406938-welcome), Chapter 1: Your energetic systems, Track 1 — The Mechanics of You. ' +
-        'Another course example: That comes from [Core - Level 2](https://courses.masteringalchemy.com/courses/take/level-2-program/texts/63628124-welcome), Session 8 — Seven Layers of Thought - Extra Class. ' +
-        'Level 3 example: That comes from [Rewire - Level 3](https://courses.masteringalchemy.com/courses/take/rewire-level-3), Session 1 — Ehyeh Asher Ehyeh. ' +
-        'Wrong: writing bare locations like Level 1, Chapter 1, Track 1 — The Mechanics of You (always paste the `cite:` markdown link first; never use Level N alone as the course name); inventing level-3-program / level-4-program / level-5-program URLs (only Level 2 uses the level-2-program slug; Level 3 is rewire-level-3); putting Session/Lesson/Chapter/Track numbers or titles inside the link brackets (link text must be only the course/book name from `cite:`, e.g. Energy Essentials - Level 1); reversing the course name order (never Level 2 — Core); wrapping track titles in quotation marks; repeating Session twice; using ACIMA instead of the full book name; swapping a book label onto a class URL; using https://masteringalchemy.com; or writing the raw URL as visible plain text. ' +
-        'Never rebuild links. Never change link text or URLs. Never nest links. Never use any URL that does not appear exactly in a `cite:` value. ' +
-        'Never expose internal file codes, session keys, or filename fragments (for example TQA1, L5-S3-TQA1, ML6-C1-S1). ' +
+        'Each excerpt begins with a numbered Source header (`--- Source 1 ---`, `--- Source 2 ---`, …) that may include `cite:`, `detail:`, and `access:`. Use the excerpts for content, facts, quotes, and practices. ' +
+        'Course names (for your understanding only — never write them as links or invent URLs): Energy Essentials - Level 1; Core - Level 2; Rewire - Level 3; Connect - Level 4; Living Lightbody - Level 5; A Course in Mastering Alchemy Book. ' +
+        '**Citations are added by the chat system, not by you.** Do not write markdown links, Thinkific/Amazon URLs, or course titles like "Level 4 - Core Program". ' +
+        'If the user asks where something comes from, where to find it, or for a source/reference/citation, you may include a single marker `[[source:N]]` using the Source number of the excerpt you actually used. Prefer a coursework Source (`access: classroom`) over the book when the same teaching appears in both. ' +
+        'If they only ask to explain, expand, or "tell me more," do not mention class/session locations and do not include `[[source:N]]`. ' +
+        'Never invent codes like TQ&A, TMetatron, TFull, or sessionKeys. Never expose internal file codes (for example TQA1, L5-S3-TQA1, ML6-C1-S1). ' +
         'If `access: purchase`, do not imply the user can open a classroom lesson now. ' +
         'Use this source material precisely. When summarizing, stay close to the wording and meaning of the excerpts; do not add claims, locations, or terms that are not supported by the source material. ' +
         'You may and should quote directly from this material when relevant — including longer multi-sentence passages when the user asks for them. Any text inside quotation marks must be copied **verbatim** as one continuous span from the source material. ' +
@@ -204,7 +191,7 @@ export function buildDynamicContextBlock(
         'Do not invent a class or session location if no Source header supports it. ' +
         'Do not refuse quote requests by saying you are only a synthesizing companion or not a searchable library — when source material is present, use it.\n\n' +
         styleExcerpts.trim() +
-        '\n\nCitation reminder: copy one complete `cite:` value exactly from the same Source block as the quoted text; never mix book titles with class URLs.'
+        '\n\nCitation reminder: do not write course names or URLs; if the user asked where to find this, you may add [[source:N]] for the excerpt you used.'
     );
   }
 
