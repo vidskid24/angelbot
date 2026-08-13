@@ -146,6 +146,88 @@ function normalizeCiteUrl(url) {
 }
 
 /**
+ * @param {string} url
+ * @returns {boolean}
+ */
+function isBrokenOrInventedCourseUrl(url) {
+  const u = String(url || '').toLowerCase();
+  return (
+    /\/not-found\b/.test(u) ||
+    /\/level-3-program\b/.test(u) ||
+    /\/take\/level-\d+-program\b/.test(u)
+  );
+}
+
+/**
+ * @param {string} text
+ * @returns {number | null}
+ */
+function extractLevelNumber(text) {
+  const m =
+    String(text || '').match(/\bLevel\s*(\d+)\b/i) ||
+    String(text || '').match(/\brewire-l?(\d+)\b/i) ||
+    String(text || '').match(/\bL(\d+)\b/);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * @param {SourceCite[]} cites
+ * @param {number} levelNum
+ * @returns {SourceCite | null}
+ */
+function findCiteForLevel(cites, levelNum) {
+  if (!cites.length || levelNum == null) return null;
+  const levelRe = new RegExp(`\\bLevel\\s*${levelNum}\\b`, 'i');
+  const urlRe = new RegExp(
+    `(?:rewire-l?${levelNum}|level-${levelNum}|/l${levelNum}\\b|mastery-live-${levelNum})`,
+    'i'
+  );
+  return (
+    cites.find((c) => !c.isBook && levelRe.test(c.title)) ||
+    cites.find((c) => !c.isBook && urlRe.test(c.url)) ||
+    null
+  );
+}
+
+/**
+ * Pick the Source cite that matches this markdown link.
+ * @param {string} linkText
+ * @param {string} url
+ * @param {SourceCite[]} cites
+ * @returns {SourceCite | null}
+ */
+function resolveCiteForMarkdownLink(linkText, url, cites) {
+  if (!cites.length) return null;
+
+  const normalized = normalizeCiteUrl(url);
+  const byUrl = cites.find((c) => normalizeCiteUrl(c.url) === normalized);
+  if (byUrl && !isBrokenOrInventedCourseUrl(url)) return byUrl;
+
+  const looksBook =
+    /acima|course in mastering alchemy|lesson\s+\d+/i.test(linkText) ||
+    /amazon\.com/i.test(url);
+  if (looksBook) {
+    return cites.find((c) => c.isBook) || null;
+  }
+
+  const levelNum =
+    extractLevelNumber(linkText) ||
+    extractLevelNumber(url) ||
+    null;
+  const byLevel = findCiteForLevel(cites, levelNum);
+  if (byLevel) return byLevel;
+
+  // Invented/broken class URLs should never be kept.
+  if (isBrokenOrInventedCourseUrl(url) || /masteringalchemy\.com|thinkific/i.test(url)) {
+    return preferredCite(cites.filter((c) => !c.isBook)) || preferredCite(cites);
+  }
+
+  return preferredCite(cites.filter((c) => !c.isBook)) || preferredCite(cites);
+}
+
+/**
  * Force markdown citation links to use the exact course/book title for a known URL,
  * and replace unknown/invented URLs with the best matching Source cite.
  * @param {string} reply
@@ -157,20 +239,8 @@ export function repairCitationMarkdown(reply, styleExcerpts) {
   const cites = parseSourceCites(styleExcerpts);
   if (!text || !cites.length) return text;
 
-  const byUrl = new Map(cites.map((c) => [normalizeCiteUrl(c.url), c]));
-  const fallback = preferredCite(cites);
-
   return text.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (full, linkText, url) => {
-    const matched = byUrl.get(normalizeCiteUrl(url));
-    if (matched) {
-      // Course/book name only — never leave Session/Lesson text inside the link label.
-      return `[${matched.title}](${matched.url})`;
-    }
-
-    const looksBook = /acima|course in mastering alchemy|lesson\s+\d+/i.test(linkText);
-    const replacement = looksBook
-      ? cites.find((c) => c.isBook) || fallback
-      : preferredCite(cites.filter((c) => !c.isBook)) || fallback;
+    const replacement = resolveCiteForMarkdownLink(linkText, url, cites);
     if (!replacement) return full;
     return `[${replacement.title}](${replacement.url})`;
   });

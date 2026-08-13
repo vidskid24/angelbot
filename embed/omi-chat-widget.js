@@ -335,15 +335,15 @@
       const label = match[1];
       const url = match[2];
       const after = text.slice(linkRe.lastIndex);
-      // Pull trailing session/lesson detail into the italic citation span.
+      // Only the short structured location tail — never the rest of the reply.
       const detailMatch = isCourseCitationUrl(url)
         ? after.match(
-            /^,\s*((?:Session|Lesson|Chapter|Track|Video)\b[^\[\]\n]*?)(?=(\s*[.!?…]|\s*$|\n))/
+            /^,\s*((?:Session|Lesson|Chapter|Track|Video)\s+\d+(?:\s*[—\-–:]\s*[^.,!?\n\[]{1,120})?)/
           )
         : null;
 
       if (detailMatch) {
-        const cite = document.createElement('em');
+        const cite = document.createElement('span');
         cite.className = 'omibot-cite';
         appendCitationLink(cite, label, url);
         const detailText = String(detailMatch[1] || '')
@@ -358,7 +358,7 @@
       }
 
       if (isCourseCitationUrl(url)) {
-        const cite = document.createElement('em');
+        const cite = document.createElement('span');
         cite.className = 'omibot-cite';
         appendCitationLink(cite, label, url);
         parent.appendChild(cite);
