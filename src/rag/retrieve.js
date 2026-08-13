@@ -7,7 +7,11 @@ import { readFile, stat } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { embed } from '../lib/gemini.js';
-import { loadCourseCatalog, formatRetrievedChunkWithCatalog } from './course-catalog.js';
+import {
+  loadCourseCatalog,
+  formatRetrievedChunkWithCatalog,
+  citeFromRetrievedChunk,
+} from './course-catalog.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '../..');
@@ -93,15 +97,6 @@ export function clearEmbeddingsIndexCache() {
   embeddingsIndexLoadPromise = null;
 }
 
-/**
- * @param {string} query
- * @param {number} [topK]
- * @param {{
- *   linkVariant?: import('./course-catalog.js').CourseLinkVariant | null;
- *   sourceDetail?: import('./course-catalog.js').SourceDetail;
- * }} [options]
- * @returns {Promise<string>} Labeled top-k chunk texts for system prompt
- */
 function isBookChunk(chunk) {
   const path = String(chunk?.sourcePath || '');
   const source = chunk?.source;
@@ -110,11 +105,20 @@ function isBookChunk(chunk) {
   return /(^|\/)ACIMA/i.test(path);
 }
 
+/**
+ * @param {string} query
+ * @param {number} [topK]
+ * @param {{
+ *   linkVariant?: import('./course-catalog.js').CourseLinkVariant | null;
+ *   sourceDetail?: import('./course-catalog.js').SourceDetail;
+ * }} [options]
+ * @returns {Promise<{ text: string; sources: Array<{ title: string; url: string; detail: string; access: string }> }>}
+ */
 export async function retrieve(query, topK = DEFAULT_TOP_K, options = {}) {
   const index = await loadEmbeddingsIndex();
-  if (!index) return '';
+  if (!index) return { text: '', sources: [] };
   const chunks = index.chunks;
-  if (!chunks.length) return '';
+  if (!chunks.length) return { text: '', sources: [] };
 
   let queryEmbedding;
   try {
@@ -123,7 +127,7 @@ export async function retrieve(query, topK = DEFAULT_TOP_K, options = {}) {
     const status = Number(err?.status);
     if (status === 429 || status === 500 || status === 503) {
       console.warn('RAG retrieval degraded: embedding temporarily unavailable.', err?.message || err);
-      return '';
+      return { text: '', sources: [] };
     }
     throw err;
   }
@@ -158,13 +162,33 @@ export async function retrieve(query, topK = DEFAULT_TOP_K, options = {}) {
     chosen.push(c);
   }
 
+  /** @type {Array<{ title: string; url: string; detail: string; access: string }>} */
+  const sources = [];
+  const seen = new Set();
   const top = chosen
-    .map((c, i) =>
-      formatRetrievedChunkWithCatalog(c, catalog, linkVariant, {
+    .map((c, i) => {
+      const formatted = formatRetrievedChunkWithCatalog(c, catalog, linkVariant, {
         sourceDetail,
         sourceIndex: i + 1,
-      })
-    )
+      });
+      const cite = citeFromRetrievedChunk(c, catalog, linkVariant || 'owned');
+      if (cite?.title && cite?.url) {
+        const key = `${cite.title}|${cite.url}|${cite.detail || ''}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          sources.push({
+            title: cite.title,
+            url: cite.url,
+            detail: cite.detail || '',
+            access: cite.access || '',
+          });
+        }
+      }
+      return formatted;
+    })
     .filter(Boolean);
-  return top.join('\n\n');
+  if (top.length && !sources.length) {
+    console.warn('[rag] retrieve returned excerpts but no catalog sources');
+  }
+  return { text: top.join('\n\n'), sources };
 }

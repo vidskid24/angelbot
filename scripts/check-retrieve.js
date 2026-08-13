@@ -8,7 +8,10 @@ import { retrieve } from '../src/rag/retrieve.js';
 
 const query = 'How can I keep centered during times of war?';
 const result = await retrieve(query, 7);
+const text = typeof result === 'string' ? result : String(result?.text || '');
 console.log('--- RAG result length (chars) ---');
-console.log(result?.length ?? 0);
+console.log(text.length);
+console.log('--- RAG sources ---');
+console.log(typeof result === 'object' ? result.sources : '(legacy string return)');
 console.log('--- RAG result (full text) ---');
-console.log(result || '(empty string)');
+console.log(text || '(empty string)');

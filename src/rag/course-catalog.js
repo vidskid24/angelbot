@@ -521,6 +521,57 @@ export function citeFromSourceLabel(labelLine, catalog, linkVariant = 'owned') {
   return null;
 }
 
+/**
+ * Catalog cite from a retrieved embedding chunk (uses source metadata, not formatted text).
+ * @param {{ text?: string; source?: import('./course-source.js').CourseSource | null; sourcePath?: string }} chunk
+ * @param {CourseCatalog | null | undefined} catalog
+ * @param {CourseLinkVariant | null} [linkVariant]
+ * @returns {{ title: string; url: string; detail: string; access: string } | null}
+ */
+export function citeFromRetrievedChunk(chunk, catalog, linkVariant = 'owned') {
+  const source =
+    chunk?.source ||
+    (chunk?.sourcePath ? parseCourseSourceFromPath(chunk.sourcePath) : null);
+  if (source?.sessionKey && catalog) {
+    const unit = lookupCatalogUnit(catalog, source.sessionKey);
+    const title = getLinkableCourseTitle(source, catalog);
+    let link = resolveLinkForSource(unit, linkVariant, catalog, source);
+    if (!link.url) link = resolveLinkForSource(unit, 'owned', catalog, source);
+    const url = link.url || resolvePurchaseUrlForSource(catalog, source, unit);
+    if (title && url) {
+      const fullLabel =
+        formatCourseSourceLabelWithCatalog(source, catalog) ||
+        formatCourseNameOnlyLabel(source, catalog) ||
+        title;
+      let detail = getLocationDetailAfterCourseTitle(fullLabel, title);
+      if (
+        !detail &&
+        (source.unitType === 'book' || String(source.sessionKey).startsWith('book:'))
+      ) {
+        detail = extractBookLessonDetail(String(chunk?.text || ''));
+      }
+      return {
+        title,
+        url,
+        detail: formatDetailForCite(detail || ''),
+        access: link.kind === 'purchase' ? 'purchase' : 'classroom',
+      };
+    }
+  }
+  if (chunk?.sourcePath) {
+    const fromName = citeFromSourceLabel(basename(chunk.sourcePath), catalog, linkVariant);
+    if (fromName?.title && fromName?.url) {
+      return {
+        title: fromName.title,
+        url: fromName.url,
+        detail: fromName.detail || '',
+        access: fromName.access || '',
+      };
+    }
+  }
+  return null;
+}
+
 /** @typedef {'full' | 'course'} SourceDetail */
 
 /**

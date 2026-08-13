@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=71
+ * OMIBOT_WIDGET_VERSION=72
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -14,6 +14,7 @@
   }
 
   const API_BASE = API.replace(/\/$/, '');
+  const WIDGET_VERSION = '72';
   const STORAGE_KEY = 'omibot_access_token';
   const STORAGE_KEY_LEGACY = 'angelbot_access_token';
   const TIER_STORAGE_KEY = 'omibot_tier';
@@ -442,14 +443,15 @@
       '.omibot-shell .omibot-quote .omibot-quote-body,.omibot-shell .omibot-quote .omibot-quote-body *{font-style:italic!important;color:#1a1a1a!important}' +
       '.omibot-shell .omibot-cite{font-style:italic;color:#1a1a1a}' +
       '.omibot-shell .omibot-cite .omibot-cite-course,.omibot-shell .omibot-cite .omibot-cite-course strong{font-weight:700!important;font-style:italic!important}' +
-      '.omibot-source-wrap{margin:10px 0 0}' +
-      '.omibot-source-btn{padding:4px 12px;border:1px solid #c9c0b5;border-radius:999px;background:#fff;cursor:pointer;font:inherit;font-size:0.75rem;letter-spacing:0.06em;text-transform:uppercase;color:#5c5348}' +
-      '.omibot-source-btn:hover,.omibot-source-wrap.is-open .omibot-source-btn{background:#f7f4ef;color:#1a1a1a}' +
-      '.omibot-source-panel{margin:8px 0 0;padding:10px 12px;border-radius:10px;background:#f7f4ef;font-size:0.9rem;font-style:italic;line-height:1.45;color:#1a1a1a}' +
-      '.omibot-source-item{margin:0 0 8px}' +
-      '.omibot-source-item:last-child{margin:0}' +
-      '.omibot-source-detail{color:#5c5348}' +
-      '.omibot-source-item a.omibot-cite-course strong{font-weight:700!important;font-style:italic!important}' +
+      '.omibot-shell .omibot-source-wrap{margin:12px 0 4px;display:block!important}' +
+      '.omibot-shell .omibot-source-toggle{display:inline!important;font-size:0.9rem!important;font-style:italic;font-weight:600;color:#722668!important;text-decoration:none;border-bottom:1px solid rgba(114,38,104,.45);cursor:pointer;background:none!important;padding:0!important;margin:0;border-left:none!important;border-right:none!important;border-top:none!important}' +
+      '.omibot-shell .omibot-source-toggle:hover{color:#1a1a1a!important;border-bottom-color:#1a1a1a}' +
+      '.omibot-shell .omibot-source-panel{margin:8px 0 0;padding:10px 12px;border-radius:10px;background:#f7f4ef;font-size:0.9rem;font-style:italic;line-height:1.45;color:#1a1a1a}' +
+      '.omibot-shell .omibot-source-item{margin:0 0 8px}' +
+      '.omibot-shell .omibot-source-item:last-child{margin:0}' +
+      '.omibot-shell .omibot-source-detail{color:#5c5348}' +
+      '.omibot-shell .omibot-source-item a.omibot-cite-course strong{font-weight:700!important;font-style:italic!important}' +
+      '.omibot-widget-ver{margin:6px 2px 0;text-align:right;font-size:0.7rem;color:#9a948c}' +
       '.omibot-shell a.omibot-md-link{color:#7a5c1e;text-decoration:none;border-bottom:1px solid rgba(122,92,30,.45);word-break:break-word}' +
       '.omibot-shell a.omibot-md-link:hover{color:#1a1a1a;border-bottom-color:#1a1a1a}' +
       '.omibot-layout{display:flex;align-items:flex-start;gap:0;margin-top:8px}' +
@@ -588,6 +590,9 @@
       '<textarea id="omibot-input" rows="2" placeholder="Write a message..."></textarea>' +
       '<button type="button" class="omibot-send-btn" id="omibot-send" aria-label="Send message" disabled>' +
       '<svg class="omibot-send-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg></button></div>' +
+      '<div class="omibot-widget-ver">v' +
+      WIDGET_VERSION +
+      '</div>' +
       '<div class="omibot-suggestions" id="omibot-suggestions" hidden>' +
       '<p class="omibot-suggestions-label">Suggestions to try</p>' +
       '<div class="omibot-suggestions-chips" id="omibot-suggestions-chips"></div>' +
@@ -1585,8 +1590,8 @@
         const s = sources[i] || {};
         const title = String(s.title || '').trim();
         const url = String(s.url || '').trim();
-        if (!title || !url) continue;
         const detail = String(s.detail || '').trim();
+        if (!title) continue;
         const key = title + '|' + url + '|' + detail;
         if (seen[key]) continue;
         seen[key] = true;
@@ -1600,11 +1605,11 @@
       if (!list.length) return;
       const wrap = document.createElement('div');
       wrap.className = 'omibot-source-wrap';
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'omibot-source-btn';
-      btn.textContent = 'Source';
-      btn.setAttribute('aria-expanded', 'false');
+      const toggle = document.createElement('a');
+      toggle.className = 'omibot-source-toggle';
+      toggle.href = '#omibot-source';
+      toggle.textContent = list.length === 1 ? 'Source' : 'Sources';
+      toggle.setAttribute('aria-expanded', 'false');
       const panel = document.createElement('div');
       panel.className = 'omibot-source-panel';
       panel.hidden = true;
@@ -1612,15 +1617,21 @@
         const s = list[i];
         const item = document.createElement('div');
         item.className = 'omibot-source-item';
-        const a = document.createElement('a');
-        a.className = 'omibot-md-link omibot-cite-course';
-        a.href = s.url;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        const strong = document.createElement('strong');
-        strong.textContent = s.title;
-        a.appendChild(strong);
-        item.appendChild(a);
+        if (s.url) {
+          const a = document.createElement('a');
+          a.className = 'omibot-md-link omibot-cite-course';
+          a.href = s.url;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          const strong = document.createElement('strong');
+          strong.textContent = s.title;
+          a.appendChild(strong);
+          item.appendChild(a);
+        } else {
+          const strong = document.createElement('strong');
+          strong.textContent = s.title;
+          item.appendChild(strong);
+        }
         if (s.detail) {
           const detail = document.createElement('span');
           detail.className = 'omibot-source-detail';
@@ -1629,14 +1640,15 @@
         }
         panel.appendChild(item);
       }
-      btn.addEventListener('click', function () {
+      toggle.addEventListener('click', function (ev) {
+        ev.preventDefault();
         const open = panel.hidden;
         panel.hidden = !open;
-        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
         wrap.classList.toggle('is-open', open);
         if (open) scrollIntoViewIfNearBottom(row);
       });
-      wrap.appendChild(btn);
+      wrap.appendChild(toggle);
       wrap.appendChild(panel);
       row.appendChild(wrap);
     }

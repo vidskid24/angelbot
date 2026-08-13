@@ -135,15 +135,23 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
       storedExcerpts = getStoredExcerpts(sessionKey);
     }
     let styleExcerpts = '';
+    /** @type {Array<{ title: string; url: string; detail: string; access: string }>} */
+    let sources = [];
     if (citationAsk && String(storedExcerpts || '').trim()) {
       styleExcerpts = storedExcerpts || '';
+      sources = sourcesFromExcerpts(styleExcerpts, catalog);
     } else {
-      styleExcerpts = await retrieve(retrievalQuery, DEFAULT_RETRIEVE_TOP_K, {
+      const retrieved = await retrieve(retrievalQuery, DEFAULT_RETRIEVE_TOP_K, {
         linkVariant,
         sourceDetail,
       });
+      styleExcerpts =
+        typeof retrieved === 'string' ? retrieved : String(retrieved?.text || '');
+      sources =
+        typeof retrieved === 'object' && Array.isArray(retrieved?.sources) && retrieved.sources.length
+          ? retrieved.sources
+          : sourcesFromExcerpts(styleExcerpts, catalog);
     }
-    const sources = sourcesFromExcerpts(styleExcerpts || '', catalog);
     const result = await getWisdomReply(
       message,
       history,
