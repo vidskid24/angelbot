@@ -128,7 +128,10 @@ function tidyAfterCitationStrip(text) {
 function cleanupCitationProse(text) {
   return String(text || '')
     .replace(/\bSession\s+(\d+)\s*[,:]\s*Session\s+\1\b/gi, 'Session $1')
-    .replace(/\bSession\s+(\d+)\s+Session\s+\1\b/gi, 'Session $1');
+    .replace(/\bSession\s+(\d+)\s+Session\s+\1\b/gi, 'Session $1')
+    // Drop quotation marks around track/lesson titles in citation tails.
+    .replace(/(\[\s*[^\]]+\]\(\s*https?:\/\/[^)]+\)\s*,\s[^"\n]*)\s*—\s*"([^"]+)"/g, '$1 — $2')
+    .replace(/(\[\s*[^\]]+\]\(\s*https?:\/\/[^)]+\)\s*,\s*(?:Session|Lesson|Chapter|Track|Video)\b[^"\n]*)"([^"\n]+)"/g, '$1$2');
 }
 
 /**

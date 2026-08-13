@@ -321,12 +321,12 @@ export function formatCourseSourceLabelWithCatalog(source, catalog) {
 
   if (source.unitType === 'level-session-supplement' && levelLabel) {
     if (source.sessionCode === 'Extra') {
-      return `${levelLabel} — "${title}"`;
+      return `${levelLabel} — ${title}`;
     }
     // Prefer Session N — "Track" so detail does not repeat the session chapter title.
     const sessionNum = source.session ?? source.unitNumber;
     if (sessionNum != null) {
-      return `${levelLabel}, Session ${sessionNum} — "${title}"`;
+      return `${levelLabel}, Session ${sessionNum} — ${title}`;
     }
   }
 
@@ -448,7 +448,20 @@ function extractBookLessonDetail(body) {
     .replace(/\s*Alchemy\.indd.*$/i, '')
     .trim();
   if (!lessonTitle) return `Lesson ${lessonNum}`;
-  return `Lesson ${lessonNum} — "${lessonTitle}"`;
+  return `Lesson ${lessonNum} — ${lessonTitle}`;
+}
+
+/**
+ * Plain-language cite detail without wrapping titles in quotation marks.
+ * @param {string} detail
+ * @returns {string}
+ */
+function formatDetailForCite(detail) {
+  return String(detail || '')
+    .replace(/\s*—\s*"([^"]+)"/g, ' — $1')
+    .replace(/"([^"]+)"/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /** @typedef {'full' | 'course'} SourceDetail */
@@ -493,7 +506,7 @@ export function formatRetrievedChunkWithCatalog(chunk, catalog, linkVariant = nu
     }
     const access = link.kind === 'purchase' ? 'purchase' : 'classroom';
     const headerLines = [sourceHeading, `cite: ${cite}`];
-    if (detail) headerLines.push(`detail: ${detail}`);
+    if (detail) headerLines.push(`detail: ${formatDetailForCite(detail)}`);
     headerLines.push(`access: ${access}`, `---`);
     return `${headerLines.join('\n')}\n${body}`;
   }

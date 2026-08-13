@@ -306,6 +306,22 @@
     parent.appendChild(quote);
   }
 
+  function isCourseCitationUrl(url) {
+    return /masteringalchemy\.com|amazon\.com|thinkific/i.test(String(url || ''));
+  }
+
+  function appendCitationLink(parent, label, url) {
+    const a = document.createElement('a');
+    a.className = 'omibot-md-link omibot-cite-course';
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    const strong = document.createElement('strong');
+    strong.textContent = String(label || '').replace(/^\*\*|\*\*$/g, '').trim();
+    a.appendChild(strong);
+    parent.appendChild(a);
+  }
+
   function appendInlineFormatted(parent, text) {
     // Markdown links first so citation URLs become clickable.
     const linkRe = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g;
@@ -315,13 +331,46 @@
       if (match.index > lastIndex) {
         appendBoldAndItalic(parent, text.slice(lastIndex, match.index));
       }
-      const a = document.createElement('a');
-      a.className = 'omibot-md-link';
-      a.href = match[2];
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.textContent = match[1];
-      parent.appendChild(a);
+
+      const label = match[1];
+      const url = match[2];
+      const after = text.slice(linkRe.lastIndex);
+      // Pull trailing session/lesson detail into the italic citation span.
+      const detailMatch = isCourseCitationUrl(url)
+        ? after.match(
+            /^,\s*((?:Session|Lesson|Chapter|Track|Video)\b[^\[\]\n]*?)(?=(\s*[.!?…]|\s*$|\n))/
+          )
+        : null;
+
+      if (detailMatch) {
+        const cite = document.createElement('em');
+        cite.className = 'omibot-cite';
+        appendCitationLink(cite, label, url);
+        const detailText = String(detailMatch[1] || '')
+          .replace(/\s*—\s*"([^"]+)"/g, ' — $1')
+          .replace(/"([^"]+)"/g, '$1')
+          .trim();
+        cite.appendChild(document.createTextNode(', ' + detailText));
+        parent.appendChild(cite);
+        lastIndex = linkRe.lastIndex + detailMatch[0].length;
+        linkRe.lastIndex = lastIndex;
+        continue;
+      }
+
+      if (isCourseCitationUrl(url)) {
+        const cite = document.createElement('em');
+        cite.className = 'omibot-cite';
+        appendCitationLink(cite, label, url);
+        parent.appendChild(cite);
+      } else {
+        const a = document.createElement('a');
+        a.className = 'omibot-md-link';
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = label;
+        parent.appendChild(a);
+      }
       lastIndex = linkRe.lastIndex;
     }
     if (lastIndex < text.length) {
@@ -389,6 +438,8 @@
       '.omibot-shell .omibot-italic{font-style:italic}' +
       '.omibot-shell .omibot-quote{display:block;margin:0.65em 0 0.65em 1rem;padding:0.15em 0 0.15em 0.95em;border:none;border-left:3px solid #8a8278!important;background:transparent;font-style:italic!important;font-weight:inherit;line-height:1.55;color:#1a1a1a!important}' +
       '.omibot-shell .omibot-quote .omibot-quote-body,.omibot-shell .omibot-quote .omibot-quote-body *{font-style:italic!important;color:#1a1a1a!important}' +
+      '.omibot-shell .omibot-cite{font-style:italic;color:#1a1a1a}' +
+      '.omibot-shell .omibot-cite .omibot-cite-course,.omibot-shell .omibot-cite .omibot-cite-course strong{font-weight:700!important;font-style:italic!important}' +
       '.omibot-shell a.omibot-md-link{color:#7a5c1e;text-decoration:none;border-bottom:1px solid rgba(122,92,30,.45);word-break:break-word}' +
       '.omibot-shell a.omibot-md-link:hover{color:#1a1a1a;border-bottom-color:#1a1a1a}' +
       '.omibot-layout{display:flex;align-items:flex-start;gap:0;margin-top:8px}' +

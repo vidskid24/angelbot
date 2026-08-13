@@ -184,10 +184,11 @@ export function buildDynamicContextBlock(
         'Never wrap locations in square brackets unless you are pasting an exact `cite:` markdown link. Never invent codes like TQ&A, TMetatron, TFull, or sessionKeys. ' +
         'When they do ask about a quote or idea, use the Source header attached to the excerpt that actually contains that quote/idea — never mix `cite:` from one Source with `detail:` or wording from another Source. ' +
         'Prefer a coursework Source (`access: classroom`) over the book when the same teaching appears in both. ' +
-        'Format: paste that Source\'s `cite:` markdown link exactly (course/book name only inside the brackets), then optionally add that same Source\'s `detail:` in plain words after a comma — detail is never part of the link. ' +
-        'Book example: That comes from [A Course in Mastering Alchemy Book](https://www.amazon.com/dp/1786780143), Lesson 16 — "Ascended Master Kuthumi introduces the Triads". ' +
-        'Course example: That comes from [Level 2 — Core](https://courses.masteringalchemy.com/courses/take/level-2-program/texts/63628124-welcome), Session 8 — "Seven Layers of Thought - Extra Class". ' +
-        'Wrong: putting Session/Lesson numbers or titles inside the link brackets (link text must be only the course/book name, e.g. Level 2 — Core); repeating Session twice; using ACIMA instead of the full book name; swapping a book label onto a class URL; using https://masteringalchemy.com; or writing the raw URL as visible plain text. ' +
+        'Format: paste that Source\'s `cite:` markdown link exactly (course/book name only inside the brackets), then optionally add that same Source\'s `detail:` in plain words after a comma — detail is never part of the link and should not use quotation marks around titles. ' +
+        'The chat UI will italicize the whole citation and bold the course/book name in the link. ' +
+        'Book example: That comes from [A Course in Mastering Alchemy Book](https://www.amazon.com/dp/1786780143), Lesson 16 — Ascended Master Kuthumi introduces the Triads. ' +
+        'Course example: That comes from [Level 2 — Core](https://courses.masteringalchemy.com/courses/take/level-2-program/texts/63628124-welcome), Session 8 — Seven Layers of Thought - Extra Class. ' +
+        'Wrong: putting Session/Lesson numbers or titles inside the link brackets (link text must be only the course/book name, e.g. Level 2 — Core); wrapping track titles in quotation marks; repeating Session twice; using ACIMA instead of the full book name; swapping a book label onto a class URL; using https://masteringalchemy.com; or writing the raw URL as visible plain text. ' +
         'Never rebuild links. Never change link text or URLs. Never nest links. Never use any URL that does not appear exactly in a `cite:` value. ' +
         'Never expose internal file codes, session keys, or filename fragments (for example TQA1, L5-S3-TQA1, ML6-C1-S1). ' +
         'If `access: purchase`, do not imply the user can open a classroom lesson now. ' +
