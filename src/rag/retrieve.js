@@ -25,8 +25,23 @@ let embeddingsIndexCache = null;
 /** @type {Promise<{ mtimeMs: number; chunks: any[] } | null> | null} */
 let embeddingsIndexLoadPromise = null;
 
-function cosineSimilarity(a, b) {
-  if (a.length !== b.length) return 0;
+function embeddingVector(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (raw && Array.isArray(raw.values)) return raw.values;
+  if (typeof raw === 'string') {
+    try {
+      return embeddingVector(JSON.parse(raw));
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function cosineSimilarity(aRaw, bRaw) {
+  const a = embeddingVector(aRaw);
+  const b = embeddingVector(bRaw);
+  if (!a.length || a.length !== b.length) return 0;
   let dot = 0;
   let na = 0;
   let nb = 0;
@@ -74,9 +89,12 @@ async function loadEmbeddingsIndex() {
       const sourceIndex = await loadChunkSourceIndex();
       const rawChunks = Array.isArray(data?.chunks) ? data.chunks : [];
       let hydrated = 0;
-      const chunks = rawChunks.map((chunk) => {
+      const chunks = rawChunks.map((chunk, index) => {
         const hadPath = Boolean(String(chunk?.sourcePath || '').trim());
-        const next = hydrateRetrievedChunk(chunk, sourceIndex);
+        const next = hydrateRetrievedChunk(chunk, sourceIndex, {
+          index,
+          total: rawChunks.length,
+        });
         if (!hadPath && next?.sourcePath) hydrated += 1;
         return next;
       });
@@ -197,7 +215,7 @@ export async function retrieve(query, topK = DEFAULT_TOP_K, options = {}) {
       return formatted;
     })
     .filter(Boolean);
-  if (top.length && !sources.length) {
+  if (top.length) {
     for (const extra of sourcesFromCatalogMatch(top.join('\n\n'), catalog, linkVariant || 'owned')) {
       const key = `${extra.title}|${extra.url}|${extra.detail || ''}`;
       if (seen.has(key)) continue;

@@ -30,14 +30,21 @@ const chunks = Array.isArray(data?.chunks) ? data.chunks : [];
 const byHash = {};
 /** @type {Record<string, string>} */
 const byPrefix = {};
+/** @type {Record<string, string>} */
+const byFingerprint = {};
 /** @type {Set<string>} */
 const prefixCollisions = new Set();
+/** @type {Set<string>} */
+const fingerprintCollisions = new Set();
+/** @type {string[]} */
+const paths = [];
 
 let withPath = 0;
 let skipped = 0;
 
 for (const chunk of chunks) {
   const sourcePath = String(chunk?.sourcePath || '').trim();
+  paths.push(sourcePath);
   const text = String(chunk?.text || chunk?.content || chunk?.chunk || '');
   const n = normalize(text);
   if (!sourcePath || !n) {
@@ -48,17 +55,29 @@ for (const chunk of chunks) {
   const hash = createHash('sha1').update(n).digest('hex');
   byHash[hash] = sourcePath;
   const prefix = n.slice(0, 160);
-  if (!prefix || prefixCollisions.has(prefix)) continue;
-  if (byPrefix[prefix] && byPrefix[prefix] !== sourcePath) {
-    delete byPrefix[prefix];
-    prefixCollisions.add(prefix);
-    continue;
+  if (prefix && !prefixCollisions.has(prefix)) {
+    if (byPrefix[prefix] && byPrefix[prefix] !== sourcePath) {
+      delete byPrefix[prefix];
+      prefixCollisions.add(prefix);
+    } else {
+      byPrefix[prefix] = sourcePath;
+    }
   }
-  byPrefix[prefix] = sourcePath;
+  if (n.length >= 40) {
+    const fingerprint = `${n.slice(0, 80)}|${n.slice(-80)}`;
+    if (!fingerprintCollisions.has(fingerprint)) {
+      if (byFingerprint[fingerprint] && byFingerprint[fingerprint] !== sourcePath) {
+        delete byFingerprint[fingerprint];
+        fingerprintCollisions.add(fingerprint);
+      } else {
+        byFingerprint[fingerprint] = sourcePath;
+      }
+    }
+  }
 }
 
-const out = { v: 1, h: byHash, p: byPrefix };
+const out = { v: 2, h: byHash, p: byPrefix, k: byFingerprint, a: paths };
 await writeFile(OUT_PATH, JSON.stringify(out), 'utf-8');
 console.log(
-  `Wrote ${OUT_PATH} (${withPath} paths, ${Object.keys(byHash).length} hashes, ${Object.keys(byPrefix).length} prefixes, skipped ${skipped})`
+  `Wrote ${OUT_PATH} (${withPath} paths, ${Object.keys(byHash).length} hashes, ${Object.keys(byPrefix).length} prefixes, ${Object.keys(byFingerprint).length} fingerprints, ${paths.length} ordered, skipped ${skipped})`
 );

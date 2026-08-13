@@ -53,17 +53,32 @@ let catalogCache = null;
 export async function loadCourseCatalog() {
   if (catalogCache) return catalogCache;
 
-  const path = process.env.COURSE_CATALOG_PATH || DEFAULT_CATALOG_PATH;
-  try {
-    const raw = await readFile(path, 'utf-8');
-    catalogCache = normalizeCatalog(JSON.parse(raw));
-  } catch (err) {
-    if (err?.code === 'ENOENT') {
-      catalogCache = normalizeCatalog({});
-    } else {
-      throw err;
+  const candidates = [
+    process.env.COURSE_CATALOG_PATH,
+    DEFAULT_CATALOG_PATH,
+    join(process.cwd(), 'data', 'course-catalog.json'),
+  ].filter(Boolean);
+
+  let lastErr = null;
+  for (const catalogPath of candidates) {
+    try {
+      const raw = await readFile(catalogPath, 'utf-8');
+      catalogCache = normalizeCatalog(JSON.parse(raw));
+      const levels = Object.keys(catalogCache.levels || {}).length;
+      const units = Object.keys(catalogCache.units || {}).length;
+      console.info(`[rag] Course catalog loaded from ${catalogPath} (${levels} levels, ${units} units)`);
+      if (!units) {
+        console.warn('[rag] Course catalog has no units; Source links will be weak');
+      }
+      return catalogCache;
+    } catch (err) {
+      lastErr = err;
+      if (err?.code !== 'ENOENT') throw err;
     }
   }
+
+  console.warn('[rag] Course catalog not found:', lastErr?.message || lastErr);
+  catalogCache = normalizeCatalog({});
   return catalogCache;
 }
 
@@ -637,20 +652,63 @@ function citeFromCatalogKey(key, detailTitle, catalog, linkVariant = 'owned') {
 }
 
 /**
- * Last-resort Source panel link when RAG ran but no unit could be resolved.
- * @param {CourseCatalog | null | undefined} catalog
- * @returns {{ title: string; url: string; detail: string; access: string }}
+ * @param {Array<{ title?: string; url?: string; detail?: string; access?: string }> | null | undefined} base
+ * @param {Array<{ title?: string; url?: string; detail?: string; access?: string }> | null | undefined} extra
+ * @returns {Array<{ title: string; url: string; detail: string; access: string }>}
  */
-export function fallbackCourseworkSource(catalog) {
-  const url = String(catalog?.siteBaseUrl || 'https://courses.masteringalchemy.com')
-    .trim()
-    .replace(/\/$/, '');
-  return {
-    title: 'Mastering Alchemy coursework',
-    url: url || 'https://courses.masteringalchemy.com',
-    detail: '',
-    access: 'classroom',
-  };
+export function mergeCatalogSources(base, extra) {
+  const seen = new Set();
+  /** @type {Array<{ title: string; url: string; detail: string; access: string }>} */
+  const out = [];
+  for (const raw of [...(base || []), ...(extra || [])]) {
+    const title = String(raw?.title || '').trim();
+    const url = String(raw?.url || '').trim();
+    if (!title || !url) continue;
+    if (/^mastering alchemy coursework$/i.test(title)) continue;
+    const detail = String(raw?.detail || '').trim();
+    const key = `${title}|${url}|${detail}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({
+      title,
+      url,
+      detail,
+      access: String(raw?.access || '').trim(),
+    });
+  }
+  return out;
+}
+
+/**
+ * Course-level cite when only the level name appears in the passage.
+ * @param {string} text
+ * @param {CourseCatalog | null | undefined} catalog
+ * @param {CourseLinkVariant | null} [linkVariant]
+ * @param {number} [limit]
+ * @returns {Array<{ title: string; url: string; detail: string; access: string }>}
+ */
+export function sourcesFromLevelTitles(text, catalog, linkVariant = 'owned', limit = 2) {
+  const blob = normalizeMatchText(text);
+  if (!blob || !catalog?.levels) return [];
+  /** @type {Array<{ title: string; url: string; detail: string; access: string }>} */
+  const out = [];
+  for (const [code, entry] of Object.entries(catalog.levels)) {
+    if (out.length >= limit) break;
+    const title = String(entry?.title || '').trim();
+    const words = normalizeMatchText(title)
+      .split(' ')
+      .filter((w) => w.length >= 4 && !GENERIC_TITLE_WORDS.has(w) && w !== 'level');
+    if (!words.length) continue;
+    const matched = words.filter((w) => blob.includes(w));
+    if (!matched.length) continue;
+    if (words.length <= 2 && matched.length < words.length && !matched.some((w) => w.length >= 6)) {
+      continue;
+    }
+    const cite = citeFromCatalogKey(code, title, catalog, linkVariant);
+    if (!cite?.url) continue;
+    out.push({ ...cite, detail: '' });
+  }
+  return out;
 }
 
 /**
@@ -705,9 +763,9 @@ export function sourcesFromCatalogMatch(text, catalog, linkVariant = 'owned', li
   /** @type {Array<{ key: string; title: string; score: number }>} */
   const hits = [];
 
-  function consider(key, title, bonus = 0) {
+  function consider(key, title, bonus = 0, minLen = 8) {
     const label = String(title || '').trim();
-    if (!label || label.length < 8) return;
+    if (!label || label.length < minLen) return;
     const words = normalizeMatchText(label)
       .split(' ')
       .filter((w) => w.length >= 4 && !GENERIC_TITLE_WORDS.has(w));
@@ -728,6 +786,12 @@ export function sourcesFromCatalogMatch(text, catalog, linkVariant = 'owned', li
   }
   for (const [key, unit] of Object.entries(catalog.units || {})) {
     consider(key, unit?.title, 8);
+    for (const keyword of unit?.keywords || []) {
+      consider(key, keyword, 12, 4);
+    }
+  }
+  for (const [key, level] of Object.entries(catalog.levels || {})) {
+    consider(key, level?.title, 1);
   }
 
   hits.sort((a, b) => b.score - a.score);

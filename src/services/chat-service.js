@@ -13,7 +13,8 @@ import { retrieve } from '../rag/retrieve.js';
 import {
   loadCourseCatalog,
   sourcesFromCatalogMatch,
-  fallbackCourseworkSource,
+  sourcesFromLevelTitles,
+  mergeCatalogSources,
 } from '../rag/course-catalog.js';
 import { resolveCourseLinkVariant } from '../lib/course-access.js';
 import {
@@ -164,16 +165,14 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
       userMemoryBlock
     );
     const reply = sanitizeReplyCitations(result.text, styleExcerpts || '', message);
-    if (!sources.length) {
-      sources = sourcesFromCatalogMatch(
-        `${styleExcerpts || ''}\n${reply}\n${message}`,
-        catalog,
-        linkVariant || 'owned'
-      );
-    }
+    const passage = `${styleExcerpts || ''}\n${reply}\n${message}`;
+    sources = mergeCatalogSources(
+      sources,
+      sourcesFromCatalogMatch(passage, catalog, linkVariant || 'owned')
+    );
     const hadRetrieval = Boolean(String(styleExcerpts || '').trim());
     if (!sources.length && hadRetrieval) {
-      sources = [fallbackCourseworkSource(catalog)];
+      sources = sourcesFromLevelTitles(passage, catalog, linkVariant || 'owned');
     }
     if (!citationAsk && String(styleExcerpts || '').trim()) {
       if (useDb && threadId) {

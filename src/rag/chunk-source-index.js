@@ -14,9 +14,11 @@ import { parseCourseSourceLoose } from './course-source.js';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const INDEX_PATH = join(ROOT, 'data', 'chunk-source-index.json');
 
-/** @type {{ byHash: Record<string, string>; byPrefix: Record<string, string> } | null} */
+/** @typedef {{ byHash: Record<string, string>; byPrefix: Record<string, string>; byFingerprint: Record<string, string>; paths: string[] }} ChunkSourceIndex */
+
+/** @type {ChunkSourceIndex | null} */
 let indexCache = null;
-/** @type {Promise<{ byHash: Record<string, string>; byPrefix: Record<string, string> }> | null} */
+/** @type {Promise<ChunkSourceIndex> | null} */
 let indexLoadPromise = null;
 
 /**
@@ -50,7 +52,29 @@ export function chunkTextPrefix(text) {
 }
 
 /**
- * @returns {Promise<{ byHash: Record<string, string>; byPrefix: Record<string, string> }>}
+ * @param {string} text
+ * @returns {string}
+ */
+export function chunkTextFingerprint(text) {
+  const n = normalizeChunkTextForIndex(text);
+  if (n.length < 40) return '';
+  return `${n.slice(0, 80)}|${n.slice(-80)}`;
+}
+
+function sessionKeyFromText(text) {
+  const raw = String(text || '');
+  const prefixed = raw.match(/^\s*\[Source:[^\]]*?\(([^)]+)\)\]/i);
+  if (prefixed?.[1]) {
+    const parsed = parseCourseSourceLoose(prefixed[1].trim());
+    if (parsed?.sessionKey) return parsed.sessionKey;
+    return String(prefixed[1]).trim();
+  }
+  const paren = raw.slice(0, 280).match(/\(((?:ML\d+|L\d+|ETPF|CFWATI|LWTLB|R[123])(?:-[A-Za-z0-9]+)+)\)/);
+  return paren?.[1] ? String(paren[1]).trim() : '';
+}
+
+/**
+ * @returns {Promise<ChunkSourceIndex>}
  */
 export async function loadChunkSourceIndex() {
   if (indexCache) return indexCache;
@@ -63,13 +87,15 @@ export async function loadChunkSourceIndex() {
       indexCache = {
         byHash: data?.h && typeof data.h === 'object' ? data.h : {},
         byPrefix: data?.p && typeof data.p === 'object' ? data.p : {},
+        byFingerprint: data?.k && typeof data.k === 'object' ? data.k : {},
+        paths: Array.isArray(data?.a) ? data.a.map((p) => String(p || '').trim()) : [],
       };
       console.info(
-        `[rag] Chunk source index loaded (${Object.keys(indexCache.byHash).length} hashes)`
+        `[rag] Chunk source index loaded (${Object.keys(indexCache.byHash).length} hashes, ${indexCache.paths.length} ordered paths)`
       );
     } catch (err) {
       if (err?.code === 'ENOENT') {
-        indexCache = { byHash: {}, byPrefix: {} };
+        indexCache = { byHash: {}, byPrefix: {}, byFingerprint: {}, paths: [] };
         console.warn('[rag] data/chunk-source-index.json missing; catalog cites need chunk metadata');
       } else {
         throw err;
@@ -90,7 +116,7 @@ export function clearChunkSourceIndexCache() {
 
 /**
  * @param {string} text
- * @param {{ byHash?: Record<string, string>; byPrefix?: Record<string, string> } | null | undefined} index
+ * @param {ChunkSourceIndex | null | undefined} index
  * @returns {string}
  */
 export function lookupChunkSourcePath(text, index) {
@@ -99,16 +125,20 @@ export function lookupChunkSourcePath(text, index) {
   const fromHash = hash ? String(index.byHash?.[hash] || '').trim() : '';
   if (fromHash) return fromHash;
   const prefix = chunkTextPrefix(text);
-  return prefix ? String(index.byPrefix?.[prefix] || '').trim() : '';
+  const fromPrefix = prefix ? String(index.byPrefix?.[prefix] || '').trim() : '';
+  if (fromPrefix) return fromPrefix;
+  const fingerprint = chunkTextFingerprint(text);
+  return fingerprint ? String(index.byFingerprint?.[fingerprint] || '').trim() : '';
 }
 
 /**
  * Fill missing sourcePath / source / text aliases on an embedding chunk.
  * @param {any} chunk
- * @param {{ byHash?: Record<string, string>; byPrefix?: Record<string, string> } | null | undefined} index
+ * @param {ChunkSourceIndex | null | undefined} index
+ * @param {{ index?: number; total?: number }} [position]
  * @returns {any}
  */
-export function hydrateRetrievedChunk(chunk, index) {
+export function hydrateRetrievedChunk(chunk, index, position = {}) {
   if (!chunk || typeof chunk !== 'object') return chunk;
   const text = String(chunk.text || chunk.content || chunk.chunk || '');
   if (text && !chunk.text) chunk.text = text;
@@ -132,6 +162,18 @@ export function hydrateRetrievedChunk(chunk, index) {
   ).trim();
   if (!sourcePath && text) {
     sourcePath = lookupChunkSourcePath(text, index);
+  }
+  if (
+    !sourcePath &&
+    index?.paths?.length &&
+    Number.isInteger(position.index) &&
+    position.total === index.paths.length
+  ) {
+    sourcePath = String(index.paths[position.index] || '').trim();
+  }
+  if (!sourcePath && text) {
+    const fromPrefix = sessionKeyFromText(text);
+    if (fromPrefix) sourcePath = /\.(txt|md|pdf)$/i.test(fromPrefix) ? fromPrefix : `${fromPrefix}.txt`;
   }
 
   if ((!source || !source.sessionKey) && sourcePath) {
