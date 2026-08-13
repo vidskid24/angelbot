@@ -174,12 +174,10 @@ export function buildDynamicContextBlock(
       : 'Use it for tone and content.';
     parts.push(
       `## MA framework and content (source material)\nThe following excerpts are Mastering Alchemy source material. ${toneNote}\n` +
-        'Each excerpt begins with a numbered Source header (`--- Source 1 ---`, `--- Source 2 ---`, …) that may include `cite:`, `detail:`, and `access:`. Use the excerpts for content, facts, quotes, and practices. ' +
-        'Course names (for your understanding only — never write them as links or invent URLs): Energy Essentials - Level 1; Core - Level 2; Rewire - Level 3; Connect - Level 4; Living Lightbody - Level 5; A Course in Mastering Alchemy Book. ' +
-        '**Citations are added by the chat system, not by you.** Never write markdown links, Thinkific/Amazon URLs, course titles, `[[source:…]]` markers, or location labels like Level N / Session N. ' +
-        'If the user asks where something comes from or where to find it, just answer the question in prose. Prefer using a coursework excerpt (`access: classroom`) over the book when the same teaching appears in both. ' +
-        'If they only ask to explain, expand, or "tell me more," do not mention class or session locations. ' +
-        'Never invent codes like TQ&A, TMetatron, TFull, or sessionKeys. Never expose internal file codes (for example TQA1, L5-S3-TQA1, ML6-C1-S1). ' +
+        'Each excerpt begins with a numbered Source header (`--- Source 1 ---`, `--- Source 2 ---`, …) that may include `cite:`, `detail:`, and `access:`. Use the excerpt **body** for content, facts, quotes, practices, and who is speaking (Raphael, Metatron, Q&A, etc.) when those words appear in the excerpt. ' +
+        '**Provenance is added by the chat system.** Do not write markdown links or Thinkific/Amazon URLs. Do not invent course titles, fake names like "Level 4 - Core Program", or file codes (TQ&A, TMetatron, TFull, sessionKeys such as L5-S3-TQA1). ' +
+        'If the user asks where a quote or teaching comes from: say who spoke and what the passage was about **only from the excerpt body or `detail:` line**. Do not format a class citation or URL — the system will append the exact catalog course name and link. Prefer a coursework excerpt (`access: classroom`) over the book when the same teaching appears in both. ' +
+        'If they only ask to explain, expand, or "tell me more," you may still name a teacher or Q&A when that wording is in the excerpt; do not invent a class location. ' +
         'If `access: purchase`, do not imply the user can open a classroom lesson now. ' +
         'Use this source material precisely. When summarizing, stay close to the wording and meaning of the excerpts; do not add claims, locations, or terms that are not supported by the source material. ' +
         'You may and should quote directly from this material when relevant — including longer multi-sentence passages when the user asks for them. Any text inside quotation marks must be copied **verbatim** as one continuous span from the source material. ' +
@@ -191,7 +189,7 @@ export function buildDynamicContextBlock(
         'Do not invent a class or session location if no Source header supports it. ' +
         'Do not refuse quote requests by saying you are only a synthesizing companion or not a searchable library — when source material is present, use it.\n\n' +
         styleExcerpts.trim() +
-        '\n\nCitation reminder: do not write course names, URLs, or [[source:…]] markers; the chat system adds citations when the user asks where something comes from.'
+        '\n\nCitation reminder: do not write URLs or invented course titles; name teachers/Q&A only if they appear in the excerpt; the chat system adds the catalog course link when the user asks where something comes from.'
     );
   }
 

@@ -1,7 +1,7 @@
 /**
- * Server-owned citations: catalog `cite:` / `detail:` are the only allowed
- * course names and URLs. The model must not invent links; we strip any it
- * writes and inject the matching Source header when the user asked for a source.
+ * Server-owned provenance: catalog `cite:` / `detail:` are the only course
+ * titles and URLs. The model teaches from excerpt bodies; we attach the
+ * catalog line when the user asks where something comes from.
  */
 
 /**
@@ -13,8 +13,6 @@
  *   access: string;
  *   isBook: boolean;
  * }} SourceCite
- *
- * @typedef {{ sourceIndex: number | null; levelNum: number | null }} CiteHints
  */
 
 /**
@@ -48,7 +46,6 @@ export function parseSourceCites(excerpts) {
   }
   if (cites.length) return cites;
 
-  // Fallback: cite: lines without a strict Source block, or "Label | url" headers.
   const looseCite = /cite:\s*\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/gi;
   while ((match = looseCite.exec(text)) !== null) {
     const title = String(match[1] || '').trim();
@@ -61,22 +58,6 @@ export function parseSourceCites(excerpts) {
       detail: '',
       access: /amazon\.com/i.test(url) ? 'purchase' : 'classroom',
       isBook: /amazon\.com|course in mastering alchemy book|acima/i.test(`${title} ${url}`),
-    });
-  }
-  if (cites.length) return cites;
-
-  const labeled = /---\s*Source(?:\s+(\d+))?\s*---\s*\r?\n([^\n|]+?)\s*\|\s*(?:purchase:\s*)?(https?:\/\/[^\s]+)/gi;
-  while ((match = labeled.exec(text)) !== null) {
-    const title = String(match[2] || '').trim();
-    const url = String(match[3] || '').trim();
-    if (!title || !url) continue;
-    cites.push({
-      index: Number(match[1]) || cites.length + 1,
-      title,
-      url,
-      detail: '',
-      access: /purchase:/i.test(match[0]) || /amazon\.com/i.test(url) ? 'purchase' : 'classroom',
-      isBook: /amazon\.com|book|acima/i.test(`${title} ${url}`),
     });
   }
   return cites;
@@ -96,15 +77,15 @@ export function userAskedForCitation(message) {
     /\bwhere\b.{0,80}\b(come|comes|came|coming)\s+from\b/i.test(t) ||
     /\bwhere\s+(?:is\s+)?(?:this|that|it)\s+from\b/i.test(t) ||
     /\btell me where\b/i.test(t) ||
-    /\bquote\b.{0,80}\b(from|source|course|class|where)\b/i.test(t) ||
+    /\bquote\b.{0,80}\b(from|source|course|class|where|courses)\b/i.test(t) ||
     /\bwhere\s+(?:can|could|do|would|might)\s+i\s+(?:find|read|listen|watch|get|see|locate)\b/i.test(t) ||
     /\bwhere\s+(?:to\s+)?find\b/i.test(t) ||
     /\bwhere\s+(?:in\s+)?(?:the\s+)?(?:coursework|courses|course|class|material|transcript)\b/i.test(t) ||
-    /\bfind\s+(?:this|that|it|more|the\s+answer|that\s+answer)\b.*\b(?:coursework|course|class|session|level)\b/i.test(
+    /\bfind\s+(?:this|that|it|more|the\s+answer|that\s+answer)\b.*\b(?:coursework|courses|course|class|session|level)\b/i.test(
       t
     ) ||
     /\blink\s+to\s+(the\s+)?(class|course|lesson|session|book)\b/i.test(t) ||
-    /\bin\s+(?:which|what)\s+(?:part\s+of\s+)?(?:the\s+)?(?:coursework|course|class)\b/i.test(t)
+    /\bin\s+(?:which|what)\s+(?:part\s+of\s+)?(?:the\s+)?(?:coursework|courses|course|class)\b/i.test(t)
   );
 }
 
@@ -143,127 +124,117 @@ function extractLevelNumber(text) {
 }
 
 /**
- * Course-name hints only when no explicit "Level N" is present.
- * @param {string} text
- * @returns {number | null}
- */
-function extractLevelFromCourseName(text) {
-  const t = String(text || '');
-  if (/\bEnergy Essentials\b/i.test(t)) return 1;
-  if (/\bRewire\b/i.test(t)) return 3;
-  if (/\bConnect\b/i.test(t)) return 4;
-  if (/\bLiving Lightbody\b/i.test(t)) return 5;
-  if (/\bCore\b/i.test(t)) return 2;
-  return null;
-}
-
-/**
- * @param {string} text
- * @returns {CiteHints}
- */
-function extractCiteHints(text) {
-  const s = String(text || '');
-  const sourceMatch = s.match(/\[\[\s*source:\s*(\d+)\s*\]\]/i) || s.match(/\[source:\s*(\d+)\s*\]/i);
-  const sourceIndex = sourceMatch ? Number(sourceMatch[1]) : null;
-  const levelNum = extractLevelNumber(s) || extractLevelFromCourseName(s);
-  return {
-    sourceIndex: Number.isFinite(sourceIndex) ? sourceIndex : null,
-    levelNum: Number.isFinite(levelNum) ? levelNum : null,
-  };
-}
-
-/**
  * @param {SourceCite[]} cites
- * @param {number} levelNum
- * @returns {SourceCite | null}
- */
-function findCiteForLevel(cites, levelNum) {
-  if (!cites.length || levelNum == null) return null;
-  const levelRe = new RegExp(`\\bLevel\\s*${levelNum}\\b`, 'i');
-  return cites.find((c) => !c.isBook && levelRe.test(c.title)) || null;
-}
-
-/**
- * @param {SourceCite[]} cites
- * @param {CiteHints} hint
  * @param {string} userMessage
  * @returns {SourceCite | null}
  */
-function pickCite(cites, hint, userMessage) {
+function pickCite(cites, userMessage) {
   if (!cites.length) return null;
-
-  if (hint?.sourceIndex != null) {
-    const byIndex = cites.find((c) => c.index === hint.sourceIndex);
-    if (byIndex) return byIndex;
+  const levelNum = extractLevelNumber(userMessage);
+  if (levelNum != null) {
+    const levelRe = new RegExp(`\\bLevel\\s*${levelNum}\\b`, 'i');
+    const byLevel = cites.find((c) => !c.isBook && levelRe.test(c.title));
+    if (byLevel) return byLevel;
   }
-
-  const levelNum = hint?.levelNum || extractLevelNumber(userMessage) || extractLevelFromCourseName(userMessage);
-  const byLevel = findCiteForLevel(cites, levelNum);
-  if (byLevel) return byLevel;
-
-  const looksBook = /\b(book|acima|lesson)\b/i.test(String(userMessage || ''));
-  if (looksBook) {
+  if (/\b(book|acima|lesson)\b/i.test(String(userMessage || ''))) {
     const book = cites.find((c) => c.isBook);
     if (book) return book;
   }
-
   return preferredCite(cites);
 }
 
 /**
- * Remove model-invented citation markup, location phrases, and source markers.
+ * @param {string} markdown
+ * @returns {boolean}
+ */
+function isInventedCitationLink(markdown) {
+  return /masteringalchemy|amazon\.com|thinkific|Level\s+\d+|Core|Rewire|Connect|Living Lightbody|Energy Essentials|Course in Mastering Alchemy|Mastery Live/i.test(
+    String(markdown || '')
+  );
+}
+
+/**
+ * Strip only invented markdown cites / source markers. Leave teacher names,
+ * Q&A, and prose alone.
  * @param {string} text
  * @returns {string}
  */
-function stripModelCitations(text) {
+function stripModelCitationMarkup(text) {
   let s = String(text || '');
-
   s = s.replace(/\[\[\s*source\s*:\s*[^\]\n]*\]\]/gi, '');
   s = s.replace(/\[source\s*:\s*[^\]]+\]/gi, '');
-
-  // Parenthesized markdown cite + optional location detail.
   s = s.replace(
     /\(\s*\[[^\]]+\]\(https?:\/\/[^)\s]+\)\s*(?:,\s*(?:Session|Lesson|Chapter|Track|Video)\b[^)]*)?\s*\)/gi,
-    ''
+    (full) => (isInventedCitationLink(full) ? '' : full)
   );
-
-  // Inline markdown cite + optional location detail (course/book URLs or any http link
-  // whose label looks like a course/level/book title).
   s = s.replace(
     /\[[^\]]+\]\(https?:\/\/[^)\s]+\)\s*(?:,\s*(?:Session|Lesson|Chapter|Track|Video)\s+\d+(?:\s*[—\-–:]\s*[^.,!?\n(]{0,120})?)?/gi,
-    (full) => (/masteringalchemy|amazon\.com|thinkific|Level\s+\d+|Core|Rewire|Connect|Living Lightbody|Energy Essentials|Course in Mastering Alchemy|Mastery Live/i.test(full) ? '' : full)
+    (full) => (isInventedCitationLink(full) ? '' : full)
   );
-
-  // Bare [Level …] / [Course name …] brackets that are not markdown links.
-  s = s.replace(
-    /\s*\[(?:Level\s+\d+|Mastery Live\s*\d*|Book|A Course in Mastering Alchemy|Core|Rewire|Connect|Living Lightbody|Energy Essentials)[^\]]*\](?!\()/gi,
-    ''
-  );
-
-  // Invented or unlinked course titles: "Level 4 - Core Program", "Connect - Level 4".
-  s = s.replace(
-    /(?:\*{1,2})?(?:Level\s+\d+\s*[—\-–:]\s*(?:Core(?:\s+Program)?|Rewire|Connect|Living Lightbody|Energy Essentials|Program)|(?:Energy Essentials|Core|Rewire|Connect|Living Lightbody)\s*[—\-–:]\s*Level\s+\d+(?:\s+Program)?|Level\s+\d+\s+Program|A Course in Mastering Alchemy(?: Book)?)(?:\s*,\s*(?:Chapter|Session|Track|Lesson|Video)\s+\d+(?:\s*[—\-–:]\s*[^.,!?\n*]{0,80})?)?(?:\*{1,2})?/gi,
-    ''
-  );
-
-  // Legacy location phrases: Level 1, Chapter 1, Track 1 — "…".
-  s = s.replace(
-    /(?:\*{1,2})?Level\s+\d+\s*,\s*(?:Chapter|Session|Track|Lesson)\s+\d+(?:\s*,\s*(?:Chapter|Session|Track|Lesson|Video)\s+\d+)?(?:\s*[—\-–:]\s*(?:"[^"]+"|[^*\n.[,][^*\n.]*?))?(?:\*{1,2})?/gi,
-    ''
-  );
-
-  s = s.replace(/\s*\(\s*,\s*(?:Session|Lesson|Chapter|Track|Video)\b[^)]*\)/gi, '');
-
   return s;
+}
+
+/**
+ * Drop redaction artifacts like "_A" / "&A" without removing real "Q&A".
+ * @param {string} text
+ * @returns {string}
+ */
+function cleanupRedactedLocationJunk(text) {
+  return String(text || '')
+    .replace(/\s*,\s*and also pops up in(?:\s+_A|\s+&A)+\b/gi, '')
+    .replace(/\bpops up in(?:\s+_A|\s+&A)+\b/gi, '')
+    .replace(/\bcomes?\s+(?:straight\s+)?from(?:\s+_A|\s+&A)+\s*,?\s*(?:with\s+)?/gi, 'comes from ')
+    .replace(/\b_A\b/g, '')
+    .replace(/(^|[\s,])&A\b/g, '$1')
+    .replace(/[ \t]{2,}/g, ' ');
 }
 
 /**
  * @param {string} text
  * @returns {string}
  */
-function tidyAfterCitationStrip(text) {
+function normalizeForQuoteCheck(text) {
+  return String(text || '')
+    .toLowerCase()
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[^a-z0-9']+/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * If quoted text is not actually in the excerpts, drop the quote marks so we
+ * do not present a paraphrase as a verbatim source quote.
+ * @param {string} reply
+ * @param {string} excerpts
+ * @returns {string}
+ */
+export function verifyQuotesAgainstExcerpts(reply, excerpts) {
+  const haystack = normalizeForQuoteCheck(excerpts);
+  if (!haystack) {
+    return String(reply || '').replace(/[“”]/g, '"').replace(/"([^"]{12,})"/g, '$1');
+  }
+
+  return String(reply || '').replace(/“([^”]{12,})”|"([^"]{12,})"/g, (full, curly, straight) => {
+    const inner = String(curly || straight || '').trim();
+    if (!inner) return full;
+    const needle = normalizeForQuoteCheck(inner);
+    if (needle.length >= 12 && haystack.includes(needle)) return full;
+    return inner;
+  });
+}
+
+/**
+ * @param {string} text
+ * @returns {string}
+ */
+function tidyProse(text) {
   return String(text || '')
     .replace(/\(\s*\)/g, '')
+    .replace(/\s+and\s+[.,]/g, '.')
+    .replace(/\bSee\s*[.]/gi, '.')
+    .replace(/\.{2,}/g, '.')
     .replace(/\s+\./g, '.')
     .replace(/[ \t]+\n/g, '\n')
     .replace(/ +\./g, '.')
@@ -271,56 +242,13 @@ function tidyAfterCitationStrip(text) {
     .replace(/ +!/g, '!')
     .replace(/ +\?/g, '?')
     .replace(/ +:/g, ':')
-    .replace(/\bin\s+of\s+the\b/gi, 'in the')
-    .replace(/\bin\s+of\b/gi, 'in')
     .replace(/  +/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
 
 /**
- * Splice a catalog cite into the reply, or append it.
- * @param {string} text
- * @param {string} snippet
- * @returns {string}
- */
-const TEACHER_NAME_RE =
-  /Raphael|Metatron|Kuthumi|Uriel|Michael|Gabriel|Yeshua|Zadkiel|El Morya|Melchizedek|Merlin/i;
-
-function extractSpeaker(text) {
-  const m = String(text || '').match(new RegExp(`\\b(?:with\\s+)?(${TEACHER_NAME_RE.source})\\b`, 'i'));
-  return m ? m[1] : '';
-}
-
-function attachCiteSnippet(text, snippet) {
-  let t = tidyAfterCitationStrip(text);
-  if (!snippet) return t;
-  t = t.replace(/^(see|look(?:\s+here)?)\.?\s*$/i, '').trim();
-  if (!t) return `You can find this in ${snippet}.`;
-
-  const speaker = extractSpeaker(t);
-  const fromClause = t.replace(
-    /\bcomes?\s+(?:straight\s+)?from\b[^\n]*?(?=\n|$)/gi,
-    () => (speaker ? `comes from ${snippet}, with ${speaker}` : `comes from ${snippet}`)
-  );
-  if (fromClause !== t) return fromClause;
-
-  const paraEnd = t.replace(
-    /\b(in|from)(?:\s+(?:the\s+)?(?:coursework|course|class|material|book|T?Q&A|&A)?)?\.?(?=\s*$|\s*\n)/gim,
-    `$1 ${snippet}`
-  );
-  if (paraEnd !== t) return paraEnd;
-
-  const spliced2 = t.replace(
-    /\b(in|from)\s+(?:the\s+)?(?:coursework|course|class|material)\b/i,
-    `$1 ${snippet}`
-  );
-  if (spliced2 !== t) return spliced2;
-
-  return ensureCitePresent(t, snippet);
-}
-
-/**
+ * Append the catalog cite without rewriting the model's teaching prose.
  * @param {string} text
  * @param {string} snippet
  * @returns {string}
@@ -330,6 +258,7 @@ function ensureCitePresent(text, snippet) {
   const urlMatch = String(snippet || '').match(/\((https?:\/\/[^)\s]+)\)/);
   const url = urlMatch ? urlMatch[1] : '';
   if (url && t.includes(url)) return t;
+  if (!snippet) return t;
 
   const gate = t.match(
     /(\n\n(?:Want to |Would you like |How would you like |Is there |Are you complete).*)\s*$/is
@@ -343,7 +272,6 @@ function ensureCitePresent(text, snippet) {
 }
 
 /**
- * Strip unsolicited cites, or replace them with the catalog Source cite.
  * @param {string} reply
  * @param {string} styleExcerpts
  * @param {string} userMessage
@@ -353,17 +281,16 @@ export function sanitizeReplyCitations(reply, styleExcerpts, userMessage) {
   const original = String(reply || '');
   if (!original) return original;
 
-  const cites = parseSourceCites(styleExcerpts);
-  const hint = extractCiteHints(original);
-  let text = stripModelCitations(original);
+  let text = verifyQuotesAgainstExcerpts(original, styleExcerpts);
+  text = stripModelCitationMarkup(text);
 
   if (!userAskedForCitation(userMessage)) {
-    return tidyAfterCitationStrip(text);
+    return tidyProse(text);
   }
 
-  const cite = pickCite(cites, hint, userMessage);
-  if (!cite) return tidyAfterCitationStrip(text);
+  text = cleanupRedactedLocationJunk(text);
+  const cite = pickCite(parseSourceCites(styleExcerpts), userMessage);
+  if (!cite) return tidyProse(text);
 
-  const snippet = formatCiteMarkdown(cite);
-  return tidyAfterCitationStrip(ensureCitePresent(attachCiteSnippet(text, snippet), snippet));
+  return tidyProse(ensureCitePresent(text, formatCiteMarkdown(cite)));
 }

@@ -118,31 +118,30 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
         userMemoryBlock = buildUserMemoryPromptBlock(settings);
       }
     }
-    const sourceDetail = tier === 'paid' ? 'full' : 'course';
+    const citationAsk = userAskedForCitation(message);
+    const sourceDetail = (citationAsk || tier === 'paid') ? 'full' : 'course';
     // Resolve Thinkific owned vs membership for everyone so Source lines can link
     // to the appropriate class page (classroom when enrolled, otherwise purchase).
     const linkVariant = useDb ? await resolveCourseLinkVariant(userId, email) : null;
-    let styleExcerpts = await retrieve(retrievalQuery, DEFAULT_RETRIEVE_TOP_K, {
-      linkVariant,
-      sourceDetail,
-    });
-    const citationAsk = userAskedForCitation(message);
     const storedExcerpts =
       useDb && threadId
         ? await threadDb.getThreadSourceExcerpts(threadId)
         : getStoredExcerpts(sessionKey);
-    if (citationAsk) {
-      const liveCites = parseSourceCites(styleExcerpts || '');
-      const storedCites = parseSourceCites(storedExcerpts || '');
-      if (storedCites.length && (!liveCites.length || storedCites.length >= liveCites.length)) {
-        styleExcerpts = storedExcerpts;
-      } else if (!liveCites.length) {
+    let styleExcerpts = '';
+    if (citationAsk && parseSourceCites(storedExcerpts || '').length) {
+      styleExcerpts = storedExcerpts || '';
+    } else {
+      styleExcerpts = await retrieve(retrievalQuery, DEFAULT_RETRIEVE_TOP_K, {
+        linkVariant,
+        sourceDetail,
+      });
+      if (citationAsk && !parseSourceCites(styleExcerpts || '').length) {
         const ctx = citationRetrievalContext(history);
         const retryQuery = [...ctx.quotes, ctx.userTopic].filter(Boolean).join('\n\n').trim();
         if (retryQuery && retryQuery !== retrievalQuery) {
           styleExcerpts = await retrieve(retryQuery, DEFAULT_RETRIEVE_TOP_K, {
             linkVariant,
-            sourceDetail,
+            sourceDetail: 'full',
           });
         }
       }
