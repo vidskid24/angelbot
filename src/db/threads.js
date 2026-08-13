@@ -122,7 +122,7 @@ export async function deleteThread(threadId, userId) {
  */
 async function fetchAllThreadMessages(threadId) {
   const { rows } = await getPool().query(
-    `SELECT role, content, thought_signature
+    `SELECT role, content, thought_signature, sources
      FROM thread_messages
      WHERE thread_id = $1
      ORDER BY created_at ASC, id ASC`,
@@ -132,17 +132,22 @@ async function fetchAllThreadMessages(threadId) {
     role: r.role === 'assistant' ? 'assistant' : 'user',
     content: r.content,
     thoughtSignature: r.thought_signature != null ? String(r.thought_signature) : null,
+    sources: normalizeMessageSources(r.sources),
   }));
 }
 
 /**
  * Full message history for UI display when a user opens a saved conversation.
  * @param {string} threadId
- * @returns {Promise<Array<{ role: 'user' | 'assistant'; content: string }>>}
+ * @returns {Promise<Array<{ role: 'user' | 'assistant'; content: string; sources?: Array<{ title: string; url: string; detail: string; access: string }> }>>}
  */
 export async function getAllThreadMessages(threadId) {
   const list = await fetchAllThreadMessages(threadId);
-  return list.map(({ role, content }) => ({ role, content }));
+  return list.map(({ role, content, sources }) => ({
+    role,
+    content,
+    ...(role === 'assistant' && sources.length ? { sources } : {}),
+  }));
 }
 
 /**
@@ -161,18 +166,57 @@ export async function getThreadMessages(threadId) {
 }
 
 /**
+ * @param {unknown} raw
+ * @returns {Array<{ title: string; url: string; detail: string; access: string }>}
+ */
+function normalizeMessageSources(raw) {
+  let data = raw;
+  if (!data) return [];
+  if (typeof data === 'string') {
+    try {
+      data = JSON.parse(data);
+    } catch {
+      return [];
+    }
+  }
+  const arr = Array.isArray(data) ? data : [];
+  return arr
+    .map((s) => ({
+      title: String(s?.title || '').trim(),
+      url: String(s?.url || '').trim(),
+      detail: String(s?.detail || '').trim(),
+      access: String(s?.access || '').trim(),
+    }))
+    .filter((s) => s.title && s.url);
+}
+
+/**
  * @param {string} threadId
  * @param {string} userContent
  * @param {string} assistantContent
  * @param {string | null} [thoughtSignature]
+ * @param {Array<{ title: string; url: string; detail?: string; access?: string }> | null} [sources]
  */
-export async function appendThreadTurn(threadId, userContent, assistantContent, thoughtSignature = null) {
+export async function appendThreadTurn(
+  threadId,
+  userContent,
+  assistantContent,
+  thoughtSignature = null,
+  sources = null
+) {
   const pool = getPool();
+  const sourceJson = normalizeMessageSources(sources);
   await pool.query(
-    `INSERT INTO thread_messages (thread_id, role, content, thought_signature) VALUES
-     ($1, 'user', $2, NULL),
-     ($1, 'assistant', $3, $4)`,
-    [threadId, userContent, assistantContent, thoughtSignature]
+    `INSERT INTO thread_messages (thread_id, role, content, thought_signature, sources) VALUES
+     ($1, 'user', $2, NULL, NULL),
+     ($1, 'assistant', $3, $4, $5::jsonb)`,
+    [
+      threadId,
+      userContent,
+      assistantContent,
+      thoughtSignature,
+      sourceJson.length ? JSON.stringify(sourceJson) : null,
+    ]
   );
   await touchThread(threadId);
 }

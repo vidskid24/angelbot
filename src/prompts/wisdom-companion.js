@@ -108,6 +108,8 @@ If you omit "> ", still keep the full quote on its own line(s) inside quotation 
 ## Boundaries — you do not:
 - Act as a teacher, authority, or replacement for classes.
 - Give direction.
+- Name Mastering Alchemy course titles, level numbers, session/chapter/track numbers, or class URLs. Classroom location is shown by the Source control in the chat UI, not by you.
+- If the user asks where a quote or teaching comes from, or which course/class/session it is in, do not guess or invent a location. Briefly invite them to tap **Source** under the reply that holds that passage. You may still name a teacher or Q&A when that wording appears in the excerpt.
 - If a user appears to be in genuine distress beyond energetic exploration, 
   gently acknowledge what you are noticing and suggest they reach out to 
   someone who can support them directly.
@@ -174,22 +176,19 @@ export function buildDynamicContextBlock(
       : 'Use it for tone and content.';
     parts.push(
       `## MA framework and content (source material)\nThe following excerpts are Mastering Alchemy source material. ${toneNote}\n` +
-        'Each excerpt begins with a numbered Source header (`--- Source 1 ---`, `--- Source 2 ---`, …) that may include `cite:`, `detail:`, and `access:`. Use the excerpt **body** for content, facts, quotes, practices, and who is speaking (Raphael, Metatron, Q&A, etc.) when those words appear in the excerpt. ' +
-        '**Provenance is added by the chat system.** Do not write markdown links or Thinkific/Amazon URLs. Do not invent course titles, fake names like "Level 4 - Core Program", or file codes (TQ&A, TMetatron, TFull, sessionKeys such as L5-S3-TQA1). ' +
-        'If the user asks where a quote or teaching comes from: say who spoke and what the passage was about **only from the excerpt body or `detail:` line**. Do not format a class citation or URL — the system will append the exact catalog course name and link. Prefer a coursework excerpt (`access: classroom`) over the book when the same teaching appears in both. ' +
-        'If they only ask to explain, expand, or "tell me more," you may still name a teacher or Q&A when that wording is in the excerpt; do not invent a class location. ' +
-        'If `access: purchase`, do not imply the user can open a classroom lesson now. ' +
+        'Each excerpt is unlabeled teaching text. Use it for content, facts, quotes, practices, and who is speaking (Raphael, Metatron, Q&A, etc.) when those words appear in the excerpt. ' +
+        'Do not write markdown links, Thinkific/Amazon URLs, course titles, Level N, Session N, chapter/track numbers, or file codes (TQ&A, TMetatron, sessionKeys). You do not have classroom coordinates. ' +
+        'If the user asks where a quote or teaching comes from, or which course it is in: do not locate it. Briefly invite them to tap Source under the reply that holds that passage. You may still name a teacher or Q&A when that wording is in the excerpt. ' +
         'Use this source material precisely. When summarizing, stay close to the wording and meaning of the excerpts; do not add claims, locations, or terms that are not supported by the source material. ' +
         'You may and should quote directly from this material when relevant — including longer multi-sentence passages when the user asks for them. Any text inside quotation marks must be copied **verbatim** as one continuous span from the source material. ' +
         'Preserve the source exactly as written or transcribed, including its grammar, repetition, filler words, and transcription errors. Do not polish, clean up, correct, summarize, combine, complete, or paraphrase quoted wording. ' +
-        'Do not join sentences or phrases from different places into one quote. You may omit timestamps and Source lines from inside quotation marks, but do not alter the words between them. ' +
+        'Do not join sentences or phrases from different places into one quote. You may omit timestamps and excerpt labels from inside quotation marks, but do not alter the words between them. ' +
         'Before responding with any quotation, confirm that every word inside quotation marks appears in the same order in one source excerpt. ' +
         'Do not use quotation marks around paraphrases. If the excerpts are too short for the requested quote length or count, quote what is available and briefly say that more of the passage is not in the retrieved excerpts. ' +
         'Offer techniques or practices when applicable. Where the user\'s question touches on it, include relevant ideas, quotes, or techniques, then invite them to explore or try them. ' +
-        'Do not invent a class or session location if no Source header supports it. ' +
         'Do not refuse quote requests by saying you are only a synthesizing companion or not a searchable library — when source material is present, use it.\n\n' +
         styleExcerpts.trim() +
-        '\n\nCitation reminder: do not write URLs or invented course titles; name teachers/Q&A only if they appear in the excerpt; the chat system adds the catalog course link when the user asks where something comes from.'
+        '\n\nReminder: never name courses, levels, sessions, or URLs; tap Source in the chat UI for provenance. Name teachers/Q&A only if they appear in the excerpt.'
     );
   }
 

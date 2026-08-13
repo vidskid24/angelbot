@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=70
+ * OMIBOT_WIDGET_VERSION=71
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -442,6 +442,14 @@
       '.omibot-shell .omibot-quote .omibot-quote-body,.omibot-shell .omibot-quote .omibot-quote-body *{font-style:italic!important;color:#1a1a1a!important}' +
       '.omibot-shell .omibot-cite{font-style:italic;color:#1a1a1a}' +
       '.omibot-shell .omibot-cite .omibot-cite-course,.omibot-shell .omibot-cite .omibot-cite-course strong{font-weight:700!important;font-style:italic!important}' +
+      '.omibot-source-wrap{margin:10px 0 0}' +
+      '.omibot-source-btn{padding:4px 12px;border:1px solid #c9c0b5;border-radius:999px;background:#fff;cursor:pointer;font:inherit;font-size:0.75rem;letter-spacing:0.06em;text-transform:uppercase;color:#5c5348}' +
+      '.omibot-source-btn:hover,.omibot-source-wrap.is-open .omibot-source-btn{background:#f7f4ef;color:#1a1a1a}' +
+      '.omibot-source-panel{margin:8px 0 0;padding:10px 12px;border-radius:10px;background:#f7f4ef;font-size:0.9rem;font-style:italic;line-height:1.45;color:#1a1a1a}' +
+      '.omibot-source-item{margin:0 0 8px}' +
+      '.omibot-source-item:last-child{margin:0}' +
+      '.omibot-source-detail{color:#5c5348}' +
+      '.omibot-source-item a.omibot-cite-course strong{font-weight:700!important;font-style:italic!important}' +
       '.omibot-shell a.omibot-md-link{color:#7a5c1e;text-decoration:none;border-bottom:1px solid rgba(122,92,30,.45);word-break:break-word}' +
       '.omibot-shell a.omibot-md-link:hover{color:#1a1a1a;border-bottom-color:#1a1a1a}' +
       '.omibot-layout{display:flex;align-items:flex-start;gap:0;margin-top:8px}' +
@@ -1569,7 +1577,71 @@
       scrollIntoViewIfNearBottom(d);
     }
 
-    function append(role, text) {
+    function normalizeSources(sources) {
+      if (!Array.isArray(sources)) return [];
+      const seen = {};
+      const out = [];
+      for (let i = 0; i < sources.length; i++) {
+        const s = sources[i] || {};
+        const title = String(s.title || '').trim();
+        const url = String(s.url || '').trim();
+        if (!title || !url) continue;
+        const detail = String(s.detail || '').trim();
+        const key = title + '|' + url + '|' + detail;
+        if (seen[key]) continue;
+        seen[key] = true;
+        out.push({ title: title, url: url, detail: detail });
+      }
+      return out;
+    }
+
+    function appendSourceControl(row, sources) {
+      const list = normalizeSources(sources);
+      if (!list.length) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'omibot-source-wrap';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'omibot-source-btn';
+      btn.textContent = 'Source';
+      btn.setAttribute('aria-expanded', 'false');
+      const panel = document.createElement('div');
+      panel.className = 'omibot-source-panel';
+      panel.hidden = true;
+      for (let i = 0; i < list.length; i++) {
+        const s = list[i];
+        const item = document.createElement('div');
+        item.className = 'omibot-source-item';
+        const a = document.createElement('a');
+        a.className = 'omibot-md-link omibot-cite-course';
+        a.href = s.url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        const strong = document.createElement('strong');
+        strong.textContent = s.title;
+        a.appendChild(strong);
+        item.appendChild(a);
+        if (s.detail) {
+          const detail = document.createElement('span');
+          detail.className = 'omibot-source-detail';
+          detail.textContent = ' — ' + s.detail;
+          item.appendChild(detail);
+        }
+        panel.appendChild(item);
+      }
+      btn.addEventListener('click', function () {
+        const open = panel.hidden;
+        panel.hidden = !open;
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        wrap.classList.toggle('is-open', open);
+        if (open) scrollIntoViewIfNearBottom(row);
+      });
+      wrap.appendChild(btn);
+      wrap.appendChild(panel);
+      row.appendChild(wrap);
+    }
+
+    function append(role, text, sources) {
       const isUser = role === 'You';
       const isSystem = role === 'System';
       const row = document.createElement('div');
@@ -1593,6 +1665,7 @@
           appendFormattedContent(body, text);
         }
         row.appendChild(body);
+        if (!isSystem) appendSourceControl(row, sources);
       }
       log.appendChild(row);
       scrollIntoViewIfNearBottom(row);
@@ -1690,7 +1763,7 @@
         dismissWelcome();
         for (let i = 0; i < messages.length; i++) {
           const m = messages[i];
-          append(m.role === 'user' ? 'You' : 'Companion', m.content);
+          append(m.role === 'user' ? 'You' : 'Companion', m.content, m.sources);
         }
       } else {
         restoreWelcome();
@@ -1892,7 +1965,7 @@
         if (result.data.dailyMessageLimit != null) {
           threadsMeta.dailyMessageLimit = result.data.dailyMessageLimit;
         }
-        append('Companion', result.data.text || '');
+        append('Companion', result.data.text || '', result.data.sources);
         updateThreadMeta();
       } catch (e) {
         append('System', String(e && e.message ? e.message : e));

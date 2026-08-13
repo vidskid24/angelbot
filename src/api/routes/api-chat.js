@@ -90,6 +90,7 @@ export function createChatApiRouter() {
         kind: 'reply',
         text: out.assistantReply,
         html: formatChatTextHtml(out.assistantReply),
+        sources: Array.isArray(out.sources) ? out.sources : [],
         sessionId: threadId,
         threadId,
         ...(out.threadTitle ? { threadTitle: out.threadTitle } : {}),

@@ -15,7 +15,8 @@ import { resolveCourseLinkVariant } from '../lib/course-access.js';
 import {
   sanitizeReplyCitations,
   userAskedForCitation,
-  parseSourceCites,
+  excerptBodiesForModel,
+  sourcesFromExcerpts,
 } from '../lib/citation-repair.js';
 
 const DEFAULT_RETRIEVE_TOP_K = 8;
@@ -101,7 +102,7 @@ function buildRetrievalQuery(message, history) {
  * @param {{ userId: string; sessionKey: string; message: string; threadId?: string; useDb?: boolean; email?: string }} params
  * @returns {Promise<
  *   | { ok: false; code: 'error'; text: string }
- *   | { ok: true; kind: 'reply'; assistantReply: string; threadTitle?: string | null }
+ *   | { ok: true; kind: 'reply'; assistantReply: string; threadTitle?: string | null; sources?: Array<{ title: string; url: string; detail: string; access: string }> }
  * >}
  */
 export async function processWisdomMessage({ userId, sessionKey, message, threadId, useDb = false, email }) {
@@ -123,7 +124,7 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
       }
     }
     const citationAsk = userAskedForCitation(message);
-    const sourceDetail = (citationAsk || tier === 'paid') ? 'full' : 'course';
+    const sourceDetail = 'full';
     // Resolve Thinkific owned vs membership for everyone so Source lines can link
     // to the appropriate class page (classroom when enrolled, otherwise purchase).
     const linkVariant = useDb ? await resolveCourseLinkVariant(userId, email) : null;
@@ -141,31 +142,16 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
         linkVariant,
         sourceDetail,
       });
-      if (citationAsk && !parseSourceCites(styleExcerpts || '', catalog).length) {
-        const ctx = citationRetrievalContext(history);
-        const retryQuery = [...ctx.quotes, ctx.userTopic, ctx.teachingText]
-          .filter(Boolean)
-          .join('\n\n')
-          .trim();
-        if (retryQuery && retryQuery !== retrievalQuery) {
-          styleExcerpts = await retrieve(retryQuery, DEFAULT_RETRIEVE_TOP_K, {
-            linkVariant,
-            sourceDetail: 'full',
-          });
-        }
-      }
     }
+    const sources = sourcesFromExcerpts(styleExcerpts || '', catalog);
     const result = await getWisdomReply(
       message,
       history,
-      styleExcerpts || null,
+      excerptBodiesForModel(styleExcerpts || '') || null,
       userPreferencesBlock,
       userMemoryBlock
     );
-    const reply = sanitizeReplyCitations(result.text, styleExcerpts || '', message, catalog);
-    if (citationAsk && !parseSourceCites(styleExcerpts || '', catalog).length) {
-      console.warn('Citation ask had no catalog cite to inject');
-    }
+    const reply = sanitizeReplyCitations(result.text, styleExcerpts || '', message);
     if (!citationAsk && String(styleExcerpts || '').trim()) {
       if (useDb && threadId) {
         await threadDb.setThreadSourceExcerpts(threadId, styleExcerpts);
@@ -175,7 +161,7 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
     const thoughtSignature = result.thoughtSignature;
     let threadTitle = null;
     if (useDb && threadId) {
-      await threadDb.appendThreadTurn(threadId, message, reply, thoughtSignature);
+      await threadDb.appendThreadTurn(threadId, message, reply, thoughtSignature, sources);
       await users.touchUserChatActivity(userId);
       if (history.length === 0) {
         try {
@@ -197,6 +183,7 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
       kind: 'reply',
       assistantReply: reply,
       threadTitle,
+      sources,
     };
   } catch (err) {
     console.error('Wisdom reply error:', err);

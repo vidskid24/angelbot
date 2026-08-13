@@ -181,90 +181,58 @@ export function userAskedForCitation(message) {
 }
 
 /**
- * @param {SourceCite[]} cites
- * @returns {SourceCite | null}
- */
-function preferredCite(cites) {
-  if (!cites.length) return null;
-  const classroom = cites.find((c) => c.access === 'classroom' && !c.isBook);
-  if (classroom) return classroom;
-  const course = cites.find((c) => !c.isBook);
-  if (course) return course;
-  return cites[0];
-}
-
-/**
- * @param {SourceCite} cite
+ * Excerpt bodies only — no course titles, URLs, or session labels for the model.
+ * @param {string} excerpts
  * @returns {string}
  */
-function formatCiteMarkdown(cite) {
-  if (!cite?.title || !cite?.url) return '';
-  const detail = String(cite.detail || '').trim();
-  return detail ? `[${cite.title}](${cite.url}), ${detail}` : `[${cite.title}](${cite.url})`;
+export function excerptBodiesForModel(excerpts) {
+  const text = String(excerpts || '').trim();
+  if (!text) return '';
+  if (!/---\s*Source(?:\s+\d+)?\s*---/i.test(text)) {
+    return text
+      .replace(/^cite:\s*.*$/gim, '')
+      .replace(/^detail:\s*.*$/gim, '')
+      .replace(/^access:\s*.*$/gim, '')
+      .replace(/[ \t]+\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+  const out = parseSourceBlocks(text)
+    .map((b, i) => {
+      const body = String(b.body || '').trim();
+      return body ? `--- Excerpt ${i + 1} ---\n${body}` : '';
+    })
+    .filter(Boolean);
+  return out.join('\n\n');
 }
 
 /**
- * @param {string} text
- * @returns {number | null}
+ * Catalog sources for the widget Source control.
+ * @param {string} excerpts
+ * @param {import('../rag/course-catalog.js').CourseCatalog | null} [catalog]
+ * @returns {Array<{ title: string; url: string; detail: string; access: string }>}
  */
-function extractLevelNumber(text) {
-  const m = String(text || '').match(/\bLevel\s+(\d+)\b/i);
-  if (!m) return null;
-  const n = Number(m[1]);
-  return Number.isFinite(n) ? n : null;
-}
-
-/**
- * @param {string} reply
- * @param {string} body
- * @returns {number}
- */
-function quoteOverlapScore(reply, body) {
-  const r = normalizeForQuoteCheck(reply);
-  const b = normalizeForQuoteCheck(body);
-  if (!r || !b || r.length < 24 || b.length < 24) return 0;
-  if (b.includes(r) || r.includes(b)) return Math.min(r.length, b.length);
-  const words = r.split(' ').filter(Boolean);
-  for (let n = Math.min(20, words.length); n >= 8; n--) {
-    for (let i = 0; i + n <= words.length; i++) {
-      const span = words.slice(i, i + n).join(' ');
-      if (span.length >= 40 && b.includes(span)) return span.length;
-    }
+export function sourcesFromExcerpts(excerpts, catalog = null) {
+  const cites = parseSourceCites(excerpts, catalog);
+  const seen = new Set();
+  /** @type {Array<{ title: string; url: string; detail: string; access: string }>} */
+  const out = [];
+  for (const c of cites) {
+    const title = String(c.title || '').trim();
+    const url = String(c.url || '').trim();
+    if (!title || !url) continue;
+    const detail = String(c.detail || '').trim();
+    const key = `${title}|${url}|${detail}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({
+      title,
+      url,
+      detail,
+      access: String(c.access || '').trim(),
+    });
   }
-  return 0;
-}
-
-/**
- * @param {SourceCite[]} cites
- * @param {string} userMessage
- * @param {string} [replyText]
- * @returns {SourceCite | null}
- */
-function pickCite(cites, userMessage, replyText = '') {
-  if (!cites.length) return null;
-
-  let best = null;
-  let bestScore = 0;
-  for (const cite of cites) {
-    const score = quoteOverlapScore(replyText, cite.body || '');
-    if (score > bestScore) {
-      bestScore = score;
-      best = cite;
-    }
-  }
-  if (best && bestScore >= 40) return best;
-
-  const levelNum = extractLevelNumber(userMessage);
-  if (levelNum != null) {
-    const levelRe = new RegExp(`\\bLevel\\s*${levelNum}\\b`, 'i');
-    const byLevel = cites.find((c) => !c.isBook && levelRe.test(c.title));
-    if (byLevel) return byLevel;
-  }
-  if (/\b(book|acima|lesson)\b/i.test(String(userMessage || ''))) {
-    const book = cites.find((c) => c.isBook);
-    if (book) return book;
-  }
-  return preferredCite(cites);
+  return out;
 }
 
 /**
@@ -372,50 +340,41 @@ function tidyProse(text) {
 }
 
 /**
- * Append the catalog cite without rewriting the model's teaching prose.
+ * Drop invented classroom coordinates; Source UI owns provenance.
  * @param {string} text
- * @param {string} snippet
  * @returns {string}
  */
-function ensureCitePresent(text, snippet) {
-  const t = String(text || '').trim();
-  const urlMatch = String(snippet || '').match(/\((https?:\/\/[^)\s]+)\)/);
-  const url = urlMatch ? urlMatch[1] : '';
-  if (url && t.includes(url)) return t;
-  if (!snippet) return t;
-
-  const gate = t.match(
-    /(\n\n(?:Want to |Would you like |How would you like |Is there |Are you complete).*)\s*$/is
-  );
-  if (gate) {
-    const head = t.slice(0, t.length - gate[1].length).trim();
-    return `${head} You can find this in ${snippet}.${gate[1]}`;
-  }
-  if (!t) return `You can find this in ${snippet}.`;
-  return `${t} You can find this in ${snippet}.`;
+function stripInventedLocations(text) {
+  return String(text || '')
+    .replace(
+      /\bcomes?\s+(?:straight\s+)?from\s+Level\s+\d+(?:\s*[—\-–,]\s*Session\s+\d+(?:\s*[—\-–:]\s*[^.,\n]{0,80})?)?/gi,
+      'comes from the coursework'
+    )
+    .replace(/\bLevel\s+\d+\s*,\s*Session\s+\d+(?:\s*[—\-–:]\s*[^.,\n]{0,80})?/gi, '')
+    .replace(
+      /\b(?:Energy Essentials|Core|Rewire|Connect|Living Lightbody)\s*[—\-–:]\s*Level\s+\d+(?:\s+Program)?\b/gi,
+      ''
+    )
+    .replace(
+      /\bLevel\s+\d+\s*[—\-–:]\s*(?:Energy Essentials|Core(?:\s+Program)?|Rewire|Connect|Living Lightbody)\b/gi,
+      ''
+    );
 }
 
 /**
+ * Strip invented cites/locations. Do not inject catalog lines into prose.
  * @param {string} reply
  * @param {string} styleExcerpts
- * @param {string} userMessage
- * @param {import('../rag/course-catalog.js').CourseCatalog | null} [catalog]
+ * @param {string} [_userMessage]
  * @returns {string}
  */
-export function sanitizeReplyCitations(reply, styleExcerpts, userMessage, catalog = null) {
+export function sanitizeReplyCitations(reply, styleExcerpts, _userMessage) {
   const original = String(reply || '');
   if (!original) return original;
 
   let text = verifyQuotesAgainstExcerpts(original, styleExcerpts);
   text = stripModelCitationMarkup(text);
-
-  if (!userAskedForCitation(userMessage)) {
-    return tidyProse(text);
-  }
-
+  text = stripInventedLocations(text);
   text = cleanupRedactedLocationJunk(text);
-  const cite = pickCite(parseSourceCites(styleExcerpts, catalog), userMessage, text);
-  if (!cite) return tidyProse(text);
-
-  return tidyProse(ensureCitePresent(text, formatCiteMarkdown(cite)));
+  return tidyProse(text);
 }
