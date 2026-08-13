@@ -590,6 +590,22 @@ function parseEtpfSource(filename) {
 }
 
 /**
+ * Parse a Dropbox/local course filename, including names without an extension.
+ * @param {string} filePathOrName
+ * @returns {CourseSource | null}
+ */
+export function parseCourseSourceLoose(filePathOrName) {
+  const raw = String(filePathOrName || '').trim();
+  if (!raw) return null;
+  const name = basename(raw.split(/[?#]/)[0]);
+  return (
+    parseCourseSourceFromPath(raw) ||
+    parseCourseSourceFromPath(name) ||
+    (name && !/\.(txt|md|pdf)$/i.test(name) ? parseCourseSourceFromPath(`${name}.txt`) : null)
+  );
+}
+
+/**
  * @param {string} filePathOrName
  * @returns {CourseSource | null}
  */

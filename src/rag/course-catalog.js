@@ -10,7 +10,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { basename } from 'path';
 import {
-  parseCourseSourceFromPath,
+  parseCourseSourceLoose,
   formatCourseSourceLabel,
   humanizeTrackTitle,
 } from './course-source.js';
@@ -478,10 +478,7 @@ export function citeFromSourceLabel(labelLine, catalog, linkVariant = 'owned') {
   if (!label || !catalog) return null;
 
   const filename = basename(label);
-  const source =
-    parseCourseSourceFromPath(filename) ||
-    parseCourseSourceFromPath(label) ||
-    null;
+  const source = parseCourseSourceLoose(filename) || parseCourseSourceLoose(label) || null;
   if (source?.sessionKey) {
     const unit = lookupCatalogUnit(catalog, source.sessionKey);
     const title = getLinkableCourseTitle(source, catalog);
@@ -531,7 +528,7 @@ export function citeFromSourceLabel(labelLine, catalog, linkVariant = 'owned') {
 export function citeFromRetrievedChunk(chunk, catalog, linkVariant = 'owned') {
   const source =
     chunk?.source ||
-    (chunk?.sourcePath ? parseCourseSourceFromPath(chunk.sourcePath) : null);
+    (chunk?.sourcePath ? parseCourseSourceLoose(chunk.sourcePath) : null);
   if (source?.sessionKey && catalog) {
     const unit = lookupCatalogUnit(catalog, source.sessionKey);
     const title = getLinkableCourseTitle(source, catalog);
@@ -591,6 +588,7 @@ const GENERIC_TITLE_WORDS = new Set([
   'video',
   'chapter',
   'lesson',
+  'level',
   'the',
   'and',
   'for',
@@ -639,6 +637,57 @@ function citeFromCatalogKey(key, detailTitle, catalog, linkVariant = 'owned') {
 }
 
 /**
+ * Last-resort Source panel link when RAG ran but no unit could be resolved.
+ * @param {CourseCatalog | null | undefined} catalog
+ * @returns {{ title: string; url: string; detail: string; access: string }}
+ */
+export function fallbackCourseworkSource(catalog) {
+  const url = String(catalog?.siteBaseUrl || 'https://courses.masteringalchemy.com')
+    .trim()
+    .replace(/\/$/, '');
+  return {
+    title: 'Mastering Alchemy coursework',
+    url: url || 'https://courses.masteringalchemy.com',
+    detail: '',
+    access: 'classroom',
+  };
+}
+
+/**
+ * Catalog cites from L1-C3-V / filename tokens in excerpt or reply text.
+ * @param {string} text
+ * @param {CourseCatalog | null | undefined} catalog
+ * @param {CourseLinkVariant | null} [linkVariant]
+ * @param {number} [limit]
+ * @returns {Array<{ title: string; url: string; detail: string; access: string }>}
+ */
+export function sourcesFromSessionKeyTokens(text, catalog, linkVariant = 'owned', limit = 4) {
+  if (!catalog || !String(text || '').trim()) return [];
+  const seen = new Set();
+  /** @type {Array<{ title: string; url: string; detail: string; access: string }>} */
+  const out = [];
+  const re =
+    /\b((?:ML\d+|L\d+|ETPF|CFWATI|LWTLB|R[123])(?:-[A-Za-z0-9]+)+)(?:\.(?:txt|md|pdf))?\b/gi;
+  let match;
+  while ((match = re.exec(String(text))) !== null) {
+    if (out.length >= limit) break;
+    const token = String(match[1] || '').trim();
+    const parsed = parseCourseSourceLoose(token);
+    const sessionKey =
+      parsed?.sessionKey ||
+      (catalog.units?.[token] || catalog.chapters?.[token] ? token : '');
+    if (!sessionKey || seen.has(sessionKey)) continue;
+    seen.add(sessionKey);
+    const unit = lookupCatalogUnit(catalog, sessionKey);
+    const detail = String(unit?.title || catalog.chapters?.[sessionKey]?.title || parsed?.title || '').trim();
+    const cite = citeFromCatalogKey(sessionKey, detail, catalog, linkVariant);
+    if (!cite?.url) continue;
+    out.push(cite);
+  }
+  return out;
+}
+
+/**
  * Infer catalog sources from excerpt/reply text when chunk metadata is missing.
  * @param {string} text
  * @param {CourseCatalog | null | undefined} catalog
@@ -647,8 +696,12 @@ function citeFromCatalogKey(key, detailTitle, catalog, linkVariant = 'owned') {
  * @returns {Array<{ title: string; url: string; detail: string; access: string }>}
  */
 export function sourcesFromCatalogMatch(text, catalog, linkVariant = 'owned', limit = 4) {
+  if (!catalog) return [];
+  const fromKeys = sourcesFromSessionKeyTokens(text, catalog, linkVariant, limit);
+  if (fromKeys.length >= limit) return fromKeys;
+
   const blob = normalizeMatchText(text);
-  if (!blob || !catalog) return [];
+  if (!blob) return fromKeys;
   /** @type {Array<{ key: string; title: string; score: number }>} */
   const hits = [];
 
@@ -678,9 +731,9 @@ export function sourcesFromCatalogMatch(text, catalog, linkVariant = 'owned', li
   }
 
   hits.sort((a, b) => b.score - a.score);
-  const seen = new Set();
+  const seen = new Set(fromKeys.map((c) => `${c.title}|${c.url}|${c.detail}`));
   /** @type {Array<{ title: string; url: string; detail: string; access: string }>} */
-  const out = [];
+  const out = [...fromKeys];
   for (const hit of hits) {
     if (out.length >= limit) break;
     const cite = citeFromCatalogKey(hit.key, hit.title, catalog, linkVariant);
@@ -705,7 +758,7 @@ export function sourcesFromCatalogMatch(text, catalog, linkVariant = 'owned', li
 export function formatRetrievedChunkWithCatalog(chunk, catalog, linkVariant = null, options = {}) {
   const source =
     chunk.source ||
-    (chunk.sourcePath ? parseCourseSourceFromPath(chunk.sourcePath) : null);
+    (chunk.sourcePath ? parseCourseSourceLoose(chunk.sourcePath) : null);
   const unit = catalog && source?.sessionKey ? lookupCatalogUnit(catalog, source.sessionKey) : null;
   const sourceDetail = options.sourceDetail === 'course' ? 'course' : 'full';
   const label =

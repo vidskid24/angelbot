@@ -11,7 +11,9 @@ import {
   loadCourseCatalog,
   formatRetrievedChunkWithCatalog,
   citeFromRetrievedChunk,
+  sourcesFromCatalogMatch,
 } from './course-catalog.js';
+import { hydrateRetrievedChunk, loadChunkSourceIndex } from './chunk-source-index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '../..');
@@ -69,10 +71,18 @@ async function loadEmbeddingsIndex() {
       }
       const raw = await readFile(EMBEDDINGS_PATH, 'utf-8');
       const data = JSON.parse(raw);
-      const chunks = Array.isArray(data?.chunks) ? data.chunks : [];
+      const sourceIndex = await loadChunkSourceIndex();
+      const rawChunks = Array.isArray(data?.chunks) ? data.chunks : [];
+      let hydrated = 0;
+      const chunks = rawChunks.map((chunk) => {
+        const hadPath = Boolean(String(chunk?.sourcePath || '').trim());
+        const next = hydrateRetrievedChunk(chunk, sourceIndex);
+        if (!hadPath && next?.sourcePath) hydrated += 1;
+        return next;
+      });
       embeddingsIndexCache = { mtimeMs, chunks };
       console.info(
-        `[rag] Embeddings index loaded into memory (${chunks.length} chunks, ${(Buffer.byteLength(raw) / (1024 * 1024)).toFixed(1)} MB)`
+        `[rag] Embeddings index loaded into memory (${chunks.length} chunks, ${(Buffer.byteLength(raw) / (1024 * 1024)).toFixed(1)} MB, hydrated ${hydrated} source paths)`
       );
       return embeddingsIndexCache;
     } finally {
@@ -132,9 +142,9 @@ export async function retrieve(query, topK = DEFAULT_TOP_K, options = {}) {
     throw err;
   }
   const withScore = chunks.map((c) => ({
-    text: c.text,
+    text: c.text || c.content || c.chunk || '',
     source: c.source ?? null,
-    sourcePath: c.sourcePath,
+    sourcePath: c.sourcePath || c.path || c.file || c.filename,
     score: cosineSimilarity(c.embedding, queryEmbedding),
   }));
   // Prefer online coursework over the book when similarity is close.
@@ -188,7 +198,20 @@ export async function retrieve(query, topK = DEFAULT_TOP_K, options = {}) {
     })
     .filter(Boolean);
   if (top.length && !sources.length) {
-    console.warn('[rag] retrieve returned excerpts but no catalog sources');
+    for (const extra of sourcesFromCatalogMatch(top.join('\n\n'), catalog, linkVariant || 'owned')) {
+      const key = `${extra.title}|${extra.url}|${extra.detail || ''}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      sources.push(extra);
+    }
+  }
+  if (top.length && !sources.length) {
+    console.warn(
+      '[rag] retrieve returned excerpts but no catalog sources; chosen0 keys=',
+      chosen[0] ? Object.keys(chosen[0]).filter((k) => k !== 'embedding' && k !== 'score') : []
+    );
+  } else if (sources.length) {
+    console.info('[rag] retrieve sources', sources.length, sources.map((s) => s.title).join(' | '));
   }
   return { text: top.join('\n\n'), sources };
 }

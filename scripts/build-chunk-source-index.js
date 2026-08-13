@@ -1,0 +1,64 @@
+/**
+ * Build data/chunk-source-index.json from local embeddings.json.
+ * Maps chunk text → sourcePath so production can cite even when vectors
+ * were uploaded without source metadata.
+ *
+ * Run from repo root: node scripts/build-chunk-source-index.js
+ */
+import { createHash } from 'crypto';
+import { readFile, writeFile } from 'fs/promises';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const EMBEDDINGS_PATH = join(ROOT, 'data', 'embeddings.json');
+const OUT_PATH = join(ROOT, 'data', 'chunk-source-index.json');
+
+function normalize(text) {
+  return String(text || '')
+    .replace(/\r\n/g, '\n')
+    .replace(/^\[Source:[^\]]*\]\s*/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+const raw = await readFile(EMBEDDINGS_PATH, 'utf-8');
+const data = JSON.parse(raw);
+const chunks = Array.isArray(data?.chunks) ? data.chunks : [];
+
+/** @type {Record<string, string>} */
+const byHash = {};
+/** @type {Record<string, string>} */
+const byPrefix = {};
+/** @type {Set<string>} */
+const prefixCollisions = new Set();
+
+let withPath = 0;
+let skipped = 0;
+
+for (const chunk of chunks) {
+  const sourcePath = String(chunk?.sourcePath || '').trim();
+  const text = String(chunk?.text || chunk?.content || chunk?.chunk || '');
+  const n = normalize(text);
+  if (!sourcePath || !n) {
+    skipped++;
+    continue;
+  }
+  withPath++;
+  const hash = createHash('sha1').update(n).digest('hex');
+  byHash[hash] = sourcePath;
+  const prefix = n.slice(0, 160);
+  if (!prefix || prefixCollisions.has(prefix)) continue;
+  if (byPrefix[prefix] && byPrefix[prefix] !== sourcePath) {
+    delete byPrefix[prefix];
+    prefixCollisions.add(prefix);
+    continue;
+  }
+  byPrefix[prefix] = sourcePath;
+}
+
+const out = { v: 1, h: byHash, p: byPrefix };
+await writeFile(OUT_PATH, JSON.stringify(out), 'utf-8');
+console.log(
+  `Wrote ${OUT_PATH} (${withPath} paths, ${Object.keys(byHash).length} hashes, ${Object.keys(byPrefix).length} prefixes, skipped ${skipped})`
+);

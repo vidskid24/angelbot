@@ -10,7 +10,11 @@ import { generateThreadTitleFromMessage } from '../lib/gemini.js';
 import { buildUserPreferencesPromptBlock } from '../lib/user-preferences.js';
 import { buildUserMemoryPromptBlock } from '../lib/user-memory.js';
 import { retrieve } from '../rag/retrieve.js';
-import { loadCourseCatalog, sourcesFromCatalogMatch } from '../rag/course-catalog.js';
+import {
+  loadCourseCatalog,
+  sourcesFromCatalogMatch,
+  fallbackCourseworkSource,
+} from '../rag/course-catalog.js';
 import { resolveCourseLinkVariant } from '../lib/course-access.js';
 import {
   sanitizeReplyCitations,
@@ -168,6 +172,9 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
       );
     }
     const hadRetrieval = Boolean(String(styleExcerpts || '').trim());
+    if (!sources.length && hadRetrieval) {
+      sources = [fallbackCourseworkSource(catalog)];
+    }
     if (!citationAsk && String(styleExcerpts || '').trim()) {
       if (useDb && threadId) {
         await threadDb.setThreadSourceExcerpts(threadId, styleExcerpts);

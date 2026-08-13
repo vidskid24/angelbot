@@ -9,6 +9,7 @@
     "ingest": "node src/rag/run-ingest.js",
     "ingest:new": "node src/rag/run-ingest.js --new",
     "catalog:validate": "node scripts/validate-course-catalog.js",
+    "catalog:chunk-index": "node scripts/build-chunk-source-index.js",
     "metrics:embed": "node scripts/summarize-embed-metrics.js",
     "notes:hooks": "node scripts/setup-version-notes-hooks.js",
     "notes:log": "node scripts/append-version-notes.js",
