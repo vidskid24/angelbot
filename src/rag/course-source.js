@@ -98,9 +98,37 @@ function normalizeTitle(raw) {
  */
 function sessionTrackCatalogKey(levelCode, sessionCode, title) {
   const normalized = normalizeTitle(title);
+  const compact = normalized.replace(/[\s&]+/g, '');
+  // Filenames use TQ&A / TQA; catalog keys are often …-TQA or …-QA.
+  if (/^t?qa\d*$/i.test(compact)) {
+    const num = compact.match(/(\d+)$/);
+    return num
+      ? `${levelCode}-${sessionCode}-TQA${num[1]}`
+      : `${levelCode}-${sessionCode}-TQA`;
+  }
   if (/^q&a$/i.test(normalized)) return `${levelCode}-${sessionCode}-QA`;
   const slug = normalized.replace(/[^a-z0-9]+/gi, '');
   return `${levelCode}-${sessionCode}-${slug}`;
+}
+
+/**
+ * Friendly display title for track filenames like TMetatron, TQ&A, TFull.
+ * @param {string} raw
+ * @returns {string}
+ */
+export function humanizeTrackTitle(raw) {
+  let t = normalizeTitle(raw);
+  if (!t) return '';
+  const compact = t.replace(/[\s&]+/g, '');
+  if (/^t?qa\d*$/i.test(compact)) {
+    const num = compact.match(/(\d+)$/);
+    return num ? `Q&A ${num[1]}` : 'Q&A';
+  }
+  if (/^tfull$/i.test(compact)) return 'Full session';
+  if (/^T[A-Z]/.test(t) && t.length > 2) {
+    t = t.slice(1);
+  }
+  return t;
 }
 
 /**
@@ -743,10 +771,11 @@ export function parseCourseSourceFromPath(filePathOrName) {
   if (m) {
     const level = Number(m[1]);
     const session = Number(m[2]);
-    const title = normalizeTitle(m[3]);
-    if (!title) return null;
+    const rawTitle = normalizeTitle(m[3]);
+    if (!rawTitle) return null;
     const levelCode = `L${level}`;
     const sessionCode = `S${session}`;
+    const title = humanizeTrackTitle(rawTitle);
     return {
       level,
       levelCode,
@@ -754,9 +783,9 @@ export function parseCourseSourceFromPath(filePathOrName) {
       sessionCode,
       unitType: 'level-session-supplement',
       unitNumber: session,
-      unitCode: sessionTrackCatalogKey(levelCode, sessionCode, title),
+      unitCode: sessionTrackCatalogKey(levelCode, sessionCode, rawTitle),
       mediaType: 'audio',
-      sessionKey: sessionTrackCatalogKey(levelCode, sessionCode, title),
+      sessionKey: sessionTrackCatalogKey(levelCode, sessionCode, rawTitle),
       title,
       sessionTitle: title,
       filename,

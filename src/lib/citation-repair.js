@@ -1,6 +1,6 @@
 /**
- * Keep citation markdown links aligned with RAG Source `cite:` values.
- * Models often invent link text (lesson titles, "ACIMA") or mix a book title with a class URL.
+ * Keep citation markdown links aligned with RAG Source `cite:` values,
+ * and strip unsolicited location brackets when the user did not ask for a source.
  */
 
 /**
@@ -47,6 +47,21 @@ export function parseSourceCites(excerpts) {
 }
 
 /**
+ * @param {string} message
+ * @returns {boolean}
+ */
+export function userAskedForCitation(message) {
+  const t = String(message || '');
+  return (
+    /\b(where\s+(is|did|does|was|came|come)|source|citation|cite|reference|references)\b/i.test(t) ||
+    /\b(which|what)\s+(class|course|session|level|lesson|book)\b/i.test(t) ||
+    /\bfrom\s+which\b/i.test(t) ||
+    /\bwhere\s+can\s+i\s+(find|read|listen|watch)\b/i.test(t) ||
+    /\blink\s+to\s+(the\s+)?(class|course|lesson|session|book)\b/i.test(t)
+  );
+}
+
+/**
  * @param {SourceCite[]} cites
  * @returns {SourceCite | null}
  */
@@ -57,6 +72,51 @@ function preferredCite(cites) {
   const course = cites.find((c) => !c.isBook);
   if (course) return course;
   return cites[0];
+}
+
+/**
+ * Remove bare [Level …] / [Mastery Live …] brackets that are not markdown links.
+ * @param {string} text
+ * @returns {string}
+ */
+function stripBareLocationBrackets(text) {
+  return String(text || '').replace(
+    /\s*\[(?:Level\s+\d+|Mastery Live\s*\d*|Book|A Course in Mastering Alchemy)[^\]]*\]/gi,
+    ''
+  );
+}
+
+/**
+ * Remove course/book markdown citation links from a reply.
+ * @param {string} text
+ * @returns {string}
+ */
+function stripCitationLinks(text) {
+  return String(text || '').replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (full, label, url) => {
+    if (
+      /masteringalchemy|amazon\.com|thinkific/i.test(url) ||
+      /Level\s+\d+|Course|Mastery Live|Book|A Course in Mastering Alchemy/i.test(label)
+    ) {
+      return '';
+    }
+    return full;
+  });
+}
+
+/**
+ * @param {string} text
+ * @returns {string}
+ */
+function tidyAfterCitationStrip(text) {
+  return String(text || '')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/ +\./g, '.')
+    .replace(/ +,/g, ',')
+    .replace(/ +!/g, '!')
+    .replace(/ +\?/g, '?')
+    .replace(/  +/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 /**
@@ -77,7 +137,6 @@ export function repairCitationMarkdown(reply, styleExcerpts) {
   return text.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (full, linkText, url) => {
     const matched = byUrl.get(url);
     if (matched) {
-      // Keep the correct destination; never allow lesson/session text inside the link label.
       return `[${matched.title}](${matched.url})`;
     }
 
@@ -88,4 +147,27 @@ export function repairCitationMarkdown(reply, styleExcerpts) {
     if (!replacement) return full;
     return `[${replacement.title}](${replacement.url})`;
   });
+}
+
+/**
+ * Repair links when citing was requested; otherwise strip unsolicited citation markup.
+ * @param {string} reply
+ * @param {string} styleExcerpts
+ * @param {string} userMessage
+ * @returns {string}
+ */
+export function sanitizeReplyCitations(reply, styleExcerpts, userMessage) {
+  let text = String(reply || '');
+  if (!text) return text;
+
+  if (userAskedForCitation(userMessage)) {
+    text = repairCitationMarkdown(text, styleExcerpts);
+    // Drop fake bracket cites that are not real markdown links.
+    text = stripBareLocationBrackets(text);
+    return tidyAfterCitationStrip(text);
+  }
+
+  text = stripCitationLinks(text);
+  text = stripBareLocationBrackets(text);
+  return tidyAfterCitationStrip(text);
 }

@@ -180,6 +180,8 @@ export function buildDynamicContextBlock(
         '- `access:` `classroom` or `purchase`\n' +
         'Use the excerpts for content, facts, quotes, and practices. ' +
         '**Citations / references — only when asked:** Do not cite unless the user asks where something comes from, where to find it, for a reference, source, or citation. ' +
+        'If they only ask to explain, expand, or "tell me more," do not add any class/session brackets or links. ' +
+        'Never wrap locations in square brackets unless you are pasting an exact `cite:` markdown link. Never invent codes like TQ&A, TMetatron, TFull, or sessionKeys. ' +
         'When they do ask about a quote or idea, use the Source header attached to the excerpt that actually contains that quote/idea — never mix `cite:` from one Source with `detail:` or wording from another Source. ' +
         'Prefer a coursework Source (`access: classroom`) over the book when the same teaching appears in both. ' +
         'Format: paste that Source\'s `cite:` markdown link exactly (course/book name only inside the brackets), then optionally add that same Source\'s `detail:` in plain words after a comma — detail is never part of the link. ' +

@@ -12,6 +12,7 @@ import { basename } from 'path';
 import {
   parseCourseSourceFromPath,
   formatCourseSourceLabel,
+  humanizeTrackTitle,
 } from './course-source.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -201,7 +202,7 @@ export function lookupCatalogUnit(catalog, sessionKey) {
 function resolveDisplayTitle(source, unit) {
   const fromCatalog = String(unit?.title || '').trim();
   if (fromCatalog) return fromCatalog;
-  return String(source?.title || source?.sessionTitle || '').trim();
+  return humanizeTrackTitle(source?.title || source?.sessionTitle || '');
 }
 
 /**
