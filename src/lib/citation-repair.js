@@ -307,11 +307,11 @@ function normalizeCiteUrl(url) {
  */
 function isBrokenOrInventedCourseUrl(url) {
   const u = String(url || '').toLowerCase();
-  return (
-    /\/not-found\b/.test(u) ||
-    /\/level-3-program\b/.test(u) ||
-    /\/take\/level-\d+-program\b/.test(u)
-  );
+  if (/\/not-found\b/.test(u)) return true;
+  // Level 2's real Thinkific slug IS level-2-program. Do not flag it.
+  // Level 3+ do not use level-N-program (L3 current = rewire-level-3;
+  // level-3-program is a separate legacy course with different session numbering).
+  return /\/(?:take\/)?level-[1345]-program\b/.test(u);
 }
 
 /**
@@ -319,10 +319,20 @@ function isBrokenOrInventedCourseUrl(url) {
  * @returns {number | null}
  */
 function extractLevelNumber(text) {
+  const s = String(text || '');
   const m =
-    String(text || '').match(/\bLevel\s*(\d+)\b/i) ||
-    String(text || '').match(/\brewire-l?(\d+)\b/i) ||
-    String(text || '').match(/\bL(\d+)\b/);
+    s.match(/\bLevel\s*(\d+)\b/i) ||
+    s.match(/\blevel-(\d+)-program\b/i) ||
+    s.match(/\brewire-level-(\d+)\b/i) ||
+    s.match(/\brewire-l(\d+)\b/i) ||
+    s.match(/\benergyessentials-level(\d+)\b/i) ||
+    s.match(/\benergy-essentials-l(\d+)\b/i) ||
+    s.match(/\bcore-l(\d+)\b/i) ||
+    s.match(/\bconnect-level-(\d+)\b/i) ||
+    s.match(/\bconnect-l(\d+)\b/i) ||
+    s.match(/\bliving-lightbody-level-(\d+)\b/i) ||
+    s.match(/\bliving-lightbody-l(\d+)\b/i) ||
+    s.match(/\bL(\d+)\b/i);
   if (!m) return null;
   const n = Number(m[1]);
   return Number.isFinite(n) ? n : null;
@@ -337,7 +347,7 @@ function findCiteForLevel(cites, levelNum) {
   if (!cites.length || levelNum == null) return null;
   const levelRe = new RegExp(`\\bLevel\\s*${levelNum}\\b`, 'i');
   const urlRe = new RegExp(
-    `(?:rewire-l?${levelNum}|level-${levelNum}|/l${levelNum}\\b|mastery-live-${levelNum}|energyessentials-level${levelNum}|energy-essentials-l${levelNum})`,
+    `(?:rewire-level-${levelNum}|rewire-l${levelNum}|level-${levelNum}-program|level-${levelNum}|/l${levelNum}\\b|mastery-live-${levelNum}|energyessentials-level${levelNum}|energy-essentials-l${levelNum}|core-l${levelNum}|connect-level-${levelNum}|connect-l${levelNum}|living-lightbody-level-${levelNum}|living-lightbody-l${levelNum})`,
     'i'
   );
   return (
