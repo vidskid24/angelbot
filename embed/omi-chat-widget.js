@@ -336,9 +336,11 @@
       const url = match[2];
       const after = text.slice(linkRe.lastIndex);
       // Only the short structured location tail — never the rest of the reply.
+      // Keep multi-part locations inside the cite span, e.g.
+      // Chapter 1: Your energetic systems, Track 1 — The Mechanics of You
       const detailMatch = isCourseCitationUrl(url)
         ? after.match(
-            /^,\s*((?:Session|Lesson|Chapter|Track|Video)\s+\d+(?:\s*[—\-–:]\s*[^.,!?\n\[]{1,120})?)/
+            /^,\s*((?:Session|Lesson|Chapter|Track|Video)\s+\d+(?:[:\s][^,\n\[]{0,100})?(?:\s*,\s*(?:Session|Lesson|Chapter|Track|Video)\s+\d+(?:\s*[—\-–:]\s*[^.,!?\n\[]{1,120})?)?)/
           )
         : null;
 

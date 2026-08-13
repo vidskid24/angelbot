@@ -23,7 +23,7 @@ export function parseSourceCites(excerpts) {
   /** @type {SourceCite[]} */
   const cites = [];
   const blockRe =
-    /---\s*Source\s+(\d+)\s*---\s*\ncite:\s*\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)\s*(?:\ndetail:\s*([^\n]+))?\s*(?:\naccess:\s*(\w+))?/gi;
+    /---\s*Source\s+(\d+)\s*---\s*\r?\ncite:\s*\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)[ \t]*(?:\r?\n[ \t]*detail:\s*([^\n\r]+))?[ \t]*(?:\r?\n[ \t]*access:\s*(\w+))?/gi;
   let match;
   while ((match = blockRe.exec(text)) !== null) {
     const title = String(match[2] || '').trim();
@@ -81,19 +81,84 @@ function preferredCite(cites) {
 }
 
 /**
- * Format a canonical citation markdown snippet from a Source cite.
- * @param {SourceCite} cite
+ * Turn stuffed link text / bare location into plain detail when Source has none.
+ * "Level 1, Chapter 1, Track 1 — \"The Mechanics of You\"" →
+ * "Chapter 1, Track 1 — The Mechanics of You"
+ * @param {string} text
  * @returns {string}
  */
-function formatCiteMarkdown(cite) {
+function detailFromLocationText(text) {
+  let t = String(text || '').trim();
+  if (!t) return '';
+  t = t.replace(/^\*{1,2}|\*{1,2}$/g, '').trim();
+  t = t.replace(/^in\s+/i, '').trim();
+  t = t.replace(/^Level\s+\d+\s*,\s*/i, '').trim();
+  t = t
+    .replace(/\s*—\s*"([^"]+)"/g, ' — $1')
+    .replace(/"([^"]+)"/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!/\b(?:Chapter|Session|Track|Lesson|Video)\b/i.test(t)) return '';
+  return t;
+}
+
+/**
+ * Format a canonical citation markdown snippet from a Source cite.
+ * @param {SourceCite} cite
+ * @param {string} [fallbackDetail]
+ * @returns {string}
+ */
+function formatCiteMarkdown(cite, fallbackDetail = '') {
   if (!cite?.title || !cite?.url) return '';
-  const detail = String(cite.detail || '').trim();
+  const detail = String(cite.detail || fallbackDetail || '').trim();
   return detail ? `[${cite.title}](${cite.url}), ${detail}` : `[${cite.title}](${cite.url})`;
 }
 
 /**
- * If the user asked for a source but the model only wrote plain/bold "Level N, Chapter X",
- * replace that with the real catalog cite link (+ detail when available).
+ * Legacy location phrases the model invents instead of pasting `cite:` + `detail:`.
+ * Covers: Level 1, Chapter 1, Track 1 — "The Mechanics of You"
+ * and shorter forms like Level 1, Chapter 2 / Level 2, Session 8 — title
+ * @type {RegExp}
+ */
+const LOCATION_PHRASE_RE =
+  /(\*{1,2})?Level\s+(\d+)\s*,\s*(Chapter|Session|Track|Lesson)\s+(\d+)(?:\s*,\s*(Chapter|Session|Track|Lesson|Video)\s+(\d+))?(?:\s*[—\-–:]\s*(?:"[^"]+"|[^*\n,[\]"][^*\n[\]]*?))?(\*{1,2})?/gi;
+
+/**
+ * True when markdown link text is a stuffed location, not a course/book title.
+ * @param {string} linkText
+ * @returns {boolean}
+ */
+function linkTextLooksLikeLocation(linkText) {
+  const t = String(linkText || '').trim();
+  if (!t) return false;
+  if (/Level\s+\d+\s*,\s*(?:Chapter|Session|Track|Lesson)\b/i.test(t)) return true;
+  if (
+    /\b(?:Chapter|Session|Track|Lesson|Video)\s+\d+/i.test(t) &&
+    /(?:Level\s+\d+|Core|Rewire|Connect|Living Lightbody|Energy Essentials|Mastery Live)/i.test(t) &&
+    t.length > 48
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Pick the best Source cite for a Level N location phrase.
+ * @param {SourceCite[]} cites
+ * @param {number} levelNum
+ * @returns {SourceCite | null}
+ */
+function citeForLocation(cites, levelNum) {
+  return (
+    findCiteForLevel(cites, levelNum) ||
+    preferredCite(cites.filter((c) => !c.isBook)) ||
+    preferredCite(cites)
+  );
+}
+
+/**
+ * If the user asked for a source but the model only wrote plain/bold "Level N, Chapter X…",
+ * replace that entire phrase with the real catalog cite link (+ detail when available).
  * @param {string} reply
  * @param {string} styleExcerpts
  * @returns {string}
@@ -103,31 +168,21 @@ function ensureProperCitation(reply, styleExcerpts) {
   if (!cites.length) return reply;
 
   const hasValidCiteLink = cites.some(
-    (c) =>
-      reply.includes(`](${c.url})`) ||
-      reply.includes(`[${c.title}](`)
+    (c) => reply.includes(`](${c.url})`) || reply.includes(`[${c.title}](`)
   );
-
-  // Replace plain or bold Level/location phrases with a proper cite when possible.
-  const locationRe =
-    /(\*{1,2})?(?:in\s+)?Level\s+(\d+)\s*,\s*(Chapter|Session|Track|Lesson)\s+(\d+)(?:\s*[—\-–:]\s*[^*\n.,]+)?\1?/gi;
 
   let text = String(reply || '');
   let replaced = false;
-  text = text.replace(locationRe, (full, _wrap, levelNum, kind, num) => {
-    const cite =
-      findCiteForLevel(cites, Number(levelNum)) ||
-      preferredCite(cites.filter((c) => !c.isBook)) ||
-      preferredCite(cites);
+  text = text.replace(LOCATION_PHRASE_RE, (full, _openWrap, levelNum, kind, num) => {
+    const cite = citeForLocation(cites, Number(levelNum));
     if (!cite) return full;
     replaced = true;
-    if (cite.detail) return formatCiteMarkdown(cite);
-    return `[${cite.title}](${cite.url}), ${kind} ${num}`;
+    const fallback = detailFromLocationText(full) || `${kind} ${num}`;
+    return formatCiteMarkdown(cite, fallback);
   });
 
   if (hasValidCiteLink || replaced) return text;
 
-  // No location phrase and no cite link — append the best coursework cite.
   const fallback = preferredCite(cites.filter((c) => !c.isBook)) || preferredCite(cites);
   if (!fallback) return text;
   const snippet = formatCiteMarkdown(fallback);
@@ -181,9 +236,16 @@ function stripCitationLinks(text) {
 
   // Inline cite + optional location detail (no wrapping parens):
   // [Course](url), Session 13 — Q&A-1
+  // Also stuffed locations: [Level 1, Chapter 1, Track 1 — "…"](url)
   s = s.replace(
     /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)\s*(?:,\s*(?:Session|Lesson|Chapter|Track|Video)\s+\d+(?:\s*[—\-–:]\s*[^.,!?\n(]{0,120})?)?/gi,
     (full, label, url) => (isCourseCitationMarkdown(label, url) ? '' : full)
+  );
+
+  // Leftover bare legacy locations when cites were stripped or never linked.
+  s = s.replace(
+    /\s*(?:\*{1,2})?(?:in\s+)?Level\s+\d+\s*,\s*(?:Chapter|Session|Track|Lesson)\s+\d+(?:\s*,\s*(?:Chapter|Session|Track|Lesson|Video)\s+\d+)?(?:\s*[—\-–:]\s*(?:"[^"]+"|[^*\n.[,][^*\n.]*?))?(?:\*{1,2})?/gi,
+    ''
   );
 
   // Leftover fragments after a partial strip: (, Session 1) or (, Chapter 1, Track 2 — ...)
@@ -275,7 +337,7 @@ function findCiteForLevel(cites, levelNum) {
   if (!cites.length || levelNum == null) return null;
   const levelRe = new RegExp(`\\bLevel\\s*${levelNum}\\b`, 'i');
   const urlRe = new RegExp(
-    `(?:rewire-l?${levelNum}|level-${levelNum}|/l${levelNum}\\b|mastery-live-${levelNum})`,
+    `(?:rewire-l?${levelNum}|level-${levelNum}|/l${levelNum}\\b|mastery-live-${levelNum}|energyessentials-level${levelNum}|energy-essentials-l${levelNum})`,
     'i'
   );
   return (
@@ -324,6 +386,7 @@ function resolveCiteForMarkdownLink(linkText, url, cites) {
 /**
  * Force markdown citation links to use the exact course/book title for a known URL,
  * and replace unknown/invented URLs with the best matching Source cite.
+ * Location-stuffed link text becomes a full cite + detail snippet.
  * @param {string} reply
  * @param {string} styleExcerpts
  * @returns {string}
@@ -336,6 +399,9 @@ export function repairCitationMarkdown(reply, styleExcerpts) {
   return text.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (full, linkText, url) => {
     const replacement = resolveCiteForMarkdownLink(linkText, url, cites);
     if (!replacement) return full;
+    if (linkTextLooksLikeLocation(linkText)) {
+      return formatCiteMarkdown(replacement, detailFromLocationText(linkText));
+    }
     return `[${replacement.title}](${replacement.url})`;
   });
 }

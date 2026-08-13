@@ -331,27 +331,29 @@ export function formatCourseSourceLabelWithCatalog(source, catalog) {
   }
 
   if (source.unitType === 'class-track' && levelLabel && chapterLabel) {
-    return `${levelLabel}, ${chapterLabel}, Track ${source.unitNumber} — "${title}"`;
+    return `${levelLabel}, ${chapterLabel}, Track ${source.unitNumber} — ${title}`;
   }
   if (source.unitType === 'class-video' && levelLabel && chapterLabel) {
-    return `${levelLabel}, ${chapterLabel}, Video — "${title}"`;
+    return `${levelLabel}, ${chapterLabel}, Video — ${title}`;
   }
   if (source.unitType === 'class-session' && levelLabel && chapterLabel) {
     const genericSession = new RegExp(`^Session\\s*${source.unitNumber}$`, 'i').test(
       title
     );
     const base = `${levelLabel}, ${chapterLabel}, Session ${source.unitNumber}`;
-    return genericSession ? base : `${base} — "${title}"`;
+    return genericSession ? base : `${base} — ${title}`;
   }
   if (source.unitType === 'level-session' && levelLabel) {
     const sessionLabel = formatLevelSessionLabel(catalog, source);
-    if (sessionLabel) return `${levelLabel}, ${sessionLabel} — "${title}"`;
+    if (sessionLabel) return `${levelLabel}, ${sessionLabel} — ${title}`;
   }
 
   if (unit?.title) {
     const base = formatCourseSourceLabel(source);
     if (base) {
-      return base.replace(/ — "[^"]+"$/, ` — "${title}"`);
+      return base
+        .replace(/ — "[^"]+"$/, ` — ${title}`)
+        .replace(/ — [^\n]+$/, ` — ${title}`);
     }
   }
 
