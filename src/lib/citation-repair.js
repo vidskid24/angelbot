@@ -114,14 +114,15 @@ function ensureProperCitation(reply, styleExcerpts) {
 
   let text = String(reply || '');
   let replaced = false;
-  text = text.replace(locationRe, (full, _wrap, levelNum) => {
+  text = text.replace(locationRe, (full, _wrap, levelNum, kind, num) => {
     const cite =
       findCiteForLevel(cites, Number(levelNum)) ||
       preferredCite(cites.filter((c) => !c.isBook)) ||
       preferredCite(cites);
     if (!cite) return full;
     replaced = true;
-    return formatCiteMarkdown(cite);
+    if (cite.detail) return formatCiteMarkdown(cite);
+    return `[${cite.title}](${cite.url}), ${kind} ${num}`;
   });
 
   if (hasValidCiteLink || replaced) return text;
