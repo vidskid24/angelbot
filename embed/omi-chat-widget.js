@@ -272,6 +272,40 @@
     }
   }
 
+  function isBlockquoteMarkerLine(line) {
+    return /^>\s?/.test(line);
+  }
+
+  /** Long quoted passages on their own line(s), with or without a leading "> ". */
+  function isQuotedPassageLine(line) {
+    const t = String(line || '').replace(/^>\s?/, '').trim();
+    if (t.length < 32) return false;
+    if (/^[-*]\s/.test(t)) return false;
+    if (/^cite:\s/i.test(t) || /^detail:\s/i.test(t) || /^access:\s/i.test(t)) return false;
+    // Straight or curly quotes wrapping the passage.
+    if (/^"/.test(t) && /"/.test(t.slice(1))) return true;
+    if (/^[\u201C]/.test(t) && /[\u201D]/.test(t.slice(1))) return true;
+    return false;
+  }
+
+  function isQuoteLine(line) {
+    return isBlockquoteMarkerLine(line) || isQuotedPassageLine(line);
+  }
+
+  function stripQuoteMarker(line) {
+    return String(line || '').replace(/^>\s?/, '');
+  }
+
+  function appendQuoteBlock(parent, quoteText) {
+    const quote = document.createElement('blockquote');
+    quote.className = 'omibot-quote';
+    const body = document.createElement('div');
+    body.className = 'omibot-quote-body';
+    appendInlineFormatted(body, quoteText);
+    quote.appendChild(body);
+    parent.appendChild(quote);
+  }
+
   function appendInlineFormatted(parent, text) {
     // Markdown links first so citation URLs become clickable.
     const linkRe = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g;
@@ -295,26 +329,43 @@
     }
   }
 
+  function quoteOpenCount(text) {
+    const s = String(text || '');
+    // Treat paired straight/curly quotes; odd count means still open.
+    const straight = (s.match(/"/g) || []).length;
+    const left = (s.match(/[\u201C]/g) || []).length;
+    const right = (s.match(/[\u201D]/g) || []).length;
+    return straight % 2 === 1 || left > right;
+  }
+
   function appendFormattedContent(parent, text) {
     const normalized = normalizeBoldMarkers(text);
     const lines = normalized.split('\n');
     let i = 0;
     while (i < lines.length) {
-      if (/^>\s?/.test(lines[i])) {
-        const quoteLines = [];
-        while (i < lines.length && /^>\s?/.test(lines[i])) {
-          quoteLines.push(lines[i].replace(/^>\s?/, ''));
-          i += 1;
+      if (isQuoteLine(lines[i])) {
+        const quoteLines = [stripQuoteMarker(lines[i])];
+        i += 1;
+        while (i < lines.length) {
+          if (isBlockquoteMarkerLine(lines[i]) || isQuotedPassageLine(lines[i])) {
+            quoteLines.push(stripQuoteMarker(lines[i]));
+            i += 1;
+            continue;
+          }
+          // Keep wrapping multi-line quotes until the closing quote appears.
+          if (quoteOpenCount(quoteLines.join('\n')) && String(lines[i]).trim() !== '') {
+            quoteLines.push(lines[i]);
+            i += 1;
+            continue;
+          }
+          break;
         }
-        const quote = document.createElement('blockquote');
-        quote.className = 'omibot-quote';
-        appendInlineFormatted(quote, quoteLines.join('\n'));
-        parent.appendChild(quote);
+        appendQuoteBlock(parent, quoteLines.join('\n'));
         continue;
       }
 
       const normalLines = [];
-      while (i < lines.length && !/^>\s?/.test(lines[i])) {
+      while (i < lines.length && !isQuoteLine(lines[i])) {
         normalLines.push(lines[i]);
         i += 1;
       }
@@ -336,7 +387,8 @@
       '.omibot-shell{font-family:system-ui,-apple-system,sans-serif;max-width:920px;width:100%;margin:0 auto;padding:0 16px;box-sizing:border-box;color:#1a1a1a}' +
       '.omibot-shell .omibot-bold{font-weight:700!important}' +
       '.omibot-shell .omibot-italic{font-style:italic}' +
-      '.omibot-shell .omibot-quote{display:block;margin:0.65em 0 0.65em 1.15em;padding:0;border:none;font-style:italic;line-height:1.55;color:#2a2a2a}' +
+      '.omibot-shell .omibot-quote{display:block;margin:0.65em 0 0.65em 1.15em;padding:0 0 0 0.15em;border:none;border-left:none;background:transparent;font-style:italic!important;font-weight:inherit;line-height:1.55;color:#2a2a2a}' +
+      '.omibot-shell .omibot-quote .omibot-quote-body,.omibot-shell .omibot-quote .omibot-quote-body *{font-style:italic!important}' +
       '.omibot-shell a.omibot-md-link{color:#7a5c1e;text-decoration:none;border-bottom:1px solid rgba(122,92,30,.45);word-break:break-word}' +
       '.omibot-shell a.omibot-md-link:hover{color:#1a1a1a;border-bottom-color:#1a1a1a}' +
       '.omibot-layout{display:flex;align-items:flex-start;gap:0;margin-top:8px}' +
