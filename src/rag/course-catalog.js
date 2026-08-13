@@ -405,16 +405,9 @@ export function formatRetrievedChunkWithCatalog(chunk, catalog, linkVariant = nu
   const body = String(chunk.text || '').trim();
   if (!body) return '';
 
-  /** @type {{ url: string; kind: 'course' | 'purchase' | null }} */
-  let link;
-  if (sourceDetail === 'course') {
-    const purchaseUrl = resolvePurchaseUrlForSource(catalog, source, unit);
-    link = purchaseUrl
-      ? { url: purchaseUrl, kind: 'purchase' }
-      : { url: '', kind: null };
-  } else {
-    link = resolveLinkForSource(unit, linkVariant, catalog, source);
-  }
+  // Prefer owned/membership classroom URL when known; otherwise purchase/product page.
+  // Free and paid both get a URL whenever the catalog has one.
+  const link = resolveLinkForSource(unit, linkVariant, catalog, source);
 
   if (label && link.url && link.kind === 'purchase') {
     return `--- Source: ${label} | purchase: ${link.url} ---\n${body}`;

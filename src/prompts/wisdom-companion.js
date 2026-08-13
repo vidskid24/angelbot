@@ -170,17 +170,22 @@ export function buildDynamicContextBlock(
       ? 'Use the following for **content and facts** only — do not copy its tone; follow the user preference and memory sections later in this context.'
       : 'Use it for tone and content.';
     parts.push(
-      `## MA framework and content (source material)\nThe following excerpts are citable Mastering Alchemy source material. ${toneNote} ` +
-        'Each excerpt may begin with a **Source** line. Cite only the location detail that appears on that Source line — do not invent chapter, session, track, or video locations that are not written there. ' +
-        'When the Source line names only a course or level (and optionally a URL), refer to that course/level name when the user asks where the information comes from or for a reference. ' +
-        'When the Source line includes Level, Chapter, Session, Track, Video, or Book detail, name that location in plain language when the user asks where to find a meditation, practice, video, or topic. ' +
-        'If a Source line includes a course URL after a pipe (`|`), share that link as a markdown link so the user can open the lesson in Thinkific. Only include URLs that appear in the Source line — do not invent links. ' +
-        'If a Source line includes `purchase:` before a URL, the user does not have lesson access yet — share that link as a markdown link to the product or sales page where they can get the course. Do not describe it as a lesson they can open now. ' +
+      `## MA framework and content (source material)\nThe following excerpts are Mastering Alchemy source material. ${toneNote} ` +
+        'Each excerpt may begin with a **Source** line (friendly location text, optional URL after `|`). ' +
+        'Use the excerpts for content, facts, quotes, and practices. ' +
+        '**Citations / references — only when asked:** Do not add class, level, chapter, session, track, or book citations unless the user asks where something comes from, where to find it, for a reference, source, or citation, or otherwise requests the location. ' +
+        'Ordinary answers and quotes do not need a trailing citation. ' +
+        'When they do ask for a location or reference, use only the friendly wording on the Source line — never invent locations, and never expose internal file codes, session keys, or filename fragments (for example TQA1, L5-S3-TQA1, ML6-C1-S1). ' +
+        '**Always link the class/course title:** Whenever you name the course or level from a Source line in that reference, format it as a markdown link `[Course or level title](url)` using the URL on that same Source line. ' +
+        'If chapter, session, track, video, or book detail also appears on the Source line, you may include that plain-language detail after the linked title. ' +
+        'Only use URLs that appear on the Source line — do not invent links. ' +
+        'If the Source line has `purchase:` before the URL, that is a product or sales page (not an open classroom lesson) — still link the course/level title to that URL, and do not imply they can open the lesson now. ' +
+        'If the Source line has a URL without `purchase:`, treat it as their course/classroom link. ' +
         'Use this source material precisely. When summarizing, stay close to the wording and meaning of the excerpts; do not add claims, locations, or terms that are not supported by the source material. ' +
         'You may and should quote directly from this material when relevant — including longer multi-sentence passages when the user asks for them. Any text inside quotation marks must be copied **verbatim** as one continuous span from the source material. ' +
         'Preserve the source exactly as written or transcribed, including its grammar, repetition, filler words, and transcription errors. Do not polish, clean up, correct, summarize, combine, complete, or paraphrase quoted wording. ' +
         'Do not join sentences or phrases from different places into one quote. You may omit timestamps and Source lines from inside quotation marks, but do not alter the words between them. ' +
-        'Cite the Source line separately for each quote when present. Before responding with any quotation, confirm that every word inside quotation marks appears in the same order in one source excerpt. ' +
+        'Before responding with any quotation, confirm that every word inside quotation marks appears in the same order in one source excerpt. ' +
         'Do not use quotation marks around paraphrases. If the excerpts are too short for the requested quote length or count, quote what is available and briefly say that more of the passage is not in the retrieved excerpts. ' +
         'Offer techniques or practices when applicable. Where the user\'s question touches on it, include relevant ideas, quotes, or techniques, then invite them to explore or try them. ' +
         'Do not invent a class or session location if no Source line supports it. ' +

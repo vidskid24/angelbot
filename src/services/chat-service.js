@@ -57,7 +57,9 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
       }
     }
     const sourceDetail = tier === 'paid' ? 'full' : 'course';
-    const linkVariant = tier === 'paid' ? await resolveCourseLinkVariant(userId, email) : null;
+    // Resolve Thinkific owned vs membership for everyone so Source lines can link
+    // to the appropriate class page (classroom when enrolled, otherwise purchase).
+    const linkVariant = useDb ? await resolveCourseLinkVariant(userId, email) : null;
     const styleExcerpts = await retrieve(retrievalQuery, DEFAULT_RETRIEVE_TOP_K, {
       linkVariant,
       sourceDetail,
