@@ -221,7 +221,7 @@ Edit **`data/course-catalog.json`** to map each **sessionKey** (from Phase 1 fil
 
 ```json
 "L2": {
-  "title": "Level 2 — Core",
+  "title": "Core - Level 2",
   "purchaseUrl": "https://courses.masteringalchemy.com/courses/level-2-program",
   "variants": {
     "owned": { "courseSlug": "level-2-program" },
@@ -241,7 +241,7 @@ If a user has both, the **owned** course is preferred. If neither matches, Omi c
 
 ```json
 "L1": {
-  "title": "Level 1 — Energy Essentials",
+  "title": "Energy Essentials - Level 1",
   "purchaseUrl": "https://courses.masteringalchemy.com/courses/energyessentials-level1"
 }
 ```

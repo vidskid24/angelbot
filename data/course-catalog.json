@@ -2,7 +2,7 @@
   "siteBaseUrl": "https://courses.masteringalchemy.com",
   "levels": {
     "L1": {
-      "title": "Level 1 — Energy Essentials",
+      "title": "Energy Essentials - Level 1",
       "purchaseUrl": "https://courses.masteringalchemy.com/courses/energyessentials-level1",
       "variants": {
         "owned": {
@@ -16,7 +16,7 @@
       }
     },
     "L2": {
-      "title": "Level 2 — Core",
+      "title": "Core - Level 2",
       "purchaseUrl": "https://courses.masteringalchemy.com/courses/level-2-program",
       "variants": {
         "owned": {
@@ -30,7 +30,7 @@
       }
     },
     "L3": {
-      "title": "Level 3 — Rewire",
+      "title": "Rewire - Level 3",
       "purchaseUrl": "https://courses.masteringalchemy.com/courses/rewire-level-3",
       "variants": {
         "owned": {
@@ -44,7 +44,7 @@
       }
     },
     "L4": {
-      "title": "Level 4 — Connect",
+      "title": "Connect - Level 4",
       "purchaseUrl": "https://courses.masteringalchemy.com/courses/connect-level-4",
       "variants": {
         "owned": {
@@ -58,7 +58,7 @@
       }
     },
     "L5": {
-      "title": "Level 5 — Living Lightbody",
+      "title": "Living Lightbody - Level 5",
       "purchaseUrl": "https://courses.masteringalchemy.com/courses/living-lightbody-level-5",
       "variants": {
         "owned": {
