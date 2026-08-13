@@ -177,6 +177,44 @@ export async function appendThreadTurn(threadId, userContent, assistantContent, 
   await touchThread(threadId);
 }
 
+const MAX_SOURCE_EXCERPTS_CHARS = 20000;
+
+/**
+ * RAG excerpts from the last teaching turn (used to cite on follow-up asks).
+ * @param {string} threadId
+ * @returns {Promise<string | null>}
+ */
+export async function getThreadSourceExcerpts(threadId) {
+  try {
+    const { rows } = await getPool().query(
+      'SELECT last_source_excerpts FROM threads WHERE id = $1',
+      [threadId]
+    );
+    const text = String(rows[0]?.last_source_excerpts || '').trim();
+    return text || null;
+  } catch (err) {
+    console.warn('getThreadSourceExcerpts failed:', err?.message || err);
+    return null;
+  }
+}
+
+/**
+ * @param {string} threadId
+ * @param {string} excerpts
+ */
+export async function setThreadSourceExcerpts(threadId, excerpts) {
+  const text = String(excerpts || '').trim().slice(0, MAX_SOURCE_EXCERPTS_CHARS);
+  if (!text) return;
+  try {
+    await getPool().query(
+      `UPDATE threads SET last_source_excerpts = $2, updated_at = NOW() WHERE id = $1`,
+      [threadId, text]
+    );
+  } catch (err) {
+    console.warn('setThreadSourceExcerpts failed:', err?.message || err);
+  }
+}
+
 /**
  * @param {string} userId
  * @param {'free' | 'paid'} tier

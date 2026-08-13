@@ -99,7 +99,7 @@ export function userAskedForCitation(message) {
     /\bquote\b.{0,80}\b(from|source|course|class|where)\b/i.test(t) ||
     /\bwhere\s+(?:can|could|do|would|might)\s+i\s+(?:find|read|listen|watch|get|see|locate)\b/i.test(t) ||
     /\bwhere\s+(?:to\s+)?find\b/i.test(t) ||
-    /\bwhere\s+(?:in\s+)?(?:the\s+)?(?:coursework|course|class|material|transcript)\b/i.test(t) ||
+    /\bwhere\s+(?:in\s+)?(?:the\s+)?(?:coursework|courses|course|class|material|transcript)\b/i.test(t) ||
     /\bfind\s+(?:this|that|it|more|the\s+answer|that\s+answer)\b.*\b(?:coursework|course|class|session|level)\b/i.test(
       t
     ) ||

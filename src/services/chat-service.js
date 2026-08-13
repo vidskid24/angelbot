@@ -3,7 +3,7 @@
  */
 
 import { getWisdomReply } from '../bot/wisdom.js';
-import { getHistory, appendTurn } from '../bot/memory.js';
+import { getHistory, appendTurn, getStoredExcerpts, setStoredExcerpts } from '../bot/memory.js';
 import * as threadDb from '../db/threads.js';
 import * as users from '../db/users.js';
 import { generateThreadTitleFromMessage } from '../lib/gemini.js';
@@ -126,14 +126,25 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
       linkVariant,
       sourceDetail,
     });
-    if (userAskedForCitation(message) && !parseSourceCites(styleExcerpts || '').length) {
-      const ctx = citationRetrievalContext(history);
-      const retryQuery = [...ctx.quotes, ctx.userTopic].filter(Boolean).join('\n\n').trim();
-      if (retryQuery && retryQuery !== retrievalQuery) {
-        styleExcerpts = await retrieve(retryQuery, DEFAULT_RETRIEVE_TOP_K, {
-          linkVariant,
-          sourceDetail,
-        });
+    const citationAsk = userAskedForCitation(message);
+    const storedExcerpts =
+      useDb && threadId
+        ? await threadDb.getThreadSourceExcerpts(threadId)
+        : getStoredExcerpts(sessionKey);
+    if (citationAsk) {
+      const liveCites = parseSourceCites(styleExcerpts || '');
+      const storedCites = parseSourceCites(storedExcerpts || '');
+      if (storedCites.length && (!liveCites.length || storedCites.length >= liveCites.length)) {
+        styleExcerpts = storedExcerpts;
+      } else if (!liveCites.length) {
+        const ctx = citationRetrievalContext(history);
+        const retryQuery = [...ctx.quotes, ctx.userTopic].filter(Boolean).join('\n\n').trim();
+        if (retryQuery && retryQuery !== retrievalQuery) {
+          styleExcerpts = await retrieve(retryQuery, DEFAULT_RETRIEVE_TOP_K, {
+            linkVariant,
+            sourceDetail,
+          });
+        }
       }
     }
     const result = await getWisdomReply(
@@ -144,6 +155,13 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
       userMemoryBlock
     );
     const reply = sanitizeReplyCitations(result.text, styleExcerpts || '', message);
+    if (!citationAsk && parseSourceCites(styleExcerpts || '').length) {
+      if (useDb && threadId) {
+        await threadDb.setThreadSourceExcerpts(threadId, styleExcerpts);
+      } else {
+        setStoredExcerpts(sessionKey, styleExcerpts);
+      }
+    }
     const thoughtSignature = result.thoughtSignature;
     let threadTitle = null;
     if (useDb && threadId) {
