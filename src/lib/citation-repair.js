@@ -89,19 +89,40 @@ function stripBareLocationBrackets(text) {
 
 /**
  * Remove course/book markdown citation links from a reply.
+ * Also removes wrapping parentheses the model often puts around cites, so we
+ * don't leave empty `()` behind.
  * @param {string} text
  * @returns {string}
  */
 function stripCitationLinks(text) {
-  return String(text || '').replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (full, label, url) => {
+  let s = String(text || '');
+  // Prefer removing a whole "( [Title](url) )" / "([Title](url))" unit first.
+  s = s.replace(
+    /\(\s*\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)\s*\)/g,
+    (full, label, url) => {
+      if (
+        /masteringalchemy|amazon\.com|thinkific/i.test(url) ||
+        /Level\s+\d+|Course|Mastery Live|Book|A Course in Mastering Alchemy|Core|Rewire|Connect|Living Lightbody|Energy Essentials/i.test(
+          label
+        )
+      ) {
+        return '';
+      }
+      return full;
+    }
+  );
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (full, label, url) => {
     if (
       /masteringalchemy|amazon\.com|thinkific/i.test(url) ||
-      /Level\s+\d+|Course|Mastery Live|Book|A Course in Mastering Alchemy/i.test(label)
+      /Level\s+\d+|Course|Mastery Live|Book|A Course in Mastering Alchemy|Core|Rewire|Connect|Living Lightbody|Energy Essentials/i.test(
+        label
+      )
     ) {
       return '';
     }
     return full;
   });
+  return s;
 }
 
 /**
@@ -110,11 +131,13 @@ function stripCitationLinks(text) {
  */
 function tidyAfterCitationStrip(text) {
   return String(text || '')
+    .replace(/\(\s*\)/g, '')
     .replace(/[ \t]+\n/g, '\n')
     .replace(/ +\./g, '.')
     .replace(/ +,/g, ',')
     .replace(/ +!/g, '!')
     .replace(/ +\?/g, '?')
+    .replace(/ +:/g, ':')
     .replace(/  +/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
