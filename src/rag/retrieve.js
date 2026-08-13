@@ -102,6 +102,14 @@ export function clearEmbeddingsIndexCache() {
  * }} [options]
  * @returns {Promise<string>} Labeled top-k chunk texts for system prompt
  */
+function isBookChunk(chunk) {
+  const path = String(chunk?.sourcePath || '');
+  const source = chunk?.source;
+  if (source?.unitType === 'book') return true;
+  if (String(source?.sessionKey || '').startsWith('book:')) return true;
+  return /(^|\/)ACIMA/i.test(path);
+}
+
 export async function retrieve(query, topK = DEFAULT_TOP_K, options = {}) {
   const index = await loadEmbeddingsIndex();
   if (!index) return '';
@@ -125,12 +133,32 @@ export async function retrieve(query, topK = DEFAULT_TOP_K, options = {}) {
     sourcePath: c.sourcePath,
     score: cosineSimilarity(c.embedding, queryEmbedding),
   }));
-  withScore.sort((a, b) => b.score - a.score);
+  // Prefer online coursework over the book when similarity is close.
+  withScore.sort((a, b) => {
+    const diff = b.score - a.score;
+    if (Math.abs(diff) > 0.025) return diff;
+    return Number(isBookChunk(a)) - Number(isBookChunk(b));
+  });
+
   const catalog = await loadCourseCatalog();
   const linkVariant = options.linkVariant || null;
   const sourceDetail = options.sourceDetail === 'course' ? 'course' : 'full';
-  const top = withScore
-    .slice(0, topK)
+
+  const pool = withScore.slice(0, Math.max(topK * 3, topK));
+  const courses = pool.filter((c) => !isBookChunk(c));
+  const books = pool.filter((c) => isBookChunk(c));
+  /** @type {typeof withScore} */
+  const chosen = [];
+  for (const c of courses) {
+    if (chosen.length >= topK) break;
+    chosen.push(c);
+  }
+  for (const c of books) {
+    if (chosen.length >= topK) break;
+    chosen.push(c);
+  }
+
+  const top = chosen
     .map((c, i) =>
       formatRetrievedChunkWithCatalog(c, catalog, linkVariant, {
         sourceDetail,

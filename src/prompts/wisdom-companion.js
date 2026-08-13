@@ -181,10 +181,11 @@ export function buildDynamicContextBlock(
         'Use the excerpts for content, facts, quotes, and practices. ' +
         '**Citations / references — only when asked:** Do not cite unless the user asks where something comes from, where to find it, for a reference, source, or citation. ' +
         'When they do ask about a quote or idea, use the Source header attached to the excerpt that actually contains that quote/idea — never mix `cite:` from one Source with `detail:` or wording from another Source. ' +
-        'Format: paste that Source\'s `cite:` markdown link exactly, then optionally add that same Source\'s `detail:` in plain words after a comma. ' +
+        'Prefer a coursework Source (`access: classroom`) over the book when the same teaching appears in both. ' +
+        'Format: paste that Source\'s `cite:` markdown link exactly (course/book name only inside the brackets), then optionally add that same Source\'s `detail:` in plain words after a comma — detail is never part of the link. ' +
         'Book example: That comes from [A Course in Mastering Alchemy Book](https://www.amazon.com/dp/1786780143), Lesson 16 — "Ascended Master Kuthumi introduces the Triads". ' +
         'Course example: That comes from [Level 2 — Core](https://courses.masteringalchemy.com/courses/take/level-2-program/texts/63628124-welcome), Session 13: Compressing Light — "Kuthumi on the Second Triad". ' +
-        'Wrong: inventing titles like "ACIMA Lesson 16" inside the link, swapping a book cite onto a class URL, using https://masteringalchemy.com, or writing the raw URL as visible plain text. ' +
+        'Wrong: putting "ACIMA", lesson titles, or session titles inside the link brackets; swapping a book label onto a class URL; using https://masteringalchemy.com; or writing the raw URL as visible plain text. ' +
         'Never rebuild links. Never change link text or URLs. Never nest links. Never use any URL that does not appear exactly in a `cite:` value. ' +
         'Never expose internal file codes, session keys, or filename fragments (for example TQA1, L5-S3-TQA1, ML6-C1-S1). ' +
         'If `access: purchase`, do not imply the user can open a classroom lesson now. ' +

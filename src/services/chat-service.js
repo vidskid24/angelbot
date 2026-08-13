@@ -11,6 +11,7 @@ import { buildUserPreferencesPromptBlock } from '../lib/user-preferences.js';
 import { buildUserMemoryPromptBlock } from '../lib/user-memory.js';
 import { retrieve } from '../rag/retrieve.js';
 import { resolveCourseLinkVariant } from '../lib/course-access.js';
+import { repairCitationMarkdown } from '../lib/citation-repair.js';
 
 const DEFAULT_RETRIEVE_TOP_K = 8;
 
@@ -71,7 +72,7 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
       userPreferencesBlock,
       userMemoryBlock
     );
-    const reply = result.text;
+    const reply = repairCitationMarkdown(result.text, styleExcerpts || '');
     const thoughtSignature = result.thoughtSignature;
     let threadTitle = null;
     if (useDb && threadId) {
