@@ -284,15 +284,24 @@ function tidyAfterCitationStrip(text) {
  * @param {string} snippet
  * @returns {string}
  */
+const TEACHER_NAME_RE =
+  /Raphael|Metatron|Kuthumi|Uriel|Michael|Gabriel|Yeshua|Zadkiel|El Morya|Melchizedek|Merlin/i;
+
+function extractSpeaker(text) {
+  const m = String(text || '').match(new RegExp(`\\b(?:with\\s+)?(${TEACHER_NAME_RE.source})\\b`, 'i'));
+  return m ? m[1] : '';
+}
+
 function attachCiteSnippet(text, snippet) {
   let t = tidyAfterCitationStrip(text);
   if (!snippet) return t;
   t = t.replace(/^(see|look(?:\s+here)?)\.?\s*$/i, '').trim();
   if (!t) return `You can find this in ${snippet}.`;
 
+  const speaker = extractSpeaker(t);
   const fromClause = t.replace(
     /\bcomes?\s+(?:straight\s+)?from\b[^\n]*?(?=\n|$)/gi,
-    `comes from ${snippet}`
+    () => (speaker ? `comes from ${snippet}, with ${speaker}` : `comes from ${snippet}`)
   );
   if (fromClause !== t) return fromClause;
 

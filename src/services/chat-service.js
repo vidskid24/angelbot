@@ -39,10 +39,48 @@ function extractAssistantQuotes(text) {
   return [...new Set(quotes)];
 }
 
+function looksLikeCitationHuntReply(text) {
+  const t = String(text || '');
+  return (
+    /track down that exact coordinate/i.test(t) ||
+    /slide the dial right over to track down/i.test(t) ||
+    /comes straight from/i.test(t)
+  );
+}
+
+function citationRetrievalContext(history) {
+  const userTopic =
+    [...history]
+      .reverse()
+      .find((t) => t.role === 'user' && t.content && !userAskedForCitation(t.content))?.content || '';
+
+  const assistantTurns = history.filter((t) => t.role === 'assistant' && String(t.content || '').trim());
+  const quotes = [];
+  for (const t of assistantTurns.slice(-8)) {
+    quotes.push(...extractAssistantQuotes(t.content));
+  }
+
+  const teaching =
+    [...assistantTurns].reverse().find((t) => !looksLikeCitationHuntReply(t.content)) ||
+    assistantTurns[assistantTurns.length - 1];
+
+  return {
+    userTopic: String(userTopic).slice(0, 500),
+    quotes: [...new Set(quotes)].slice(0, 5),
+    teachingText: String(teaching?.content || '').slice(-1800),
+  };
+}
+
 function buildRetrievalQuery(message, history) {
   const current = String(message || '').trim();
   const citationAsk = userAskedForCitation(current);
   if (!citationAsk && !isContextDependentFollowup(current)) return current;
+
+  if (citationAsk) {
+    const ctx = citationRetrievalContext(history);
+    const query = [ctx.userTopic, ...ctx.quotes, ctx.teachingText].filter(Boolean).join('\n\n');
+    return query || current;
+  }
 
   const lastTopicUser =
     [...history]
@@ -50,19 +88,9 @@ function buildRetrievalQuery(message, history) {
       .find((t) => t.role === 'user' && t.content && !userAskedForCitation(t.content))?.content || '';
   const lastAssistant =
     [...history].reverse().find((t) => t.role === 'assistant' && t.content)?.content || '';
-  const quotes = extractAssistantQuotes(lastAssistant);
-  const assistantAnchor = citationAsk
-    ? quotes.length
-      ? quotes.join('\n')
-      : String(lastAssistant).slice(-1500)
-    : String(lastAssistant).slice(0, 500);
-  const userAnchor = String(lastTopicUser || '').slice(0, 400);
-  // Don't include the citation question itself — it dilutes RAG toward "where/coursework"
-  // instead of the quote or teaching being located.
-  if (citationAsk) {
-    return [userAnchor, assistantAnchor].filter(Boolean).join('\n\n') || current;
-  }
-  return [userAnchor, assistantAnchor, current].filter(Boolean).join('\n\n');
+  return [String(lastTopicUser).slice(0, 400), String(lastAssistant).slice(0, 500), current]
+    .filter(Boolean)
+    .join('\n\n');
 }
 
 /**
@@ -99,10 +127,8 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
       sourceDetail,
     });
     if (userAskedForCitation(message) && !parseSourceCites(styleExcerpts || '').length) {
-      const lastAssistant =
-        [...history].reverse().find((t) => t.role === 'assistant' && t.content)?.content || '';
-      const quotes = extractAssistantQuotes(lastAssistant);
-      const retryQuery = (quotes.length ? quotes.join('\n') : String(lastAssistant).slice(-1500)).trim();
+      const ctx = citationRetrievalContext(history);
+      const retryQuery = [...ctx.quotes, ctx.userTopic].filter(Boolean).join('\n\n').trim();
       if (retryQuery && retryQuery !== retrievalQuery) {
         styleExcerpts = await retrieve(retryQuery, DEFAULT_RETRIEVE_TOP_K, {
           linkVariant,
