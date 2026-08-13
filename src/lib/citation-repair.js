@@ -46,6 +46,39 @@ export function parseSourceCites(excerpts) {
       isBook,
     });
   }
+  if (cites.length) return cites;
+
+  // Fallback: cite: lines without a strict Source block, or "Label | url" headers.
+  const looseCite = /cite:\s*\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/gi;
+  while ((match = looseCite.exec(text)) !== null) {
+    const title = String(match[1] || '').trim();
+    const url = String(match[2] || '').trim();
+    if (!title || !url) continue;
+    cites.push({
+      index: cites.length + 1,
+      title,
+      url,
+      detail: '',
+      access: /amazon\.com/i.test(url) ? 'purchase' : 'classroom',
+      isBook: /amazon\.com|course in mastering alchemy book|acima/i.test(`${title} ${url}`),
+    });
+  }
+  if (cites.length) return cites;
+
+  const labeled = /---\s*Source(?:\s+(\d+))?\s*---\s*\r?\n([^\n|]+?)\s*\|\s*(?:purchase:\s*)?(https?:\/\/[^\s]+)/gi;
+  while ((match = labeled.exec(text)) !== null) {
+    const title = String(match[2] || '').trim();
+    const url = String(match[3] || '').trim();
+    if (!title || !url) continue;
+    cites.push({
+      index: Number(match[1]) || cites.length + 1,
+      title,
+      url,
+      detail: '',
+      access: /purchase:/i.test(match[0]) || /amazon\.com/i.test(url) ? 'purchase' : 'classroom',
+      isBook: /amazon\.com|book|acima/i.test(`${title} ${url}`),
+    });
+  }
   return cites;
 }
 
@@ -58,7 +91,12 @@ export function userAskedForCitation(message) {
   return (
     /\b(where\s+(is|did|does|was|came|come)|source|citation|cite|reference|references)\b/i.test(t) ||
     /\b(which|what)\s+(class|course|session|level|lesson|book|chapter)\b/i.test(t) ||
+    /\b(what|which)\s+course\b/i.test(t) ||
     /\bfrom\s+which\b/i.test(t) ||
+    /\bwhere\b.{0,80}\b(come|comes|came|coming)\s+from\b/i.test(t) ||
+    /\bwhere\s+(?:is\s+)?(?:this|that|it)\s+from\b/i.test(t) ||
+    /\btell me where\b/i.test(t) ||
+    /\bquote\b.{0,80}\b(from|source|course|class|where)\b/i.test(t) ||
     /\bwhere\s+(?:can|could|do|would|might)\s+i\s+(?:find|read|listen|watch|get|see|locate)\b/i.test(t) ||
     /\bwhere\s+(?:to\s+)?find\b/i.test(t) ||
     /\bwhere\s+(?:in\s+)?(?:the\s+)?(?:coursework|course|class|material|transcript)\b/i.test(t) ||
@@ -252,17 +290,31 @@ function attachCiteSnippet(text, snippet) {
   t = t.replace(/^(see|look(?:\s+here)?)\.?\s*$/i, '').trim();
   if (!t) return `You can find this in ${snippet}.`;
 
-  const spliced = t.replace(
-    /\b(in|from)(?:\s+(?:the\s+)?(?:coursework|course|class|material|book)?)?\.?\s*$/i,
+  const fromClause = t.replace(
+    /\bcomes?\s+(?:straight\s+)?from(?:\s+a\s+Q&A(?:\s+session)?)?\.?/gi,
+    `comes from ${snippet}`
+  );
+  if (fromClause !== t) return fromClause;
+
+  const paraEnd = t.replace(
+    /\b(in|from)(?:\s+(?:the\s+)?(?:coursework|course|class|material|book)?)?\.?(?=\s*$|\s*\n)/gim,
     `$1 ${snippet}`
   );
-  if (spliced !== t) return spliced;
+  if (paraEnd !== t) return paraEnd;
 
   const spliced2 = t.replace(
     /\b(in|from)\s+(?:the\s+)?(?:coursework|course|class|material)\b/i,
     `$1 ${snippet}`
   );
   if (spliced2 !== t) return spliced2;
+
+  const gate = t.match(
+    /(\n\n(?:Want to |Would you like |How would you like |Is there |Are you complete).*)\s*$/is
+  );
+  if (gate) {
+    const head = t.slice(0, t.length - gate[1].length).trim();
+    return `${head} You can find this in ${snippet}.${gate[1]}`;
+  }
 
   return `${t} You can find this in ${snippet}.`;
 }

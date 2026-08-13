@@ -11,7 +11,7 @@ import { buildUserPreferencesPromptBlock } from '../lib/user-preferences.js';
 import { buildUserMemoryPromptBlock } from '../lib/user-memory.js';
 import { retrieve } from '../rag/retrieve.js';
 import { resolveCourseLinkVariant } from '../lib/course-access.js';
-import { sanitizeReplyCitations } from '../lib/citation-repair.js';
+import { sanitizeReplyCitations, userAskedForCitation } from '../lib/citation-repair.js';
 
 const DEFAULT_RETRIEVE_TOP_K = 8;
 
@@ -22,13 +22,35 @@ function isContextDependentFollowup(message) {
   return /\b(it|that|this|those|these|them|same|again)\b/.test(normalized);
 }
 
+function extractAssistantQuotes(text) {
+  const s = String(text || '');
+  const quotes = [];
+  const re = /(?:^>?\s*["“]([^"”\n]{20,})["”])/gm;
+  let match;
+  while ((match = re.exec(s)) !== null) {
+    quotes.push(match[1].trim());
+  }
+  return quotes;
+}
+
 function buildRetrievalQuery(message, history) {
   const current = String(message || '').trim();
-  if (!isContextDependentFollowup(current)) return current;
-  const lastUser = [...history].reverse().find((t) => t.role === 'user' && t.content)?.content || '';
-  const lastAssistant = [...history].reverse().find((t) => t.role === 'assistant' && t.content)?.content || '';
-  const assistantAnchor = String(lastAssistant).slice(0, 500);
-  const userAnchor = String(lastUser).slice(0, 300);
+  const citationAsk = userAskedForCitation(current);
+  if (!citationAsk && !isContextDependentFollowup(current)) return current;
+
+  const lastTopicUser =
+    [...history]
+      .reverse()
+      .find((t) => t.role === 'user' && t.content && !userAskedForCitation(t.content))?.content || '';
+  const lastAssistant =
+    [...history].reverse().find((t) => t.role === 'assistant' && t.content)?.content || '';
+  const quotes = extractAssistantQuotes(lastAssistant);
+  const assistantAnchor = citationAsk
+    ? quotes.length
+      ? quotes.join('\n')
+      : String(lastAssistant).slice(-1200)
+    : String(lastAssistant).slice(0, 500);
+  const userAnchor = String(lastTopicUser || '').slice(0, 400);
   return [userAnchor, assistantAnchor, current].filter(Boolean).join('\n\n');
 }
 
