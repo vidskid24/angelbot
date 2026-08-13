@@ -10,7 +10,7 @@ import { generateThreadTitleFromMessage } from '../lib/gemini.js';
 import { buildUserPreferencesPromptBlock } from '../lib/user-preferences.js';
 import { buildUserMemoryPromptBlock } from '../lib/user-memory.js';
 import { retrieve } from '../rag/retrieve.js';
-import { loadCourseCatalog } from '../rag/course-catalog.js';
+import { loadCourseCatalog, sourcesFromCatalogMatch } from '../rag/course-catalog.js';
 import { resolveCourseLinkVariant } from '../lib/course-access.js';
 import {
   sanitizeReplyCitations,
@@ -160,6 +160,14 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
       userMemoryBlock
     );
     const reply = sanitizeReplyCitations(result.text, styleExcerpts || '', message);
+    if (!sources.length) {
+      sources = sourcesFromCatalogMatch(
+        `${styleExcerpts || ''}\n${reply}\n${message}`,
+        catalog,
+        linkVariant || 'owned'
+      );
+    }
+    const hadRetrieval = Boolean(String(styleExcerpts || '').trim());
     if (!citationAsk && String(styleExcerpts || '').trim()) {
       if (useDb && threadId) {
         await threadDb.setThreadSourceExcerpts(threadId, styleExcerpts);
@@ -192,6 +200,7 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
       assistantReply: reply,
       threadTitle,
       sources,
+      hadRetrieval,
     };
   } catch (err) {
     console.error('Wisdom reply error:', err);

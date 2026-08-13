@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=72
+ * OMIBOT_WIDGET_VERSION=73
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -14,7 +14,7 @@
   }
 
   const API_BASE = API.replace(/\/$/, '');
-  const WIDGET_VERSION = '72';
+  const WIDGET_VERSION = '73';
   const STORAGE_KEY = 'omibot_access_token';
   const STORAGE_KEY_LEGACY = 'angelbot_access_token';
   const TIER_STORAGE_KEY = 'omibot_tier';
@@ -1600,9 +1600,9 @@
       return out;
     }
 
-    function appendSourceControl(row, sources) {
+    function appendSourceControl(row, sources, hadRetrieval) {
       const list = normalizeSources(sources);
-      if (!list.length) return;
+      if (!list.length && !hadRetrieval) return;
       const wrap = document.createElement('div');
       wrap.className = 'omibot-source-wrap';
       const toggle = document.createElement('a');
@@ -1613,6 +1613,12 @@
       const panel = document.createElement('div');
       panel.className = 'omibot-source-panel';
       panel.hidden = true;
+      if (!list.length) {
+        const empty = document.createElement('div');
+        empty.className = 'omibot-source-item';
+        empty.textContent = 'No catalog location was attached to this reply.';
+        panel.appendChild(empty);
+      }
       for (let i = 0; i < list.length; i++) {
         const s = list[i];
         const item = document.createElement('div');
@@ -1653,7 +1659,7 @@
       row.appendChild(wrap);
     }
 
-    function append(role, text, sources) {
+    function append(role, text, sources, hadRetrieval) {
       const isUser = role === 'You';
       const isSystem = role === 'System';
       const row = document.createElement('div');
@@ -1677,7 +1683,7 @@
           appendFormattedContent(body, text);
         }
         row.appendChild(body);
-        if (!isSystem) appendSourceControl(row, sources);
+        if (!isSystem) appendSourceControl(row, sources, hadRetrieval);
       }
       log.appendChild(row);
       scrollIntoViewIfNearBottom(row);
@@ -1775,7 +1781,12 @@
         dismissWelcome();
         for (let i = 0; i < messages.length; i++) {
           const m = messages[i];
-          append(m.role === 'user' ? 'You' : 'Companion', m.content, m.sources);
+          append(
+            m.role === 'user' ? 'You' : 'Companion',
+            m.content,
+            m.sources,
+            Boolean(m.sources && m.sources.length)
+          );
         }
       } else {
         restoreWelcome();
@@ -1977,7 +1988,15 @@
         if (result.data.dailyMessageLimit != null) {
           threadsMeta.dailyMessageLimit = result.data.dailyMessageLimit;
         }
-        append('Companion', result.data.text || '', result.data.sources);
+        if (typeof console !== 'undefined' && console.info) {
+          console.info('[omi] sources', Array.isArray(result.data.sources) ? result.data.sources.length : 0, result.data.hadRetrieval);
+        }
+        append(
+          'Companion',
+          result.data.text || '',
+          result.data.sources,
+          Boolean(result.data.hadRetrieval) || (Array.isArray(result.data.sources) && result.data.sources.length > 0)
+        );
         updateThreadMeta();
       } catch (e) {
         append('System', String(e && e.message ? e.message : e));

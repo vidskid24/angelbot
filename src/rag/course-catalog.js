@@ -572,6 +572,127 @@ export function citeFromRetrievedChunk(chunk, catalog, linkVariant = 'owned') {
   return null;
 }
 
+const GENERIC_TITLE_WORDS = new Set([
+  'tool',
+  'tools',
+  'session',
+  'class',
+  'energy',
+  'light',
+  'body',
+  'field',
+  'your',
+  'from',
+  'with',
+  'that',
+  'this',
+  'complete',
+  'track',
+  'video',
+  'chapter',
+  'lesson',
+  'the',
+  'and',
+  'for',
+  'into',
+  'about',
+]);
+
+function normalizeMatchText(text) {
+  return String(text || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * @param {string} key
+ * @param {string} detailTitle
+ * @param {CourseCatalog | null | undefined} catalog
+ * @param {CourseLinkVariant | null} [linkVariant]
+ * @returns {{ title: string; url: string; detail: string; access: string } | null}
+ */
+function citeFromCatalogKey(key, detailTitle, catalog, linkVariant = 'owned') {
+  const sessionKey = String(key || '').trim();
+  if (!sessionKey || !catalog) return null;
+  const unit = lookupCatalogUnit(catalog, sessionKey);
+  const levelCode = sessionKey.split('-')[0] || '';
+  const levelEntry = levelCode && catalog.levels ? catalog.levels[levelCode] : null;
+  const courseTitle = String(levelEntry?.title || '').trim() || String(detailTitle || '').trim();
+  const variant = linkVariant === 'membership' ? 'membership' : 'owned';
+  let url = resolveThinkificUrlForUnit(unit, variant) || resolveThinkificUrlForUnit(unit, 'owned');
+  if (!url && levelEntry && typeof levelEntry === 'object') {
+    url =
+      String(levelEntry.variants?.[variant]?.courseUrl || '').trim() ||
+      String(levelEntry.variants?.owned?.courseUrl || '').trim() ||
+      String(levelEntry.purchaseUrl || '').trim();
+  }
+  if (!courseTitle || !url) return null;
+  const detail = String(detailTitle || '').trim();
+  return {
+    title: courseTitle,
+    url,
+    detail: detail && detail !== courseTitle ? detail : '',
+    access: 'classroom',
+  };
+}
+
+/**
+ * Infer catalog sources from excerpt/reply text when chunk metadata is missing.
+ * @param {string} text
+ * @param {CourseCatalog | null | undefined} catalog
+ * @param {CourseLinkVariant | null} [linkVariant]
+ * @param {number} [limit]
+ * @returns {Array<{ title: string; url: string; detail: string; access: string }>}
+ */
+export function sourcesFromCatalogMatch(text, catalog, linkVariant = 'owned', limit = 4) {
+  const blob = normalizeMatchText(text);
+  if (!blob || !catalog) return [];
+  /** @type {Array<{ key: string; title: string; score: number }>} */
+  const hits = [];
+
+  function consider(key, title, bonus = 0) {
+    const label = String(title || '').trim();
+    if (!label || label.length < 8) return;
+    const words = normalizeMatchText(label)
+      .split(' ')
+      .filter((w) => w.length >= 4 && !GENERIC_TITLE_WORDS.has(w));
+    if (!words.length) return;
+    const matched = words.filter((w) => blob.includes(w));
+    if (!matched.length) return;
+    const ratio = matched.length / words.length;
+    if (ratio < (words.length <= 2 ? 1 : 0.67)) return;
+    hits.push({
+      key: String(key),
+      title: label,
+      score: bonus + matched.join('').length + Math.round(ratio * 20),
+    });
+  }
+
+  for (const [key, chapter] of Object.entries(catalog.chapters || {})) {
+    consider(key, chapter?.title, 2);
+  }
+  for (const [key, unit] of Object.entries(catalog.units || {})) {
+    consider(key, unit?.title, 8);
+  }
+
+  hits.sort((a, b) => b.score - a.score);
+  const seen = new Set();
+  /** @type {Array<{ title: string; url: string; detail: string; access: string }>} */
+  const out = [];
+  for (const hit of hits) {
+    if (out.length >= limit) break;
+    const cite = citeFromCatalogKey(hit.key, hit.title, catalog, linkVariant);
+    if (!cite?.url) continue;
+    const dedupe = `${cite.title}|${cite.url}|${cite.detail}`;
+    if (seen.has(dedupe)) continue;
+    seen.add(dedupe);
+    out.push(cite);
+  }
+  return out;
+}
+
 /** @typedef {'full' | 'course'} SourceDetail */
 
 /**

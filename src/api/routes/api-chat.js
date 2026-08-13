@@ -91,6 +91,7 @@ export function createChatApiRouter() {
         text: out.assistantReply,
         html: formatChatTextHtml(out.assistantReply),
         sources: Array.isArray(out.sources) ? out.sources : [],
+        hadRetrieval: Boolean(out.hadRetrieval),
         sessionId: threadId,
         threadId,
         ...(out.threadTitle ? { threadTitle: out.threadTitle } : {}),
