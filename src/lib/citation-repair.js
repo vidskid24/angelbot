@@ -121,6 +121,28 @@ function tidyAfterCitationStrip(text) {
 }
 
 /**
+ * Collapse duplicated session mentions the model often invents around cites.
+ * @param {string} text
+ * @returns {string}
+ */
+function cleanupCitationProse(text) {
+  return String(text || '')
+    .replace(/\bSession\s+(\d+)\s*[,:]\s*Session\s+\1\b/gi, 'Session $1')
+    .replace(/\bSession\s+(\d+)\s+Session\s+\1\b/gi, 'Session $1');
+}
+
+/**
+ * Normalize URL keys so trailing slashes still match Source cites.
+ * @param {string} url
+ * @returns {string}
+ */
+function normalizeCiteUrl(url) {
+  return String(url || '')
+    .trim()
+    .replace(/\/+$/, '');
+}
+
+/**
  * Force markdown citation links to use the exact course/book title for a known URL,
  * and replace unknown/invented URLs with the best matching Source cite.
  * @param {string} reply
@@ -132,12 +154,13 @@ export function repairCitationMarkdown(reply, styleExcerpts) {
   const cites = parseSourceCites(styleExcerpts);
   if (!text || !cites.length) return text;
 
-  const byUrl = new Map(cites.map((c) => [c.url, c]));
+  const byUrl = new Map(cites.map((c) => [normalizeCiteUrl(c.url), c]));
   const fallback = preferredCite(cites);
 
   return text.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (full, linkText, url) => {
-    const matched = byUrl.get(url);
+    const matched = byUrl.get(normalizeCiteUrl(url));
     if (matched) {
+      // Course/book name only — never leave Session/Lesson text inside the link label.
       return `[${matched.title}](${matched.url})`;
     }
 
@@ -163,12 +186,13 @@ export function sanitizeReplyCitations(reply, styleExcerpts, userMessage) {
 
   if (userAskedForCitation(userMessage)) {
     text = repairCitationMarkdown(text, styleExcerpts);
-    // Drop fake bracket cites that are not real markdown links.
     text = stripBareLocationBrackets(text);
+    text = cleanupCitationProse(text);
     return tidyAfterCitationStrip(text);
   }
 
   text = stripCitationLinks(text);
   text = stripBareLocationBrackets(text);
+  text = cleanupCitationProse(text);
   return tidyAfterCitationStrip(text);
 }

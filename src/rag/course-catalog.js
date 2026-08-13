@@ -323,8 +323,11 @@ export function formatCourseSourceLabelWithCatalog(source, catalog) {
     if (source.sessionCode === 'Extra') {
       return `${levelLabel} — "${title}"`;
     }
-    const sessionLabel = formatLevelSessionLabel(catalog, source);
-    if (sessionLabel) return `${levelLabel}, ${sessionLabel} — "${title}"`;
+    // Prefer Session N — "Track" so detail does not repeat the session chapter title.
+    const sessionNum = source.session ?? source.unitNumber;
+    if (sessionNum != null) {
+      return `${levelLabel}, Session ${sessionNum} — "${title}"`;
+    }
   }
 
   if (source.unitType === 'class-track' && levelLabel && chapterLabel) {
