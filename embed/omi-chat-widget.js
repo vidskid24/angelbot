@@ -253,14 +253,13 @@
     }
   }
 
-  function appendFormattedContent(parent, text) {
-    const normalized = normalizeBoldMarkers(text);
+  function appendBoldAndItalic(parent, text) {
     const boldRe = /\*\*([^*]+?)\*\*/g;
     let lastIndex = 0;
     let match;
-    while ((match = boldRe.exec(normalized)) !== null) {
+    while ((match = boldRe.exec(text)) !== null) {
       if (match.index > lastIndex) {
-        appendItalicInTextChunk(parent, normalized.slice(lastIndex, match.index));
+        appendItalicInTextChunk(parent, text.slice(lastIndex, match.index));
       }
       const strong = document.createElement('strong');
       strong.className = 'omibot-bold';
@@ -268,8 +267,60 @@
       parent.appendChild(strong);
       lastIndex = boldRe.lastIndex;
     }
-    if (lastIndex < normalized.length) {
-      appendItalicInTextChunk(parent, normalized.slice(lastIndex));
+    if (lastIndex < text.length) {
+      appendItalicInTextChunk(parent, text.slice(lastIndex));
+    }
+  }
+
+  function appendInlineFormatted(parent, text) {
+    // Markdown links first so citation URLs become clickable.
+    const linkRe = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g;
+    let lastIndex = 0;
+    let match;
+    while ((match = linkRe.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        appendBoldAndItalic(parent, text.slice(lastIndex, match.index));
+      }
+      const a = document.createElement('a');
+      a.className = 'omibot-md-link';
+      a.href = match[2];
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = match[1];
+      parent.appendChild(a);
+      lastIndex = linkRe.lastIndex;
+    }
+    if (lastIndex < text.length) {
+      appendBoldAndItalic(parent, text.slice(lastIndex));
+    }
+  }
+
+  function appendFormattedContent(parent, text) {
+    const normalized = normalizeBoldMarkers(text);
+    const lines = normalized.split('\n');
+    let i = 0;
+    while (i < lines.length) {
+      if (/^>\s?/.test(lines[i])) {
+        const quoteLines = [];
+        while (i < lines.length && /^>\s?/.test(lines[i])) {
+          quoteLines.push(lines[i].replace(/^>\s?/, ''));
+          i += 1;
+        }
+        const quote = document.createElement('blockquote');
+        quote.className = 'omibot-quote';
+        appendInlineFormatted(quote, quoteLines.join('\n'));
+        parent.appendChild(quote);
+        continue;
+      }
+
+      const normalLines = [];
+      while (i < lines.length && !/^>\s?/.test(lines[i])) {
+        normalLines.push(lines[i]);
+        i += 1;
+      }
+      if (normalLines.length) {
+        appendInlineFormatted(parent, normalLines.join('\n'));
+      }
     }
   }
 
@@ -285,6 +336,9 @@
       '.omibot-shell{font-family:system-ui,-apple-system,sans-serif;max-width:920px;width:100%;margin:0 auto;padding:0 16px;box-sizing:border-box;color:#1a1a1a}' +
       '.omibot-shell .omibot-bold{font-weight:700!important}' +
       '.omibot-shell .omibot-italic{font-style:italic}' +
+      '.omibot-shell .omibot-quote{display:block;margin:0.65em 0 0.65em 1.15em;padding:0;border:none;font-style:italic;line-height:1.55;color:#2a2a2a}' +
+      '.omibot-shell a.omibot-md-link{color:#7a5c1e;text-decoration:none;border-bottom:1px solid rgba(122,92,30,.45);word-break:break-word}' +
+      '.omibot-shell a.omibot-md-link:hover{color:#1a1a1a;border-bottom-color:#1a1a1a}' +
       '.omibot-layout{display:flex;align-items:flex-start;gap:0;margin-top:8px}' +
       '.omibot-sidebar{width:11.5rem;flex-shrink:0;border-right:1px solid #e0dcd4;padding:4px 12px 16px 0;box-sizing:border-box}' +
       '.omibot-sidebar .omibot-new-btn,.omibot-sidebar .omibot-thread-list,.omibot-sidebar .omibot-thread-row{width:100%}' +
