@@ -75,6 +75,20 @@ function preferredCite(cites) {
 }
 
 /**
+ * @param {string} label
+ * @param {string} url
+ * @returns {boolean}
+ */
+function isCourseCitationMarkdown(label, url) {
+  return (
+    /masteringalchemy|amazon\.com|thinkific/i.test(url) ||
+    /Level\s+\d+|Course|Mastery Live|Book|A Course in Mastering Alchemy|Core|Rewire|Connect|Living Lightbody|Energy Essentials/i.test(
+      label
+    )
+  );
+}
+
+/**
  * Remove bare [Level …] / [Mastery Live …] brackets that are not markdown links.
  * Important: do not match the label of a real `[Title](url)` citation link.
  * @param {string} text
@@ -82,46 +96,41 @@ function preferredCite(cites) {
  */
 function stripBareLocationBrackets(text) {
   return String(text || '').replace(
-    /\s*\[(?:Level\s+\d+|Mastery Live\s*\d*|Book|A Course in Mastering Alchemy)[^\]]*\](?!\()/gi,
+    /\s*\[(?:Level\s+\d+|Mastery Live\s*\d*|Book|A Course in Mastering Alchemy|Core|Rewire|Connect|Living Lightbody|Energy Essentials)[^\]]*\](?!\()/gi,
     ''
   );
 }
 
 /**
  * Remove course/book markdown citation links from a reply.
- * Also removes wrapping parentheses the model often puts around cites, so we
- * don't leave empty `()` behind.
+ * Also removes wrapping parentheses and trailing Session/Lesson detail the model
+ * often attaches, so we don't leave leftovers like `(, Session 1)`.
  * @param {string} text
  * @returns {string}
  */
 function stripCitationLinks(text) {
   let s = String(text || '');
-  // Prefer removing a whole "( [Title](url) )" / "([Title](url))" unit first.
+
+  // Whole parenthesized cite + optional location detail:
+  // ([Course](url), Session 1 — Melchizedek)
   s = s.replace(
-    /\(\s*\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)\s*\)/g,
-    (full, label, url) => {
-      if (
-        /masteringalchemy|amazon\.com|thinkific/i.test(url) ||
-        /Level\s+\d+|Course|Mastery Live|Book|A Course in Mastering Alchemy|Core|Rewire|Connect|Living Lightbody|Energy Essentials/i.test(
-          label
-        )
-      ) {
-        return '';
-      }
-      return full;
-    }
+    /\(\s*\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)\s*(?:,\s*(?:Session|Lesson|Chapter|Track|Video)\b[^)]*)?\s*\)/gi,
+    (full, label, url) => (isCourseCitationMarkdown(label, url) ? '' : full)
   );
-  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (full, label, url) => {
-    if (
-      /masteringalchemy|amazon\.com|thinkific/i.test(url) ||
-      /Level\s+\d+|Course|Mastery Live|Book|A Course in Mastering Alchemy|Core|Rewire|Connect|Living Lightbody|Energy Essentials/i.test(
-        label
-      )
-    ) {
-      return '';
-    }
-    return full;
-  });
+
+  // Inline cite + optional location detail (no wrapping parens):
+  // [Course](url), Session 13 — Q&A-1
+  s = s.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)\s*(?:,\s*(?:Session|Lesson|Chapter|Track|Video)\s+\d+(?:\s*[—\-–:]\s*[^.,!?\n(]{0,120})?)?/gi,
+    (full, label, url) => (isCourseCitationMarkdown(label, url) ? '' : full)
+  );
+
+  // Leftover fragments after a partial strip: (, Session 1) or (, Chapter 1, Track 2 — ...)
+  s = s.replace(
+    /\s*\(\s*,\s*(?:Session|Lesson|Chapter|Track|Video)\b[^)]*\)/gi,
+    ''
+  );
+
   return s;
 }
 
@@ -132,6 +141,7 @@ function stripCitationLinks(text) {
 function tidyAfterCitationStrip(text) {
   return String(text || '')
     .replace(/\(\s*\)/g, '')
+    .replace(/\s+\./g, '.')
     .replace(/[ \t]+\n/g, '\n')
     .replace(/ +\./g, '.')
     .replace(/ +,/g, ',')
