@@ -173,16 +173,21 @@ export function buildDynamicContextBlock(
       ? 'Use the following for **content and facts** only — do not copy its tone; follow the user preference and memory sections later in this context.'
       : 'Use it for tone and content.';
     parts.push(
-      `## MA framework and content (source material)\nThe following excerpts are Mastering Alchemy source material. ${toneNote} ` +
-        'Each excerpt may begin with a **Source** line. The course/level/book title on that line is often already a complete markdown link like `[Title](https://...)`. ' +
+      `## MA framework and content (source material)\nThe following excerpts are Mastering Alchemy source material. ${toneNote}\n` +
+        'Each excerpt begins with a short Source header that may include:\n' +
+        '- `cite:` a complete markdown link for the course/level/book — example: `[Level 2 — Core](https://courses.masteringalchemy.com/...)`\n' +
+        '- `detail:` plain-language session/chapter/track location (not a link)\n' +
+        '- `access:` `classroom` or `purchase`\n' +
         'Use the excerpts for content, facts, quotes, and practices. ' +
         '**Citations / references — only when asked:** Do not add class, level, chapter, session, track, or book citations unless the user asks where something comes from, where to find it, for a reference, source, or citation, or otherwise requests the location. ' +
         'Ordinary answers and quotes do not need a trailing citation. ' +
-        'When they do ask for a location or reference, copy the Source line\'s markdown course/level/book link **exactly as written** (one `[Title](https://...)` only). ' +
-        'Never nest links (never write `[Title]([Title](url))`). Never rebuild or wrap an existing markdown link. Never invent URLs or use links found inside the excerpt body. ' +
+        'When they do ask, your citation MUST use the `cite:` markdown link **copied character-for-character** from that excerpt\'s Source header. ' +
+        'Then you may append the `detail:` text in plain words (no link). ' +
+        'Correct example: That comes from [Level 2 — Core](https://courses.masteringalchemy.com/courses/take/level-2-program/texts/63628124-welcome), Session 13: Compressing Light — "Kuthumi on the Second Triad". ' +
+        'Wrong: rebuilding a new link, linking the whole session title, inventing https://masteringalchemy.com, or writing the raw URL as visible plain text. ' +
+        'Never nest links. Never invent URLs. Never use any URL that does not appear exactly in a `cite:` value. ' +
         'Never expose internal file codes, session keys, or filename fragments (for example TQA1, L5-S3-TQA1, ML6-C1-S1). ' +
-        'You may add plain-language chapter/session/track/book detail from the same Source line after the copied link. ' +
-        'If the Source line includes `access: purchase` or `purchase:`, that URL is a product/sales page — do not imply the user can open the classroom lesson now. ' +
+        'If `access: purchase`, do not imply the user can open the classroom lesson now. ' +
         'Use this source material precisely. When summarizing, stay close to the wording and meaning of the excerpts; do not add claims, locations, or terms that are not supported by the source material. ' +
         'You may and should quote directly from this material when relevant — including longer multi-sentence passages when the user asks for them. Any text inside quotation marks must be copied **verbatim** as one continuous span from the source material. ' +
         'Preserve the source exactly as written or transcribed, including its grammar, repetition, filler words, and transcription errors. Do not polish, clean up, correct, summarize, combine, complete, or paraphrase quoted wording. ' +
@@ -190,9 +195,10 @@ export function buildDynamicContextBlock(
         'Before responding with any quotation, confirm that every word inside quotation marks appears in the same order in one source excerpt. ' +
         'Do not use quotation marks around paraphrases. If the excerpts are too short for the requested quote length or count, quote what is available and briefly say that more of the passage is not in the retrieved excerpts. ' +
         'Offer techniques or practices when applicable. Where the user\'s question touches on it, include relevant ideas, quotes, or techniques, then invite them to explore or try them. ' +
-        'Do not invent a class or session location if no Source line supports it. ' +
+        'Do not invent a class or session location if no Source header supports it. ' +
         'Do not refuse quote requests by saying you are only a synthesizing companion or not a searchable library — when source material is present, use it.\n\n' +
-        styleExcerpts.trim()
+        styleExcerpts.trim() +
+        '\n\nCitation reminder: if the user asked where this came from, copy a `cite:` link exactly from a Source header above; do not invent https://masteringalchemy.com.'
     );
   }
 

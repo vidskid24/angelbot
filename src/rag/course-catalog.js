@@ -405,28 +405,28 @@ function getLinkableCourseTitle(source, catalog) {
 }
 
 /**
- * Embed `[Course Title](url)` once in the Source label so the model can copy it.
+ * Location text after the course/level/book title (session, chapter, track, etc.).
  * @param {string} label
  * @param {string} courseTitle
- * @param {string} url
  * @returns {string}
  */
-function embedCourseTitleMarkdownLink(label, courseTitle, url) {
+function getLocationDetailAfterCourseTitle(label, courseTitle) {
   const text = String(label || '').trim();
   const title = String(courseTitle || '').trim();
-  const href = String(url || '').trim();
-  if (!text || !title || !href) return text;
+  if (!text || !title) return text;
 
+  if (text === title) return '';
   if (text.startsWith(title)) {
-    return `[${title}](${href})${text.slice(title.length)}`;
+    return text.slice(title.length).replace(/^[\s,|:;—-]+/, '').trim();
   }
 
   const bookForm = `Book — "${title}"`;
+  if (text === bookForm) return '';
   if (text.startsWith(bookForm)) {
-    return `[${title}](${href})${text.slice(bookForm.length)}`;
+    return text.slice(bookForm.length).replace(/^[\s,|:;—-]+/, '').trim();
   }
 
-  return `[${title}](${href}) — ${text}`;
+  return text;
 }
 
 /** @typedef {'full' | 'course'} SourceDetail */
@@ -444,7 +444,7 @@ export function formatRetrievedChunkWithCatalog(chunk, catalog, linkVariant = nu
     (chunk.sourcePath ? parseCourseSourceFromPath(chunk.sourcePath) : null);
   const unit = catalog && source?.sessionKey ? lookupCatalogUnit(catalog, source.sessionKey) : null;
   const sourceDetail = options.sourceDetail === 'course' ? 'course' : 'full';
-  let label =
+  const label =
     sourceDetail === 'course'
       ? formatCourseNameOnlyLabel(source, catalog)
       : formatCourseSourceLabelWithCatalog(source, catalog);
@@ -456,11 +456,13 @@ export function formatRetrievedChunkWithCatalog(chunk, catalog, linkVariant = nu
   const courseTitle = getLinkableCourseTitle(source, catalog);
 
   if (label && link.url && courseTitle) {
-    label = embedCourseTitleMarkdownLink(label, courseTitle, link.url);
-    if (link.kind === 'purchase') {
-      return `--- Source: ${label} | access: purchase ---\n${body}`;
-    }
-    return `--- Source: ${label} ---\n${body}`;
+    const cite = `[${courseTitle}](${link.url})`;
+    const detail = getLocationDetailAfterCourseTitle(label, courseTitle);
+    const access = link.kind === 'purchase' ? 'purchase' : 'classroom';
+    const headerLines = [`--- Source ---`, `cite: ${cite}`];
+    if (detail) headerLines.push(`detail: ${detail}`);
+    headerLines.push(`access: ${access}`, `---`);
+    return `${headerLines.join('\n')}\n${body}`;
   }
 
   if (label && link.url && link.kind === 'purchase') {
