@@ -174,20 +174,20 @@ export function buildDynamicContextBlock(
       : 'Use it for tone and content.';
     parts.push(
       `## MA framework and content (source material)\nThe following excerpts are Mastering Alchemy source material. ${toneNote}\n` +
-        'Each excerpt begins with a short Source header that may include:\n' +
-        '- `cite:` a complete markdown link for the course/level/book — example: `[Level 2 — Core](https://courses.masteringalchemy.com/...)`\n' +
-        '- `detail:` plain-language session/chapter/track location (not a link)\n' +
+        'Each excerpt begins with a numbered Source header (`--- Source 1 ---`, `--- Source 2 ---`, …) that may include:\n' +
+        '- `cite:` the ONLY allowed markdown link for that excerpt — copy it character-for-character, including the link text inside `[...]` and the URL inside `(...)`\n' +
+        '- `detail:` plain-language location (lesson/session/chapter/track). Never put this text inside the markdown link brackets\n' +
         '- `access:` `classroom` or `purchase`\n' +
         'Use the excerpts for content, facts, quotes, and practices. ' +
-        '**Citations / references — only when asked:** Do not add class, level, chapter, session, track, or book citations unless the user asks where something comes from, where to find it, for a reference, source, or citation, or otherwise requests the location. ' +
-        'Ordinary answers and quotes do not need a trailing citation. ' +
-        'When they do ask, your citation MUST use the `cite:` markdown link **copied character-for-character** from that excerpt\'s Source header. ' +
-        'Then you may append the `detail:` text in plain words (no link). ' +
-        'Correct example: That comes from [Level 2 — Core](https://courses.masteringalchemy.com/courses/take/level-2-program/texts/63628124-welcome), Session 13: Compressing Light — "Kuthumi on the Second Triad". ' +
-        'Wrong: rebuilding a new link, linking the whole session title, inventing https://masteringalchemy.com, or writing the raw URL as visible plain text. ' +
-        'Never nest links. Never invent URLs. Never use any URL that does not appear exactly in a `cite:` value. ' +
+        '**Citations / references — only when asked:** Do not cite unless the user asks where something comes from, where to find it, for a reference, source, or citation. ' +
+        'When they do ask about a quote or idea, use the Source header attached to the excerpt that actually contains that quote/idea — never mix `cite:` from one Source with `detail:` or wording from another Source. ' +
+        'Format: paste that Source\'s `cite:` markdown link exactly, then optionally add that same Source\'s `detail:` in plain words after a comma. ' +
+        'Book example: That comes from [A Course in Mastering Alchemy Book](https://www.amazon.com/dp/1786780143), Lesson 16 — "Ascended Master Kuthumi introduces the Triads". ' +
+        'Course example: That comes from [Level 2 — Core](https://courses.masteringalchemy.com/courses/take/level-2-program/texts/63628124-welcome), Session 13: Compressing Light — "Kuthumi on the Second Triad". ' +
+        'Wrong: inventing titles like "ACIMA Lesson 16" inside the link, swapping a book cite onto a class URL, using https://masteringalchemy.com, or writing the raw URL as visible plain text. ' +
+        'Never rebuild links. Never change link text or URLs. Never nest links. Never use any URL that does not appear exactly in a `cite:` value. ' +
         'Never expose internal file codes, session keys, or filename fragments (for example TQA1, L5-S3-TQA1, ML6-C1-S1). ' +
-        'If `access: purchase`, do not imply the user can open the classroom lesson now. ' +
+        'If `access: purchase`, do not imply the user can open a classroom lesson now. ' +
         'Use this source material precisely. When summarizing, stay close to the wording and meaning of the excerpts; do not add claims, locations, or terms that are not supported by the source material. ' +
         'You may and should quote directly from this material when relevant — including longer multi-sentence passages when the user asks for them. Any text inside quotation marks must be copied **verbatim** as one continuous span from the source material. ' +
         'Preserve the source exactly as written or transcribed, including its grammar, repetition, filler words, and transcription errors. Do not polish, clean up, correct, summarize, combine, complete, or paraphrase quoted wording. ' +
@@ -198,7 +198,7 @@ export function buildDynamicContextBlock(
         'Do not invent a class or session location if no Source header supports it. ' +
         'Do not refuse quote requests by saying you are only a synthesizing companion or not a searchable library — when source material is present, use it.\n\n' +
         styleExcerpts.trim() +
-        '\n\nCitation reminder: if the user asked where this came from, copy a `cite:` link exactly from a Source header above; do not invent https://masteringalchemy.com.'
+        '\n\nCitation reminder: copy one complete `cite:` value exactly from the same Source block as the quoted text; never mix book titles with class URLs.'
     );
   }
 

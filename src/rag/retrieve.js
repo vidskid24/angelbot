@@ -131,7 +131,12 @@ export async function retrieve(query, topK = DEFAULT_TOP_K, options = {}) {
   const sourceDetail = options.sourceDetail === 'course' ? 'course' : 'full';
   const top = withScore
     .slice(0, topK)
-    .map((c) => formatRetrievedChunkWithCatalog(c, catalog, linkVariant, { sourceDetail }))
+    .map((c, i) =>
+      formatRetrievedChunkWithCatalog(c, catalog, linkVariant, {
+        sourceDetail,
+        sourceIndex: i + 1,
+      })
+    )
     .filter(Boolean);
   return top.join('\n\n');
 }

@@ -429,13 +429,31 @@ function getLocationDetailAfterCourseTitle(label, courseTitle) {
   return text;
 }
 
+/**
+ * Pull Lesson N + title from book excerpt body when present.
+ * @param {string} body
+ * @returns {string}
+ */
+function extractBookLessonDetail(body) {
+  const text = String(body || '');
+  const m = text.match(/LESSON\s+(\d+)\s*[\r\n]+\s*([^\r\n]{3,120})/i);
+  if (!m) return '';
+  const lessonNum = m[1];
+  const lessonTitle = String(m[2] || '')
+    .replace(/\s+/g, ' ')
+    .replace(/\s*Alchemy\.indd.*$/i, '')
+    .trim();
+  if (!lessonTitle) return `Lesson ${lessonNum}`;
+  return `Lesson ${lessonNum} — "${lessonTitle}"`;
+}
+
 /** @typedef {'full' | 'course'} SourceDetail */
 
 /**
  * @param {{ text: string; source?: import('./course-source.js').CourseSource | null; sourcePath?: string }} chunk
  * @param {CourseCatalog | null | undefined} [catalog]
  * @param {CourseLinkVariant | null} [linkVariant]
- * @param {{ sourceDetail?: SourceDetail }} [options]
+ * @param {{ sourceDetail?: SourceDetail; sourceIndex?: number }} [options]
  * @returns {string}
  */
 export function formatRetrievedChunkWithCatalog(chunk, catalog, linkVariant = null, options = {}) {
@@ -454,29 +472,40 @@ export function formatRetrievedChunkWithCatalog(chunk, catalog, linkVariant = nu
   // Prefer owned/membership classroom URL when known; otherwise purchase/product page.
   const link = resolveLinkForSource(unit, linkVariant, catalog, source);
   const courseTitle = getLinkableCourseTitle(source, catalog);
+  const sourceIndex =
+    Number.isFinite(options.sourceIndex) && options.sourceIndex > 0
+      ? Math.floor(options.sourceIndex)
+      : null;
+  const sourceHeading = sourceIndex != null ? `--- Source ${sourceIndex} ---` : '--- Source ---';
 
   if (label && link.url && courseTitle) {
     const cite = `[${courseTitle}](${link.url})`;
-    const detail = getLocationDetailAfterCourseTitle(label, courseTitle);
+    let detail = getLocationDetailAfterCourseTitle(label, courseTitle);
+    if (
+      !detail &&
+      (source?.unitType === 'book' || String(source?.sessionKey || '').startsWith('book:'))
+    ) {
+      detail = extractBookLessonDetail(body);
+    }
     const access = link.kind === 'purchase' ? 'purchase' : 'classroom';
-    const headerLines = [`--- Source ---`, `cite: ${cite}`];
+    const headerLines = [sourceHeading, `cite: ${cite}`];
     if (detail) headerLines.push(`detail: ${detail}`);
     headerLines.push(`access: ${access}`, `---`);
     return `${headerLines.join('\n')}\n${body}`;
   }
 
   if (label && link.url && link.kind === 'purchase') {
-    return `--- Source: ${label} | purchase: ${link.url} ---\n${body}`;
+    return `${sourceHeading}\n${label} | purchase: ${link.url}\n---\n${body}`;
   }
   if (label && link.url) {
-    return `--- Source: ${label} | ${link.url} ---\n${body}`;
+    return `${sourceHeading}\n${label} | ${link.url}\n---\n${body}`;
   }
   if (label) {
-    return `--- Source: ${label} ---\n${body}`;
+    return `${sourceHeading}\n${label}\n---\n${body}`;
   }
 
   if (chunk.sourcePath) {
-    return `--- Source: ${basename(chunk.sourcePath)} ---\n${body}`;
+    return `${sourceHeading}\n${basename(chunk.sourcePath)}\n---\n${body}`;
   }
   return body;
 }
