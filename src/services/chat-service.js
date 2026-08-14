@@ -108,7 +108,7 @@ function buildRetrievalQuery(message, history) {
  * @param {{ userId: string; sessionKey: string; message: string; threadId?: string; useDb?: boolean; email?: string }} params
  * @returns {Promise<
  *   | { ok: false; code: 'error'; text: string }
- *   | { ok: true; kind: 'reply'; assistantReply: string; threadTitle?: string | null; sources?: Array<{ title: string; url: string; detail: string; access: string }> }
+ *   | { ok: true; kind: 'reply'; assistantReply: string; threadTitle?: string | null; sources?: Array<{ title: string; url: string; detail: string; access: string }>; hadRetrieval?: boolean; tier?: 'free' | 'paid' }
  * >}
  */
 export async function processWisdomMessage({ userId, sessionKey, message, threadId, useDb = false, email }) {
@@ -179,10 +179,13 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
           ),
       MAX_REPLY_SOURCES
     );
-    const hadRetrieval = Boolean(String(styleExcerpts || '').trim());
-    if (!sources.length && hadRetrieval) {
+    const hadRetrievalRaw = Boolean(String(styleExcerpts || '').trim());
+    if (!sources.length && hadRetrievalRaw) {
       sources = sourcesFromLevelTitles(passage, catalog, linkVariant || 'owned');
     }
+    // Source panel is a paid-plan feature.
+    const sourcesForClient = tier === 'paid' ? sources : [];
+    const hadRetrieval = tier === 'paid' ? hadRetrievalRaw : false;
     if (!citationAsk && String(styleExcerpts || '').trim()) {
       if (useDb && threadId) {
         await threadDb.setThreadSourceExcerpts(threadId, styleExcerpts);
@@ -192,7 +195,13 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
     const thoughtSignature = result.thoughtSignature;
     let threadTitle = null;
     if (useDb && threadId) {
-      await threadDb.appendThreadTurn(threadId, message, reply, thoughtSignature, sources);
+      await threadDb.appendThreadTurn(
+        threadId,
+        message,
+        reply,
+        thoughtSignature,
+        sourcesForClient.length ? sourcesForClient : null
+      );
       await users.touchUserChatActivity(userId);
       if (history.length === 0) {
         try {
@@ -214,8 +223,9 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
       kind: 'reply',
       assistantReply: reply,
       threadTitle,
-      sources,
+      sources: sourcesForClient,
       hadRetrieval,
+      tier,
     };
   } catch (err) {
     console.error('Wisdom reply error:', err);

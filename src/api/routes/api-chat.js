@@ -80,18 +80,22 @@ export function createChatApiRouter() {
       }
       let dailyMessageCount;
       let dailyMessageLimit;
+      let responseTier = 'free';
       if (useDb) {
         const tier = await ensureUserTier(userId, req.omiUser.email);
+        responseTier = tier === 'paid' ? 'paid' : 'free';
         dailyMessageLimit = getDailyMessageLimitForTier(tier);
         await dailyMessages.incrementDailyMessageCount(userId);
         dailyMessageCount = await dailyMessages.getDailyMessageCount(userId);
       }
+      const sourcesVisible = responseTier === 'paid';
       res.json({
         kind: 'reply',
         text: out.assistantReply,
         html: formatChatTextHtml(out.assistantReply),
-        sources: Array.isArray(out.sources) ? out.sources : [],
-        hadRetrieval: Boolean(out.hadRetrieval),
+        sources: sourcesVisible && Array.isArray(out.sources) ? out.sources : [],
+        hadRetrieval: sourcesVisible ? Boolean(out.hadRetrieval) : false,
+        tier: responseTier,
         sessionId: threadId,
         threadId,
         ...(out.threadTitle ? { threadTitle: out.threadTitle } : {}),

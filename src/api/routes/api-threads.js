@@ -139,6 +139,8 @@ export function createThreadsApiRouter() {
         return;
       }
       const messages = await threadDb.getAllThreadMessages(threadId);
+      const tier = await ensureUserTier(userId, req.omiUser.email);
+      const sourcesVisible = tier === 'paid';
       res.json({
         thread: {
           id: thread.id,
@@ -146,7 +148,14 @@ export function createThreadsApiRouter() {
           createdAt: thread.created_at,
           updatedAt: thread.updated_at,
         },
-        messages,
+        tier: tier === 'paid' ? 'paid' : 'free',
+        messages: sourcesVisible
+          ? messages
+          : messages.map((m) => {
+              if (!m || m.role !== 'assistant') return m;
+              const { sources, ...rest } = m;
+              return rest;
+            }),
       });
     } catch (e) {
       next(e);

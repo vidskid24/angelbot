@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=75
+ * OMIBOT_WIDGET_VERSION=76
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -14,7 +14,7 @@
   }
 
   const API_BASE = API.replace(/\/$/, '');
-  const WIDGET_VERSION = '75';
+  const WIDGET_VERSION = '76';
   const STORAGE_KEY = 'omibot_access_token';
   const STORAGE_KEY_LEGACY = 'angelbot_access_token';
   const TIER_STORAGE_KEY = 'omibot_tier';
@@ -1672,6 +1672,7 @@
     }
 
     function appendSourceControl(row, sources, hadRetrieval) {
+      if (!isPaidTier()) return;
       const list = normalizeSources(sources);
       if (!list.length && !hadRetrieval) return;
       const wrap = document.createElement('div');
@@ -1839,6 +1840,13 @@
       });
       if (!res.ok) return [];
       const data = await res.json();
+      if (data.tier === 'paid' || data.tier === 'free') {
+        threadsMeta.tier = data.tier;
+        userPrefs.tier = data.tier;
+        try {
+          sessionStorage.setItem(TIER_STORAGE_KEY, data.tier);
+        } catch (e) {}
+      }
       return data.messages || [];
     }
 
@@ -2058,6 +2066,14 @@
         }
         if (result.data.dailyMessageLimit != null) {
           threadsMeta.dailyMessageLimit = result.data.dailyMessageLimit;
+        }
+        if (result.data.tier === 'paid' || result.data.tier === 'free') {
+          threadsMeta.tier = result.data.tier;
+          userPrefs.tier = result.data.tier;
+          try {
+            sessionStorage.setItem(TIER_STORAGE_KEY, result.data.tier);
+          } catch (e) {}
+          updateThreadMeta();
         }
         if (typeof console !== 'undefined' && console.info) {
           console.info('[omi] sources', Array.isArray(result.data.sources) ? result.data.sources.length : 0, result.data.hadRetrieval);
