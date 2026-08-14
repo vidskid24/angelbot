@@ -12,6 +12,7 @@ import {
   formatRetrievedChunkWithCatalog,
   citeFromRetrievedChunk,
   sourcesFromCatalogMatch,
+  MAX_REPLY_SOURCES,
 } from './course-catalog.js';
 import { hydrateRetrievedChunk, loadChunkSourceIndex } from './chunk-source-index.js';
 
@@ -200,7 +201,7 @@ export async function retrieve(query, topK = DEFAULT_TOP_K, options = {}) {
         sourceIndex: i + 1,
       });
       const cite = citeFromRetrievedChunk(c, catalog, linkVariant || 'owned');
-      if (cite?.title && cite?.url) {
+      if (cite?.title && cite?.url && sources.length < MAX_REPLY_SOURCES) {
         const key = `${cite.title}|${cite.url}|${cite.detail || ''}`;
         if (!seen.has(key)) {
           seen.add(key);
@@ -215,12 +216,18 @@ export async function retrieve(query, topK = DEFAULT_TOP_K, options = {}) {
       return formatted;
     })
     .filter(Boolean);
-  if (top.length) {
-    for (const extra of sourcesFromCatalogMatch(top.join('\n\n'), catalog, linkVariant || 'owned')) {
+  if (top.length && sources.length < MAX_REPLY_SOURCES) {
+    for (const extra of sourcesFromCatalogMatch(
+      top.join('\n\n'),
+      catalog,
+      linkVariant || 'owned',
+      MAX_REPLY_SOURCES - sources.length
+    )) {
       const key = `${extra.title}|${extra.url}|${extra.detail || ''}`;
       if (seen.has(key)) continue;
       seen.add(key);
       sources.push(extra);
+      if (sources.length >= MAX_REPLY_SOURCES) break;
     }
   }
   if (top.length && !sources.length) {

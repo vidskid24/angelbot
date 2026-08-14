@@ -15,6 +15,7 @@ import {
   sourcesFromCatalogMatch,
   sourcesFromLevelTitles,
   mergeCatalogSources,
+  MAX_REPLY_SOURCES,
 } from '../rag/course-catalog.js';
 import { resolveCourseLinkVariant } from '../lib/course-access.js';
 import {
@@ -168,7 +169,15 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
     const passage = `${styleExcerpts || ''}\n${reply}\n${message}`;
     sources = mergeCatalogSources(
       sources,
-      sourcesFromCatalogMatch(passage, catalog, linkVariant || 'owned')
+      sources.length >= MAX_REPLY_SOURCES
+        ? []
+        : sourcesFromCatalogMatch(
+            passage,
+            catalog,
+            linkVariant || 'owned',
+            MAX_REPLY_SOURCES - sources.length
+          ),
+      MAX_REPLY_SOURCES
     );
     const hadRetrieval = Boolean(String(styleExcerpts || '').trim());
     if (!sources.length && hadRetrieval) {

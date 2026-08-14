@@ -721,16 +721,22 @@ function citeFromCatalogKey(key, detailTitle, catalog, linkVariant = 'owned') {
   };
 }
 
+/** Max Source-panel cites returned with a reply (retrieval order = relevance). */
+export const MAX_REPLY_SOURCES = 3;
+
 /**
  * @param {Array<{ title?: string; url?: string; detail?: string; access?: string }> | null | undefined} base
  * @param {Array<{ title?: string; url?: string; detail?: string; access?: string }> | null | undefined} extra
+ * @param {number} [limit]
  * @returns {Array<{ title: string; url: string; detail: string; access: string }>}
  */
-export function mergeCatalogSources(base, extra) {
+export function mergeCatalogSources(base, extra, limit = MAX_REPLY_SOURCES) {
   const seen = new Set();
   /** @type {Array<{ title: string; url: string; detail: string; access: string }>} */
   const out = [];
+  const max = Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : MAX_REPLY_SOURCES;
   for (const raw of [...(base || []), ...(extra || [])]) {
+    if (out.length >= max) break;
     const title = String(raw?.title || '').trim();
     const url = String(raw?.url || '').trim();
     if (!title || !url) continue;
@@ -789,7 +795,7 @@ export function sourcesFromLevelTitles(text, catalog, linkVariant = 'owned', lim
  * @param {number} [limit]
  * @returns {Array<{ title: string; url: string; detail: string; access: string }>}
  */
-export function sourcesFromSessionKeyTokens(text, catalog, linkVariant = 'owned', limit = 4) {
+export function sourcesFromSessionKeyTokens(text, catalog, linkVariant = 'owned', limit = MAX_REPLY_SOURCES) {
   if (!catalog || !String(text || '').trim()) return [];
   const seen = new Set();
   /** @type {Array<{ title: string; url: string; detail: string; access: string }>} */
@@ -823,7 +829,7 @@ export function sourcesFromSessionKeyTokens(text, catalog, linkVariant = 'owned'
  * @param {number} [limit]
  * @returns {Array<{ title: string; url: string; detail: string; access: string }>}
  */
-export function sourcesFromCatalogMatch(text, catalog, linkVariant = 'owned', limit = 4) {
+export function sourcesFromCatalogMatch(text, catalog, linkVariant = 'owned', limit = MAX_REPLY_SOURCES) {
   if (!catalog) return [];
   const fromKeys = sourcesFromSessionKeyTokens(text, catalog, linkVariant, limit);
   if (fromKeys.length >= limit) return fromKeys;
