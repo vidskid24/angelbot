@@ -185,8 +185,7 @@ export function buildDynamicContextBlock(
         'Do not join sentences or phrases from different places into one quote. You may omit timestamps and excerpt labels from inside quotation marks, but do not alter the words between them. ' +
         'Before responding with any quotation, confirm that every word inside quotation marks appears in the same order in one source excerpt. ' +
         'Do not use quotation marks around paraphrases. If the excerpts are too short for the requested quote length or count, quote what is available and briefly say that more of the passage is not in the retrieved excerpts. ' +
-        'Offer techniques or practices when applicable. Where the user\'s question touches on it, include relevant ideas, quotes, or techniques, then invite them to explore or try them. ' +
-        'Do not refuse quote requests by saying you are only a synthesizing companion or not a searchable library — when source material is present, use it.\n\n' +
+        'Offer techniques or practices when applicable.\n\n' +
         styleExcerpts.trim() +
         '\n\nReminder: never name courses, levels, sessions, or URLs; tap Source in the chat UI for provenance. Name teachers/Q&A only if they appear in the excerpt.'
     );
