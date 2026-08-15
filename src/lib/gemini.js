@@ -28,7 +28,7 @@ const EMBED_CACHE_TTL_MS = Math.max(0, parseInt(process.env.GEMINI_EMBED_CACHE_T
 const EMBED_CACHE_MAX_ENTRIES = Math.max(1, parseInt(process.env.GEMINI_EMBED_CACHE_MAX_ENTRIES || '500', 10) || 500);
 const EMBED_METRICS_LOG = String(process.env.GEMINI_EMBED_METRICS_LOG || '').toLowerCase() === 'true';
 const EMBED_METRICS_LOG_INTERVAL_MS = Math.max(5000, parseInt(process.env.GEMINI_EMBED_METRICS_LOG_INTERVAL_MS || '30000', 10) || 30000);
-const CHAT_TEMPERATURE = 0.5;
+const CHAT_TEMPERATURE = 0.6;
 let _embedLastMetricsLogAt = 0;
 
 export function getGeminiClient() {

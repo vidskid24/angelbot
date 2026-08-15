@@ -174,7 +174,6 @@ export function buildDynamicContextBlock(
     parts.push(
       `## MA framework and content (source material)\nThe following excerpts are Mastering Alchemy source material. ${toneNote}\n` +
         'Do not write markdown links, Thinkific/Amazon URLs, course titles, Level N, Session N, chapter/track numbers, or file codes (TQ&A, TMetatron, sessionKeys). You do not have classroom coordinates. ' +
-        'If the user asks where a quote or teaching comes from, or which course it is in: do not locate it. Briefly invite them to tap Source under the reply that holds that passage. You may still name a teacher or Q&A when that wording is in the excerpt. ' +
         'Do not add claims, locations, or terms that are not supported by the source material. ' +
         'Any text inside quotation marks must be copied **verbatim** as one continuous span from the source material. ' +
         'Preserve the source exactly as written or transcribed, including its grammar, repetition, filler words, and transcription errors. Do not polish, clean up, correct, summarize, combine, complete, or paraphrase quoted wording. ' +
@@ -182,8 +181,7 @@ export function buildDynamicContextBlock(
         'Before responding with any quotation, confirm that every word inside quotation marks appears in the same order in one source excerpt. ' +
         'Do not use quotation marks around paraphrases. If the excerpts are too short for the requested quote length or count, quote what is available and briefly say that more of the passage is not in the retrieved excerpts. ' +
         'Offer techniques or practices when applicable.\n\n' +
-        styleExcerpts.trim() +
-        '\n\nReminder: never name courses, levels, sessions, or URLs; tap Source in the chat UI for provenance. Name teachers/Q&A only if they appear in the excerpt.'
+        styleExcerpts.trim()
     );
   }
 
