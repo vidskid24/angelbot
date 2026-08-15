@@ -174,7 +174,6 @@ export function buildDynamicContextBlock(
       : 'Use it for tone and content.';
     parts.push(
       `## MA framework and content (source material)\nThe following excerpts are Mastering Alchemy source material. ${toneNote}\n` +
-        'Each excerpt is unlabeled teaching text. Use it for content, facts, quotes, practices, and who is speaking (Raphael, Metatron, Q&A, etc.) when those words appear in the excerpt. ' +
         'Do not write markdown links, Thinkific/Amazon URLs, course titles, Level N, Session N, chapter/track numbers, or file codes (TQ&A, TMetatron, sessionKeys). You do not have classroom coordinates. ' +
         'If the user asks where a quote or teaching comes from, or which course it is in: do not locate it. Briefly invite them to tap Source under the reply that holds that passage. You may still name a teacher or Q&A when that wording is in the excerpt. ' +
         'Use this source material precisely. When summarizing, stay close to the wording and meaning of the excerpts; do not add claims, locations, or terms that are not supported by the source material. ' +
