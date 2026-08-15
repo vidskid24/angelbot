@@ -235,8 +235,6 @@ export async function retrieve(query, topK = DEFAULT_TOP_K, options = {}) {
       '[rag] retrieve returned excerpts but no catalog sources; chosen0 keys=',
       chosen[0] ? Object.keys(chosen[0]).filter((k) => k !== 'embedding' && k !== 'score') : []
     );
-  } else if (sources.length) {
-    console.info('[rag] retrieve sources', sources.length, sources.map((s) => s.title).join(' | '));
   }
   return { text: top.join('\n\n'), sources };
 }
