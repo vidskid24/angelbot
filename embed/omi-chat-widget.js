@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=79
+ * OMIBOT_WIDGET_VERSION=81
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -14,7 +14,7 @@
   }
 
   const API_BASE = API.replace(/\/$/, '');
-  const WIDGET_VERSION = '79';
+  const WIDGET_VERSION = '81';
   const STORAGE_KEY = 'omibot_access_token';
   const STORAGE_KEY_LEGACY = 'angelbot_access_token';
   const TIER_STORAGE_KEY = 'omibot_tier';
@@ -607,12 +607,11 @@
       '.omibot-suggestion-chip:disabled{opacity:0.45;cursor:not-allowed}' +
       '.omibot-scope{margin:14px 0 0}' +
       '.omibot-scope[hidden]{display:none!important}' +
-      '.omibot-scope-heading{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px;margin:0 0 8px}' +
-      '.omibot-scope-label{margin:0;font-size:0.8rem;font-weight:600;color:#666;letter-spacing:0.02em}' +
-      '.omibot-scope-note{margin:0;font-size:0.75rem;font-weight:400;color:#888;letter-spacing:0;line-height:1.35}' +
+      '.omibot-scope-label{margin:0 0 8px;font-size:0.8rem;font-weight:600;color:#666;letter-spacing:0.02em}' +
       '.omibot-scope-row{display:flex;flex-wrap:wrap;gap:8px}' +
       '.omibot-scope-row select{flex:1 1 160px;min-width:0;padding:9px 12px;border:1px solid #e0dcd4;border-radius:10px;background:#f5f3ef;font:inherit;font-size:0.88rem;color:#1a1a1a}' +
       '.omibot-scope-row select:disabled{opacity:0.45}' +
+      '.omibot-scope-note{margin:8px 0 0;font-size:0.75rem;font-weight:400;color:#888;letter-spacing:0;line-height:1.35}' +
       '.omibot-notice{margin:8px 0 0;padding:10px 12px;border:1px solid #e0dcd4;border-radius:10px;background:#f5f3ef;font-size:0.86rem;line-height:1.45;color:#444}' +
       '.omibot-notice a{color:#7a5c1e;font-weight:600}' +
       '.omibot-prefs-btn{margin:0;padding:0;border:none;background:transparent;font:inherit;font-size:0.7rem;font-weight:600;letter-spacing:0.04em;color:#7a5c1e;cursor:pointer;text-decoration:underline;text-underline-offset:2px;white-space:nowrap;flex-shrink:0}' +
@@ -679,16 +678,14 @@
       '<div class="omibot-suggestions-chips" id="omibot-suggestions-chips"></div>' +
       '</div>' +
       '<div class="omibot-scope" id="omibot-scope" hidden>' +
-      '<div class="omibot-scope-heading">' +
       '<p class="omibot-scope-label">Focused conversation on</p>' +
-      '<p class="omibot-scope-note">Only courses you are enrolled in are listed.</p>' +
-      '</div>' +
       '<div class="omibot-scope-row">' +
       '<select id="omibot-scope-course" aria-label="Course">' +
       '<option value=""></option></select>' +
-      '<select id="omibot-scope-session" aria-label="Session" disabled>' +
-      '<option value="">Session</option></select>' +
-      '</div></div>' +
+      '<select id="omibot-scope-session" aria-label="Session" disabled></select>' +
+      '</div>' +
+      '<p class="omibot-scope-note">Only courses you are enrolled in are listed.</p>' +
+      '</div>' +
       '</div>' +
       '<section class="omibot-prefs-view" id="omibot-prefs-view" hidden aria-labelledby="omibot-prefs-title">' +
       '<button type="button" class="omibot-prefs-back" id="omibot-prefs-back">\u2190 Back to chat</button>' +
@@ -1391,10 +1388,6 @@
       if (scopeCourseEl) scopeCourseEl.value = '';
       if (scopeSessionEl) {
         scopeSessionEl.replaceChildren();
-        const opt = document.createElement('option');
-        opt.value = '';
-        opt.textContent = 'Session';
-        scopeSessionEl.appendChild(opt);
         scopeSessionEl.disabled = true;
       }
     }
@@ -1409,11 +1402,8 @@
 
     function fillSessionOptions(course) {
       if (!scopeSessionEl) return;
+      const previous = scopeSessionEl.value;
       scopeSessionEl.replaceChildren();
-      const placeholder = document.createElement('option');
-      placeholder.value = '';
-      placeholder.textContent = 'Session';
-      scopeSessionEl.appendChild(placeholder);
       const sessions = course && Array.isArray(course.sessions) ? course.sessions : [];
       for (let i = 0; i < sessions.length; i++) {
         const opt = document.createElement('option');
@@ -1422,6 +1412,12 @@
         scopeSessionEl.appendChild(opt);
       }
       scopeSessionEl.disabled = !course || sessions.length === 0;
+      if (sessions.length) {
+        const keep = sessions.some(function (s) {
+          return s.key === previous;
+        });
+        scopeSessionEl.value = keep ? previous : sessions[0].key;
+      }
     }
 
     function syncPendingMaterialScope() {

@@ -135,15 +135,16 @@ function sessionsForLevel(catalog, levelCode) {
   }
 
   const units = catalog.units && typeof catalog.units === 'object' ? catalog.units : {};
+  // Core levels group tracks under L4-S6. Conferences use D1AM vs D1AM1/PreConf,
+  // so unmatched unit keys are listed as their own sessions.
   const parentRe = new RegExp(
-    `^(${code}-(?:C\\d+-S\\d+|S\\d+[a-z]?|C\\d+|D\\d+[A-Za-z]*))(?:-|$)`,
+    `^(${code}-(?:C\\d+-S\\d+|S\\d+[a-z]?|C\\d+|D\\d+[A-Za-z]*\\d*))(?:-|$)`,
     'i'
   );
   for (const [key, meta] of Object.entries(units)) {
     if (key === code) continue;
     if (!key.startsWith(`${code}-`)) continue;
-    const parent = key.match(parentRe)?.[1] || (chapterRe.test(key) ? key : '');
-    if (!parent) continue;
+    const parent = key.match(parentRe)?.[1] || key;
     if (byKey.has(parent)) continue;
     const title = String(meta?.title || parent).trim();
     byKey.set(parent, title);
