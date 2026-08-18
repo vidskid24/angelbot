@@ -15,6 +15,8 @@ import {
   MAX_REPLY_SOURCES,
 } from './course-catalog.js';
 import { hydrateRetrievedChunk, loadChunkSourceIndex } from './chunk-source-index.js';
+import { parseCourseSourceLoose } from './course-source.js';
+import { chunkMatchesScope } from './material-scope.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '../..');
@@ -140,13 +142,22 @@ function isBookChunk(chunk) {
  * @param {{
  *   linkVariant?: import('./course-catalog.js').CourseLinkVariant | null;
  *   sourceDetail?: import('./course-catalog.js').SourceDetail;
+ *   scopeKey?: string | null;
  * }} [options]
  * @returns {Promise<{ text: string; sources: Array<{ title: string; url: string; detail: string; access: string }> }>}
  */
 export async function retrieve(query, topK = DEFAULT_TOP_K, options = {}) {
   const index = await loadEmbeddingsIndex();
   if (!index) return { text: '', sources: [] };
-  const chunks = index.chunks;
+  const scopeKey = String(options.scopeKey || '').trim();
+  const chunks = scopeKey
+    ? index.chunks.filter((c) =>
+        chunkMatchesScope(
+          scopeKey,
+          c?.source?.sessionKey || parseCourseSourceLoose(c?.sourcePath || '')?.sessionKey || ''
+        )
+      )
+    : index.chunks;
   if (!chunks.length) return { text: '', sources: [] };
 
   let queryEmbedding;

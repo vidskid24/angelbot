@@ -57,6 +57,7 @@ function attachDynamicContextToUserMessage(userMessage, dynamicContext) {
  * @param {string} [styleExcerpts] - Optional RAG style excerpts to inject into system prompt
  * @param {string} [userPreferencesBlock] - Optional per-user preference instructions
  * @param {string} [userMemoryBlock] - Optional paid-tier memory context
+ * @param {string} [materialScopeBlock] - Optional paid course/session pin
  * @returns {Promise<{ text: string; thoughtSignature: string | null }>}
  */
 export async function getWisdomReply(
@@ -64,7 +65,8 @@ export async function getWisdomReply(
   history = [],
   styleExcerpts = null,
   userPreferencesBlock = null,
-  userMemoryBlock = null
+  userMemoryBlock = null,
+  materialScopeBlock = null
 ) {
   const historyTurnsLimit = 8;
   const perTurnLimit = 1200;
@@ -82,7 +84,8 @@ export async function getWisdomReply(
   const dynamicContext = buildDynamicContextBlock(
     styleExcerptsCapped,
     userPreferencesBlock,
-    userMemoryBlock
+    userMemoryBlock,
+    materialScopeBlock
   );
 
   const messages = [{ role: 'system', content: staticSystem }];

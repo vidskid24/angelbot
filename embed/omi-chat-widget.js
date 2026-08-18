@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=76
+ * OMIBOT_WIDGET_VERSION=77
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -14,7 +14,7 @@
   }
 
   const API_BASE = API.replace(/\/$/, '');
-  const WIDGET_VERSION = '76';
+  const WIDGET_VERSION = '77';
   const STORAGE_KEY = 'omibot_access_token';
   const STORAGE_KEY_LEGACY = 'angelbot_access_token';
   const TIER_STORAGE_KEY = 'omibot_tier';
@@ -605,6 +605,14 @@
       '.omibot-suggestion-chip{display:inline-flex;align-items:center;max-width:100%;padding:10px 14px;border:1px solid #e0dcd4;border-radius:999px;background:#f5f3ef;font:inherit;font-size:0.88rem;line-height:1.35;color:#1a1a1a;cursor:pointer;text-align:left}' +
       '.omibot-suggestion-chip:hover:not(:disabled){background:#ebe6dc;border-color:#c9c0b5}' +
       '.omibot-suggestion-chip:disabled{opacity:0.45;cursor:not-allowed}' +
+      '.omibot-scope{margin:14px 0 0}' +
+      '.omibot-scope[hidden]{display:none!important}' +
+      '.omibot-scope-label{margin:0 0 8px;font-size:0.8rem;font-weight:600;color:#666;letter-spacing:0.02em}' +
+      '.omibot-scope-row{display:flex;flex-wrap:wrap;gap:8px}' +
+      '.omibot-scope-row select{flex:1 1 160px;min-width:0;padding:9px 12px;border:1px solid #e0dcd4;border-radius:10px;background:#f5f3ef;font:inherit;font-size:0.88rem;color:#1a1a1a}' +
+      '.omibot-scope-row select:disabled{opacity:0.45}' +
+      '.omibot-notice{margin:8px 0 0;padding:10px 12px;border:1px solid #e0dcd4;border-radius:10px;background:#f5f3ef;font-size:0.86rem;line-height:1.45;color:#444}' +
+      '.omibot-notice a{color:#7a5c1e;font-weight:600}' +
       '.omibot-prefs-btn{margin:0;padding:0;border:none;background:transparent;font:inherit;font-size:0.7rem;font-weight:600;letter-spacing:0.04em;color:#7a5c1e;cursor:pointer;text-decoration:underline;text-underline-offset:2px;white-space:nowrap;flex-shrink:0}' +
       '.omibot-prefs-btn:hover{color:#1a1a1a}' +
       '.omibot-chat-view[hidden],.omibot-prefs-view[hidden]{display:none!important}' +
@@ -668,6 +676,14 @@
       '<p class="omibot-suggestions-label">Suggestions to try</p>' +
       '<div class="omibot-suggestions-chips" id="omibot-suggestions-chips"></div>' +
       '</div>' +
+      '<div class="omibot-scope" id="omibot-scope" hidden>' +
+      '<p class="omibot-scope-label">Focus this conversation</p>' +
+      '<div class="omibot-scope-row">' +
+      '<select id="omibot-scope-course" aria-label="Course">' +
+      '<option value="">Course</option></select>' +
+      '<select id="omibot-scope-session" aria-label="Session" disabled>' +
+      '<option value="">Session</option></select>' +
+      '</div></div>' +
       '</div>' +
       '<section class="omibot-prefs-view" id="omibot-prefs-view" hidden aria-labelledby="omibot-prefs-title">' +
       '<button type="button" class="omibot-prefs-back" id="omibot-prefs-back">\u2190 Back to chat</button>' +
@@ -718,6 +734,9 @@
     const sendBtn = root.querySelector('#omibot-send');
     const suggestionsEl = root.querySelector('#omibot-suggestions');
     const suggestionsChipsEl = root.querySelector('#omibot-suggestions-chips');
+    const scopeEl = root.querySelector('#omibot-scope');
+    const scopeCourseEl = root.querySelector('#omibot-scope-course');
+    const scopeSessionEl = root.querySelector('#omibot-scope-session');
     const threadListEl = root.querySelector('#omibot-thread-list');
     const tierBadgeEl = root.querySelector('#omibot-tier-badge');
     const upgradeUrl =
@@ -1349,10 +1368,136 @@
       dailyMessageCount: 0,
     };
     let threadsCache = [];
+    let materialScopeCourses = [];
+    let pendingMaterialScopeKey = '';
 
     function hideSuggestionChips() {
       if (suggestionsEl) suggestionsEl.hidden = true;
       if (suggestionsChipsEl) suggestionsChipsEl.replaceChildren();
+      hideMaterialScopePicker();
+    }
+
+    function hideMaterialScopePicker() {
+      if (scopeEl) scopeEl.hidden = true;
+    }
+
+    function resetMaterialScopePicker() {
+      pendingMaterialScopeKey = '';
+      if (scopeCourseEl) scopeCourseEl.value = '';
+      if (scopeSessionEl) {
+        scopeSessionEl.replaceChildren();
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'Session';
+        scopeSessionEl.appendChild(opt);
+        scopeSessionEl.disabled = true;
+      }
+    }
+
+    function selectedCourse() {
+      const code = scopeCourseEl ? scopeCourseEl.value : '';
+      for (let i = 0; i < materialScopeCourses.length; i++) {
+        if (materialScopeCourses[i].code === code) return materialScopeCourses[i];
+      }
+      return null;
+    }
+
+    function fillSessionOptions(course) {
+      if (!scopeSessionEl) return;
+      scopeSessionEl.replaceChildren();
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Session';
+      scopeSessionEl.appendChild(placeholder);
+      const sessions = course && Array.isArray(course.sessions) ? course.sessions : [];
+      for (let i = 0; i < sessions.length; i++) {
+        const opt = document.createElement('option');
+        opt.value = sessions[i].key;
+        opt.textContent = sessions[i].title;
+        scopeSessionEl.appendChild(opt);
+      }
+      scopeSessionEl.disabled = !course || sessions.length === 0;
+    }
+
+    function syncPendingMaterialScope() {
+      pendingMaterialScopeKey = scopeSessionEl && scopeSessionEl.value ? scopeSessionEl.value : '';
+    }
+
+    function renderMaterialScopePicker() {
+      if (!scopeEl || !scopeCourseEl || !scopeSessionEl) return;
+      if (!isPaidTier() || !materialScopeCourses.length) {
+        hideMaterialScopePicker();
+        return;
+      }
+      const previousCourse = scopeCourseEl.value;
+      const previousSession = scopeSessionEl.value;
+      scopeCourseEl.replaceChildren();
+      const coursePlaceholder = document.createElement('option');
+      coursePlaceholder.value = '';
+      coursePlaceholder.textContent = 'Course';
+      scopeCourseEl.appendChild(coursePlaceholder);
+      for (let i = 0; i < materialScopeCourses.length; i++) {
+        const opt = document.createElement('option');
+        opt.value = materialScopeCourses[i].code;
+        opt.textContent = materialScopeCourses[i].title;
+        scopeCourseEl.appendChild(opt);
+      }
+      if (previousCourse) scopeCourseEl.value = previousCourse;
+      fillSessionOptions(selectedCourse());
+      if (previousSession) scopeSessionEl.value = previousSession;
+      syncPendingMaterialScope();
+      scopeEl.hidden = false;
+    }
+
+    async function fetchMaterialScopeOptions(token) {
+      if (!isPaidTier()) {
+        materialScopeCourses = [];
+        return;
+      }
+      try {
+        const res = await fetch(API_BASE + '/api/material-scope', { headers: authHeaders(token) });
+        const data = await res.json().catch(() => ({}));
+        materialScopeCourses = res.ok && Array.isArray(data.courses) ? data.courses : [];
+      } catch (e) {
+        materialScopeCourses = [];
+      }
+    }
+
+    if (scopeCourseEl) {
+      scopeCourseEl.addEventListener('change', function () {
+        fillSessionOptions(selectedCourse());
+        if (scopeSessionEl && selectedCourse() && selectedCourse().sessions && selectedCourse().sessions[0]) {
+          scopeSessionEl.value = selectedCourse().sessions[0].key;
+        }
+        syncPendingMaterialScope();
+      });
+    }
+    if (scopeSessionEl) {
+      scopeSessionEl.addEventListener('change', syncPendingMaterialScope);
+    }
+
+    function appendNotices(notices) {
+      if (!Array.isArray(notices) || !notices.length) return;
+      for (let i = 0; i < notices.length; i++) {
+        const notice = notices[i] || {};
+        const text = String(notice.message || '').trim();
+        if (!text) continue;
+        const row = document.createElement('div');
+        row.className = 'omibot-notice';
+        row.appendChild(document.createTextNode(text + ' '));
+        const url = String(notice.url || (notice.kind === 'upgrade' ? upgradeUrl : '')).trim();
+        if (url) {
+          const a = document.createElement('a');
+          a.className = 'omibot-tier-link';
+          a.href = url;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.textContent = notice.kind === 'purchase' ? 'View course' : 'Upgrade';
+          row.appendChild(a);
+        }
+        log.appendChild(row);
+        scrollIntoViewIfNearBottom(row);
+      }
     }
 
     function renderSuggestionChips() {
@@ -1398,6 +1543,7 @@
       welcome.appendChild(hello);
       welcome.appendChild(prompt);
       renderSuggestionChips();
+      renderMaterialScopePicker();
     }
 
     function showWelcome() {
@@ -1418,6 +1564,8 @@
         const chips = suggestionsChipsEl.querySelectorAll('.omibot-suggestion-chip');
         for (let i = 0; i < chips.length; i++) chips[i].disabled = !on;
       }
+      if (scopeCourseEl) scopeCourseEl.disabled = !on;
+      if (scopeSessionEl) scopeSessionEl.disabled = !on || !selectedCourse();
       updateSendButtonState();
     }
 
@@ -1879,6 +2027,7 @@
       closeAllThreadMenus();
       clearThreadId();
       clearLog();
+      resetMaterialScopePicker();
       restoreWelcome();
       threadToolbar.hidden = true;
       renderThreadList(null);
@@ -1957,6 +2106,7 @@
         if (prefs.tier) threadsMeta.tier = prefs.tier;
       }
       await fetchThreads(token);
+      await fetchMaterialScopeOptions(token);
       beginNewConversation();
       if (prefs && !userPrefs.preferencesCompleted) {
         showPrefsView('onboarding');
@@ -1980,10 +2130,12 @@
 
     async function postChat(message, token) {
       const threadId = getThreadId();
+      const payload = { message, threadId };
+      if (pendingMaterialScopeKey) payload.materialScopeKey = pendingMaterialScopeKey;
       const res = await fetch(API_BASE + '/api/chat/send', {
         method: 'POST',
         headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders(token)),
-        body: JSON.stringify({ message, threadId }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
       return { res, data };
@@ -2084,6 +2236,10 @@
           result.data.sources,
           Boolean(result.data.hadRetrieval) || (Array.isArray(result.data.sources) && result.data.sources.length > 0)
         );
+        appendNotices(result.data.notices);
+        if (result.data.materialScope && result.data.materialScope.key) {
+          pendingMaterialScopeKey = '';
+        }
         updateThreadMeta();
       } catch (e) {
         append('System', String(e && e.message ? e.message : e));

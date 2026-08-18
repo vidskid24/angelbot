@@ -37,7 +37,7 @@ export async function listThreads(userId) {
  */
 export async function getThreadForUser(threadId, userId) {
   const { rows } = await getPool().query(
-    `SELECT id, title, created_at, updated_at FROM threads
+    `SELECT id, title, created_at, updated_at, material_scope_key FROM threads
      WHERE id = $1 AND user_id = $2`,
     [threadId, userId]
   );
@@ -256,6 +256,40 @@ export async function setThreadSourceExcerpts(threadId, excerpts) {
     );
   } catch (err) {
     console.warn('setThreadSourceExcerpts failed:', err?.message || err);
+  }
+}
+
+/**
+ * @param {string} threadId
+ * @returns {Promise<string | null>}
+ */
+export async function getThreadMaterialScopeKey(threadId) {
+  try {
+    const { rows } = await getPool().query(
+      'SELECT material_scope_key FROM threads WHERE id = $1',
+      [threadId]
+    );
+    const key = String(rows[0]?.material_scope_key || '').trim();
+    return key || null;
+  } catch (err) {
+    console.warn('getThreadMaterialScopeKey failed:', err?.message || err);
+    return null;
+  }
+}
+
+/**
+ * @param {string} threadId
+ * @param {string | null} scopeKey
+ */
+export async function setThreadMaterialScopeKey(threadId, scopeKey) {
+  const key = String(scopeKey || '').trim() || null;
+  try {
+    await getPool().query(
+      `UPDATE threads SET material_scope_key = $2, updated_at = NOW() WHERE id = $1`,
+      [threadId, key]
+    );
+  } catch (err) {
+    console.warn('setThreadMaterialScopeKey failed:', err?.message || err);
   }
 }
 

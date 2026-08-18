@@ -6,6 +6,8 @@
 import {
   isThinkificConfigured,
   fetchThinkificEnrollments,
+  fetchThinkificCourses,
+  isThinkificEnrollmentActive,
   resolveProductIdsFromNames,
 } from './thinkific-enrollment.js';
 
@@ -150,5 +152,108 @@ export async function resolveCourseLinkVariant(userId, email) {
   } catch (err) {
     console.warn('Course link variant check failed:', err?.message || err);
     return null;
+  }
+}
+
+function slugSetForLevel(levelEntry) {
+  const slugs = new Set();
+  const variants = levelEntry?.variants && typeof levelEntry.variants === 'object' ? levelEntry.variants : {};
+  for (const variant of Object.values(variants)) {
+    const slug = String(variant?.courseSlug || '').trim().replace(/^\/+|\/+$/g, '').toLowerCase();
+    if (slug) slugs.add(slug);
+  }
+  return slugs;
+}
+
+function compactName(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function enrollmentNameMatchesLevel(enrollment, levelEntry, courseMeta) {
+  const slugs = slugSetForLevel(levelEntry);
+  const courseSlug = String(courseMeta?.slug || '').trim().toLowerCase();
+  if (courseSlug && slugs.has(courseSlug)) return true;
+
+  const catalogTitle = compactName(levelEntry?.title);
+  const names = [
+    enrollment.product_name,
+    enrollment.course_name,
+    enrollment.name,
+    enrollment.bundle_name,
+    courseMeta?.name,
+  ]
+    .map(compactName)
+    .filter(Boolean);
+
+  if (catalogTitle && names.some((n) => n === catalogTitle || n.includes(catalogTitle) || catalogTitle.includes(n))) {
+    return true;
+  }
+
+  for (const slug of slugs) {
+    const fromSlug = compactName(slug.replace(/-/g, ' '));
+    if (fromSlug.length >= 8 && names.some((n) => n.includes(fromSlug) || fromSlug.includes(n))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Whether the user has an active Thinkific enrollment in this catalog course
+ * (owned classroom, membership classroom, or membership product for L1–L5).
+ * When Thinkific is not configured, paid-scoped access is allowed (local/dev).
+ * @param {string} userId
+ * @param {string | undefined} email
+ * @param {string} levelCode
+ * @param {import('../rag/course-catalog.js').CourseCatalog | null | undefined} catalog
+ * @returns {Promise<boolean>}
+ */
+export async function userHasAccessToCourseLevel(userId, email, levelCode, catalog) {
+  const code = String(levelCode || '').trim();
+  const levelEntry = code && catalog?.levels ? catalog.levels[code] : null;
+  if (!code || !levelEntry) return false;
+  if (!isThinkificConfigured()) return true;
+
+  const thinkificUserId = String(userId || '').trim();
+  if (!thinkificUserId && !email) return false;
+  if (thinkificUserId.startsWith('email:') && !email) return false;
+
+  try {
+    const membershipBase = parseProductMatchersFromEnv('THINKIFIC_MEMBERSHIP_PRODUCT_IDS');
+    const hasMembershipConfig = membershipBase.ids.size > 0 || membershipBase.names.size > 0;
+    const hasMembershipVariant = Boolean(levelEntry.variants?.membership);
+
+    const [items, courses, membershipMatchers] = await Promise.all([
+      fetchThinkificEnrollments(userId, email),
+      fetchThinkificCourses(),
+      hasMembershipConfig && hasMembershipVariant
+        ? buildEffectiveMatchers(membershipBase)
+        : Promise.resolve(null),
+    ]);
+
+    /** @type {Map<number, { id: number; name: string; slug: string }>} */
+    const courseById = new Map();
+    for (const course of courses) {
+      if (course.id > 0) courseById.set(course.id, course);
+    }
+
+    for (const enrollment of items) {
+      if (!isThinkificEnrollmentActive(enrollment)) continue;
+      const cid = Number(enrollment.course_id);
+      const courseMeta = Number.isFinite(cid) && cid > 0 ? courseById.get(cid) : null;
+      if (enrollmentNameMatchesLevel(enrollment, levelEntry, courseMeta)) return true;
+      if (membershipMatchers && isActiveEnrollmentForProduct(enrollment, membershipMatchers)) {
+        return true;
+      }
+    }
+    return false;
+  } catch (err) {
+    console.warn('Course enrollment check failed:', err?.message || err);
+    return false;
   }
 }

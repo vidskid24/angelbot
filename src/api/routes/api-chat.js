@@ -73,6 +73,7 @@ export function createChatApiRouter() {
         message,
         threadId: useDb ? threadId : undefined,
         useDb,
+        materialScopeKey: String(req.body?.materialScopeKey || '').trim() || null,
       });
       if (!out.ok) {
         res.status(500).json({ error: out.code || 'error', message: out.text });
@@ -95,6 +96,8 @@ export function createChatApiRouter() {
         html: formatChatTextHtml(out.assistantReply),
         sources: sourcesVisible && Array.isArray(out.sources) ? out.sources : [],
         hadRetrieval: sourcesVisible ? Boolean(out.hadRetrieval) : false,
+        notices: Array.isArray(out.notices) ? out.notices : [],
+        materialScope: responseTier === 'paid' ? out.materialScope || null : null,
         tier: responseTier,
         sessionId: threadId,
         threadId,

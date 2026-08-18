@@ -17,7 +17,14 @@ import {
   mergeCatalogSources,
   MAX_REPLY_SOURCES,
 } from '../rag/course-catalog.js';
-import { resolveCourseLinkVariant } from '../lib/course-access.js';
+import { resolveCourseLinkVariant, userHasAccessToCourseLevel } from '../lib/course-access.js';
+import {
+  parseMaterialScopeFromMessage,
+  resolveMaterialScope,
+  userAskedToClearMaterialScope,
+  userNamedCourseLocation,
+  buildMaterialScopePromptBlock,
+} from '../rag/material-scope.js';
 import {
   sanitizeReplyCitations,
   userAskedForCitation,
@@ -26,6 +33,91 @@ import {
 } from '../lib/citation-repair.js';
 
 const DEFAULT_RETRIEVE_TOP_K = 8;
+const SCOPED_RETRIEVE_TOP_K = 12;
+const DEFAULT_UPGRADE_URL = 'https://courses.masteringalchemy.com/courses/omi-ai';
+
+function upgradeUrl() {
+  return String(process.env.OMIBOT_UPGRADE_URL || process.env.ANGELBOT_UPGRADE_URL || DEFAULT_UPGRADE_URL).trim();
+}
+
+/**
+ * @param {{
+ *   tier: 'free' | 'paid';
+ *   message: string;
+ *   requestedScopeKey?: string | null;
+ *   threadId?: string;
+ *   useDb: boolean;
+ *   userId: string;
+ *   email?: string;
+ *   catalog: import('../rag/course-catalog.js').CourseCatalog;
+ * }} params
+ */
+async function resolveActiveMaterialScope({
+  tier,
+  message,
+  requestedScopeKey,
+  threadId,
+  useDb,
+  userId,
+  email,
+  catalog,
+}) {
+  /** @type {Array<{ kind: string; message: string; url?: string }>} */
+  const notices = [];
+  const named = parseMaterialScopeFromMessage(message, catalog);
+  const requested = resolveMaterialScope(catalog, requestedScopeKey);
+  const incoming = named || requested;
+  const askedByName = Boolean(named) || Boolean(requested) || userNamedCourseLocation(message);
+
+  if (tier !== 'paid') {
+    if (askedByName) {
+      notices.push({
+        kind: 'upgrade',
+        message:
+          'Focusing a conversation on a specific course or session is available on the paid plan.',
+        url: upgradeUrl(),
+      });
+    }
+    return { scope: null, notices };
+  }
+
+  if (userAskedToClearMaterialScope(message)) {
+    if (useDb && threadId) await threadDb.setThreadMaterialScopeKey(threadId, null);
+    return { scope: null, notices };
+  }
+
+  let pinned = null;
+  if (useDb && threadId) {
+    pinned = resolveMaterialScope(catalog, await threadDb.getThreadMaterialScopeKey(threadId));
+  }
+
+  const candidate = incoming || pinned;
+  if (!candidate) return { scope: null, notices };
+
+  const allowed = await userHasAccessToCourseLevel(userId, email, candidate.levelCode, catalog);
+  if (!allowed) {
+    notices.push({
+      kind: 'purchase',
+      message: `Focusing on ${candidate.courseTitle} is available when you are enrolled in that course.`,
+      url: candidate.purchaseUrl || '',
+    });
+    if (incoming && pinned && pinned.scopeKey !== incoming.scopeKey) {
+      const pinnedAllowed = await userHasAccessToCourseLevel(
+        userId,
+        email,
+        pinned.levelCode,
+        catalog
+      );
+      if (pinnedAllowed) return { scope: pinned, notices };
+    }
+    return { scope: null, notices };
+  }
+
+  if (useDb && threadId && incoming) {
+    await threadDb.setThreadMaterialScopeKey(threadId, candidate.scopeKey);
+  }
+  return { scope: candidate, notices };
+}
 
 function isContextDependentFollowup(message) {
   const normalized = String(message || '').trim().toLowerCase().replace(/\s+/g, ' ');
@@ -105,13 +197,21 @@ function buildRetrievalQuery(message, history) {
 }
 
 /**
- * @param {{ userId: string; sessionKey: string; message: string; threadId?: string; useDb?: boolean; email?: string }} params
+ * @param {{ userId: string; sessionKey: string; message: string; threadId?: string; useDb?: boolean; email?: string; materialScopeKey?: string | null }} params
  * @returns {Promise<
  *   | { ok: false; code: 'error'; text: string }
- *   | { ok: true; kind: 'reply'; assistantReply: string; threadTitle?: string | null; sources?: Array<{ title: string; url: string; detail: string; access: string }>; hadRetrieval?: boolean; tier?: 'free' | 'paid' }
+ *   | { ok: true; kind: 'reply'; assistantReply: string; threadTitle?: string | null; sources?: Array<{ title: string; url: string; detail: string; access: string }>; hadRetrieval?: boolean; tier?: 'free' | 'paid'; notices?: Array<{ kind: string; message: string; url?: string }>; materialScope?: { key: string; label: string } | null }
  * >}
  */
-export async function processWisdomMessage({ userId, sessionKey, message, threadId, useDb = false, email }) {
+export async function processWisdomMessage({
+  userId,
+  sessionKey,
+  message,
+  threadId,
+  useDb = false,
+  email,
+  materialScopeKey = null,
+}) {
   const history =
     useDb && threadId ? await threadDb.getThreadMessages(threadId) : getHistory(sessionKey);
 
@@ -135,6 +235,17 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
     // to the appropriate class page (classroom when enrolled, otherwise purchase).
     const linkVariant = useDb ? await resolveCourseLinkVariant(userId, email) : null;
     const catalog = await loadCourseCatalog();
+    const { scope: materialScope, notices } = await resolveActiveMaterialScope({
+      tier,
+      message,
+      requestedScopeKey: materialScopeKey,
+      threadId,
+      useDb,
+      userId,
+      email,
+      catalog,
+    });
+    const materialScopeBlock = materialScope ? buildMaterialScopePromptBlock(materialScope) : null;
     let storedExcerpts =
       useDb && threadId ? await threadDb.getThreadSourceExcerpts(threadId) : null;
     if (!(storedExcerpts || '').trim()) {
@@ -147,9 +258,10 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
       styleExcerpts = storedExcerpts || '';
       sources = sourcesFromExcerpts(styleExcerpts, catalog);
     } else {
-      const retrieved = await retrieve(retrievalQuery, DEFAULT_RETRIEVE_TOP_K, {
+      const retrieved = await retrieve(retrievalQuery, materialScope ? SCOPED_RETRIEVE_TOP_K : DEFAULT_RETRIEVE_TOP_K, {
         linkVariant,
         sourceDetail,
+        scopeKey: materialScope?.scopeKey || null,
       });
       styleExcerpts =
         typeof retrieved === 'string' ? retrieved : String(retrieved?.text || '');
@@ -163,24 +275,27 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
       history,
       excerptBodiesForModel(styleExcerpts || '') || null,
       userPreferencesBlock,
-      userMemoryBlock
+      userMemoryBlock,
+      materialScopeBlock
     );
     const reply = sanitizeReplyCitations(result.text, styleExcerpts || '', message);
     const passage = `${styleExcerpts || ''}\n${reply}\n${message}`;
-    sources = mergeCatalogSources(
-      sources,
-      sources.length >= MAX_REPLY_SOURCES
-        ? []
-        : sourcesFromCatalogMatch(
-            passage,
-            catalog,
-            linkVariant || 'owned',
-            MAX_REPLY_SOURCES - sources.length
-          ),
-      MAX_REPLY_SOURCES
-    );
+    if (!materialScope) {
+      sources = mergeCatalogSources(
+        sources,
+        sources.length >= MAX_REPLY_SOURCES
+          ? []
+          : sourcesFromCatalogMatch(
+              passage,
+              catalog,
+              linkVariant || 'owned',
+              MAX_REPLY_SOURCES - sources.length
+            ),
+        MAX_REPLY_SOURCES
+      );
+    }
     const hadRetrievalRaw = Boolean(String(styleExcerpts || '').trim());
-    if (!sources.length && hadRetrievalRaw) {
+    if (!materialScope && !sources.length && hadRetrievalRaw) {
       sources = sourcesFromLevelTitles(passage, catalog, linkVariant || 'owned');
     }
     // Source panel is a paid-plan feature.
@@ -226,6 +341,10 @@ export async function processWisdomMessage({ userId, sessionKey, message, thread
       sources: sourcesForClient,
       hadRetrieval,
       tier,
+      notices,
+      materialScope: materialScope
+        ? { key: materialScope.scopeKey, label: materialScope.label }
+        : null,
     };
   } catch (err) {
     console.error('Wisdom reply error:', err);

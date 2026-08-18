@@ -8,8 +8,8 @@
 const API_BASE = 'https://api.thinkific.com/api/public/v1';
 const PRODUCTS_CACHE_MS = 5 * 60 * 1000;
 
-/** @type {{ at: number; items: object[] } | null} */
-let productsCache = null;
+/** @type {Map<string, { at: number; items: object[] }>} */
+const catalogCacheByPath = new Map();
 
 function getThinkificAccessToken() {
   return String(process.env.THINKIFIC_API_KEY || '').trim();
@@ -92,8 +92,9 @@ export async function probeThinkificApi() {
 
 async function fetchAllCatalogItems(path) {
   const now = Date.now();
-  if (path === '/products' && productsCache && now - productsCache.at < PRODUCTS_CACHE_MS) {
-    return productsCache.items;
+  const cached = catalogCacheByPath.get(path);
+  if (cached && now - cached.at < PRODUCTS_CACHE_MS) {
+    return cached.items;
   }
 
   const all = [];
@@ -106,10 +107,35 @@ async function fetchAllCatalogItems(path) {
     if (!result.items.length) break;
   }
 
-  if (path === '/products') {
-    productsCache = { at: now, items: all };
-  }
+  catalogCacheByPath.set(path, { at: now, items: all });
   return all;
+}
+
+/**
+ * @returns {Promise<Array<{ id: number; name: string; slug: string }>>}
+ */
+export async function fetchThinkificCourses() {
+  const items = await fetchAllCatalogItems('/courses');
+  return items.map((item) => ({
+    id: Number(item.id) || 0,
+    name: String(item.name || item.title || '').trim(),
+    slug: String(item.slug || '').trim().replace(/^\/+|\/+$/g, ''),
+  }));
+}
+
+/**
+ * @param {object} enrollment
+ * @returns {boolean}
+ */
+export function isThinkificEnrollmentActive(enrollment) {
+  if (!enrollment) return false;
+  if (enrollment.is_free_trial === true) return false;
+  if (enrollment.expired === true) return false;
+  if (enrollment.expiry_date) {
+    const exp = new Date(enrollment.expiry_date);
+    if (!Number.isNaN(exp.getTime()) && exp.getTime() < Date.now()) return false;
+  }
+  return true;
 }
 
 /**

@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { isDbEnabled } from '../../db/pool.js';
 import * as threadDb from '../../db/threads.js';
 import * as dailyMessages from '../../db/daily-messages.js';
+import { loadCourseCatalog } from '../../rag/course-catalog.js';
+import { listMaterialScopeOptions, resolveMaterialScope } from '../../rag/material-scope.js';
 import {
   ensureUserTier,
   getDailyMessageLimitForTier,
@@ -9,8 +11,29 @@ import {
   getThreadLimitMessage,
 } from '../../lib/tier.js';
 
+function scopePayload(scopeKey, catalog) {
+  const resolved = resolveMaterialScope(catalog, scopeKey);
+  if (!resolved) return null;
+  return { key: resolved.scopeKey, label: resolved.label };
+}
+
 export function createThreadsApiRouter() {
   const r = Router();
+
+  r.get('/api/material-scope', async (req, res, next) => {
+    try {
+      const userId = req.omiUser.sub;
+      const tier = await ensureUserTier(userId, req.omiUser.email);
+      if (tier !== 'paid') {
+        res.json({ courses: [] });
+        return;
+      }
+      const catalog = await loadCourseCatalog();
+      res.json({ courses: listMaterialScopeOptions(catalog) });
+    } catch (e) {
+      next(e);
+    }
+  });
 
   r.get('/api/threads', async (req, res, next) => {
     try {
@@ -141,12 +164,15 @@ export function createThreadsApiRouter() {
       const messages = await threadDb.getAllThreadMessages(threadId);
       const tier = await ensureUserTier(userId, req.omiUser.email);
       const sourcesVisible = tier === 'paid';
+      const catalog = tier === 'paid' ? await loadCourseCatalog() : null;
       res.json({
         thread: {
           id: thread.id,
           title: thread.title,
           createdAt: thread.created_at,
           updatedAt: thread.updated_at,
+          materialScope:
+            tier === 'paid' ? scopePayload(thread.material_scope_key, catalog) : null,
         },
         tier: tier === 'paid' ? 'paid' : 'free',
         messages: sourcesVisible

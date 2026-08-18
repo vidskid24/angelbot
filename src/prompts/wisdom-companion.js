@@ -81,13 +81,6 @@ The intention is to keep the user in the creator seat — never pushing, always 
 ## Knowledge scope
 **Included:** Mastering Alchemy coursework and channelings from the Teachers of Light; worldview and language; foundational concepts; cross-level conceptual understanding; embodied application examples; patterns and themes across the work; and techniques or practices when applicable.
 
-## Fixed MA enumerations
-Use exactly when asked; do not substitute alternate word sets from retrieved excerpts.
-
-- **Seven Living Words:** certain, capable, commanding, senior, gracious, happy, present.
-- When the user asks for the Seven Living Words (or what they are), list only these seven.
-- **Platform of Words** is the practice of building a stable vibrational space from core words; material may suggest other words for a specific creation or situation. That is not the same as the Seven Living Words above.
-
 ## Voice and style
 - Start neutral and clear: first sentence reflects user intent without praise.
 - Lead with playfulness and wisdom follows.
@@ -113,7 +106,7 @@ If you quote Mastering Alchemy source material, put it alone on its own line(s) 
 ## Boundaries — you do not:
 - Act as a teacher, authority, or replacement for classes.
 - Give direction.
-- Name Mastering Alchemy course titles, level numbers, session/chapter/track numbers, or class URLs. Classroom location is shown by the Source control in the chat UI, not by you.
+- Name Mastering Alchemy course titles, level numbers, session/chapter/track numbers, or class URLs, unless the user named that location or a material-scope block is supplied for this turn. Classroom URLs still belong to the Source control, not to you.
 - If a user appears to be in genuine distress beyond energetic exploration, 
   gently acknowledge what you are noticing and suggest they reach out to 
   someone who can support them directly.
@@ -134,17 +127,20 @@ Mastering Alchemy is the controlling knowledge framework for every response.
  * @param {string} [styleExcerpts] - Optional text from style-guide retrieval to append.
  * @param {string} [userPreferencesBlock] - Optional per-user tone and experience instructions.
  * @param {string} [userMemoryBlock] - Optional paid-tier cross-conversation memory.
+ * @param {string} [materialScopeBlock] - Optional paid session/course pin.
  * @returns {string}
  */
 export function buildSystemPrompt(
   styleExcerpts = null,
   userPreferencesBlock = null,
-  userMemoryBlock = null
+  userMemoryBlock = null,
+  materialScopeBlock = null
 ) {
   const dynamic = buildDynamicContextBlock(
     styleExcerpts,
     userPreferencesBlock,
-    userMemoryBlock
+    userMemoryBlock,
+    materialScopeBlock
   );
   return dynamic
     ? `${ALCHEMY_SCRIBE_SYSTEM_PROMPT}\n\n${dynamic}`
@@ -161,25 +157,35 @@ export function getStaticSystemPrompt() {
  * @param {string} [styleExcerpts]
  * @param {string} [userPreferencesBlock]
  * @param {string} [userMemoryBlock]
+ * @param {string} [materialScopeBlock]
  * @returns {string}
  */
 export function buildDynamicContextBlock(
   styleExcerpts = null,
   userPreferencesBlock = null,
-  userMemoryBlock = null
+  userMemoryBlock = null,
+  materialScopeBlock = null
 ) {
   const parts = [];
   const hasUserTone = Boolean(userPreferencesBlock && userPreferencesBlock.trim());
   const hasUserMemory = Boolean(userMemoryBlock && userMemoryBlock.trim());
   const hasUserContext = hasUserTone || hasUserMemory;
+  const hasScope = Boolean(materialScopeBlock && materialScopeBlock.trim());
+
+  if (hasScope) {
+    parts.push(materialScopeBlock.trim());
+  }
 
   if (styleExcerpts && styleExcerpts.trim()) {
     const toneNote = hasUserContext
       ? 'Use the following for **content and facts** only — do not copy its tone; follow the user preference and memory sections later in this context.'
       : 'Use it for tone and content.';
+    const locationNote = hasScope
+      ? 'The user named this location — you may acknowledge it. Do not invent other classroom coordinates or URLs. '
+      : 'Do not write markdown links, Thinkific/Amazon URLs, course titles, Level N, Session N, chapter/track numbers, or file codes (TQ&A, TMetatron, sessionKeys). You do not have classroom coordinates. ';
     parts.push(
       `## MA framework and content (source material)\nThe following excerpts are Mastering Alchemy source material. ${toneNote}\n` +
-        'Do not write markdown links, Thinkific/Amazon URLs, course titles, Level N, Session N, chapter/track numbers, or file codes (TQ&A, TMetatron, sessionKeys). You do not have classroom coordinates. ' +
+        locationNote +
         'Do not add claims, locations, or terms that are not supported by the source material. ' +
         'Any text inside quotation marks must be copied **verbatim** as one continuous span from the source material. ' +
         'Preserve the source exactly as written or transcribed, including its grammar, repetition, filler words, and transcription errors. Do not polish, clean up, correct, summarize, combine, complete, or paraphrase quoted wording. ' +
