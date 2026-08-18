@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=77
+ * OMIBOT_WIDGET_VERSION=79
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -14,7 +14,7 @@
   }
 
   const API_BASE = API.replace(/\/$/, '');
-  const WIDGET_VERSION = '77';
+  const WIDGET_VERSION = '79';
   const STORAGE_KEY = 'omibot_access_token';
   const STORAGE_KEY_LEGACY = 'angelbot_access_token';
   const TIER_STORAGE_KEY = 'omibot_tier';
@@ -607,7 +607,9 @@
       '.omibot-suggestion-chip:disabled{opacity:0.45;cursor:not-allowed}' +
       '.omibot-scope{margin:14px 0 0}' +
       '.omibot-scope[hidden]{display:none!important}' +
-      '.omibot-scope-label{margin:0 0 8px;font-size:0.8rem;font-weight:600;color:#666;letter-spacing:0.02em}' +
+      '.omibot-scope-heading{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px;margin:0 0 8px}' +
+      '.omibot-scope-label{margin:0;font-size:0.8rem;font-weight:600;color:#666;letter-spacing:0.02em}' +
+      '.omibot-scope-note{margin:0;font-size:0.75rem;font-weight:400;color:#888;letter-spacing:0;line-height:1.35}' +
       '.omibot-scope-row{display:flex;flex-wrap:wrap;gap:8px}' +
       '.omibot-scope-row select{flex:1 1 160px;min-width:0;padding:9px 12px;border:1px solid #e0dcd4;border-radius:10px;background:#f5f3ef;font:inherit;font-size:0.88rem;color:#1a1a1a}' +
       '.omibot-scope-row select:disabled{opacity:0.45}' +
@@ -677,10 +679,13 @@
       '<div class="omibot-suggestions-chips" id="omibot-suggestions-chips"></div>' +
       '</div>' +
       '<div class="omibot-scope" id="omibot-scope" hidden>' +
-      '<p class="omibot-scope-label">Focus this conversation</p>' +
+      '<div class="omibot-scope-heading">' +
+      '<p class="omibot-scope-label">Focused conversation on</p>' +
+      '<p class="omibot-scope-note">Only courses you are enrolled in are listed.</p>' +
+      '</div>' +
       '<div class="omibot-scope-row">' +
       '<select id="omibot-scope-course" aria-label="Course">' +
-      '<option value="">Course</option></select>' +
+      '<option value=""></option></select>' +
       '<select id="omibot-scope-session" aria-label="Session" disabled>' +
       '<option value="">Session</option></select>' +
       '</div></div>' +
@@ -1425,7 +1430,7 @@
 
     function renderMaterialScopePicker() {
       if (!scopeEl || !scopeCourseEl || !scopeSessionEl) return;
-      if (!isPaidTier() || !materialScopeCourses.length) {
+      if (!isPaidTier()) {
         hideMaterialScopePicker();
         return;
       }
@@ -1434,7 +1439,7 @@
       scopeCourseEl.replaceChildren();
       const coursePlaceholder = document.createElement('option');
       coursePlaceholder.value = '';
-      coursePlaceholder.textContent = 'Course';
+      coursePlaceholder.textContent = '';
       scopeCourseEl.appendChild(coursePlaceholder);
       for (let i = 0; i < materialScopeCourses.length; i++) {
         const opt = document.createElement('option');

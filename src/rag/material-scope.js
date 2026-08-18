@@ -38,12 +38,20 @@ function normalize(value) {
  */
 function levelEntries(catalog) {
   const levels = catalog?.levels && typeof catalog.levels === 'object' ? catalog.levels : {};
-  return Object.entries(levels).map(([code, entry]) => ({
-    code,
-    title: String(entry?.title || code).trim(),
-    purchaseUrl: String(entry?.purchaseUrl || catalog?.defaultPurchaseUrl || '').trim(),
-    entry,
-  }));
+  return Object.entries(levels)
+    .filter(([code, entry]) => {
+      const key = String(code || '');
+      const title = String(entry?.title || '');
+      if (key.startsWith('book:') || /^book$/i.test(key)) return false;
+      if (/\bbook\b/i.test(title)) return false;
+      return true;
+    })
+    .map(([code, entry]) => ({
+      code,
+      title: String(entry?.title || code).trim(),
+      purchaseUrl: String(entry?.purchaseUrl || catalog?.defaultPurchaseUrl || '').trim(),
+      entry,
+    }));
 }
 
 /**

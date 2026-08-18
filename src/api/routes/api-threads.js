@@ -4,6 +4,7 @@ import * as threadDb from '../../db/threads.js';
 import * as dailyMessages from '../../db/daily-messages.js';
 import { loadCourseCatalog } from '../../rag/course-catalog.js';
 import { listMaterialScopeOptions, resolveMaterialScope } from '../../rag/material-scope.js';
+import { listAccessibleLevelCodes } from '../../lib/course-access.js';
 import {
   ensureUserTier,
   getDailyMessageLimitForTier,
@@ -29,7 +30,9 @@ export function createThreadsApiRouter() {
         return;
       }
       const catalog = await loadCourseCatalog();
-      res.json({ courses: listMaterialScopeOptions(catalog) });
+      const allowed = await listAccessibleLevelCodes(userId, req.omiUser.email, catalog);
+      const courses = listMaterialScopeOptions(catalog).filter((course) => allowed.has(course.code));
+      res.json({ courses });
     } catch (e) {
       next(e);
     }

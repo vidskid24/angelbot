@@ -142,7 +142,7 @@ Check `thinkificApiProbeOk`, `thinkific.enrollments`, `matchedPaidEnrollment`, a
     }
 
     var s = document.createElement('script');
-    s.src = api + '/omi-chat-widget.js?v=79';
+    s.src = api + '/omi-chat-widget.js?v=81';
     s.defer = true;
     document.head.appendChild(s);
   }

@@ -257,3 +257,69 @@ export async function userHasAccessToCourseLevel(userId, email, levelCode, catal
     return false;
   }
 }
+
+/**
+ * Level codes the user may focus (owned or membership enrollment).
+ * When Thinkific is not configured, all catalog courses are treated as accessible.
+ * @param {string} userId
+ * @param {string | undefined} email
+ * @param {import('../rag/course-catalog.js').CourseCatalog | null | undefined} catalog
+ * @returns {Promise<Set<string>>}
+ */
+export async function listAccessibleLevelCodes(userId, email, catalog) {
+  const levels = catalog?.levels && typeof catalog.levels === 'object' ? catalog.levels : {};
+  const codes = Object.keys(levels).filter((code) => {
+    if (String(code).startsWith('book:')) return false;
+    const title = String(levels[code]?.title || '');
+    return !/\bbook\b/i.test(title);
+  });
+  if (!codes.length) return new Set();
+  if (!isThinkificConfigured()) return new Set(codes);
+
+  const thinkificUserId = String(userId || '').trim();
+  if (!thinkificUserId && !email) return new Set();
+  if (thinkificUserId.startsWith('email:') && !email) return new Set();
+
+  try {
+    const membershipBase = parseProductMatchersFromEnv('THINKIFIC_MEMBERSHIP_PRODUCT_IDS');
+    const hasMembershipConfig = membershipBase.ids.size > 0 || membershipBase.names.size > 0;
+    const [items, courses, membershipMatchers] = await Promise.all([
+      fetchThinkificEnrollments(userId, email),
+      fetchThinkificCourses(),
+      hasMembershipConfig ? buildEffectiveMatchers(membershipBase) : Promise.resolve(null),
+    ]);
+
+    /** @type {Map<number, { id: number; name: string; slug: string }>} */
+    const courseById = new Map();
+    for (const course of courses) {
+      if (course.id > 0) courseById.set(course.id, course);
+    }
+
+    const allowed = new Set();
+    for (const code of codes) {
+      const levelEntry = levels[code];
+      const hasMembershipVariant = Boolean(levelEntry?.variants?.membership);
+      for (const enrollment of items) {
+        if (!isThinkificEnrollmentActive(enrollment)) continue;
+        const cid = Number(enrollment.course_id);
+        const courseMeta = Number.isFinite(cid) && cid > 0 ? courseById.get(cid) : null;
+        if (enrollmentNameMatchesLevel(enrollment, levelEntry, courseMeta)) {
+          allowed.add(code);
+          break;
+        }
+        if (
+          hasMembershipVariant &&
+          membershipMatchers &&
+          isActiveEnrollmentForProduct(enrollment, membershipMatchers)
+        ) {
+          allowed.add(code);
+          break;
+        }
+      }
+    }
+    return allowed;
+  } catch (err) {
+    console.warn('Accessible course list failed:', err?.message || err);
+    return new Set();
+  }
+}
