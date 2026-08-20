@@ -272,11 +272,49 @@ export function resolveLinkForSource(unit, linkVariant, catalog, source) {
  * @param {string | undefined | null} sessionKey
  * @returns {CatalogUnit | null}
  */
-export function lookupCatalogUnit(catalog, sessionKey) {
+/** Duplicate/renamed file keys → existing catalog units. */
+const CATALOG_UNIT_ALIASES = {
+  'ETPF-S3-ArcoftheCovenant': 'ETPF-S3-ArcofCovenant',
+  'ETPF-S5-CompleteDayCall': 'ETPF-S5-TwoAdditionalQACompleteDay',
+  'ETPF-S5-CompleteEveningCall': 'ETPF-S5-TwoAdditionalQACompleteEvening',
+  'L2-S5-TQAFull': 'L2-S5-AnotherQACall',
+  'L2-S8-TLayersFull': 'L2-S8-SevenLayersofThoughtExtraClass',
+  'L2-S11-TWellbeingPlatformFull': 'L2-S11-WellbeingPlatform',
+  'L2-S19-ERayTAbsorbTemp0414201': 'L2-S19-AbsorbingTemplates1',
+  'L2-S19-ERayTAbsorbTemp0414202': 'L2-S19-AbsorbingTemplates2',
+  'L2-S19-ERayTMonitorRays0421201': 'L2-S19-MonitorRays',
+  'L2-S19-TPrev8Ray1Full': 'L2-S19-PreviousGroup',
+  'L2-S20-TPrev8Ray2Full': 'L2-S20-PreviousGroup',
+  'L2-S20-TZadkielFull': 'L2-S20-Zadkiel',
+  'R2-S10-QuestionsAnswers1': 'R2-S10-QA1',
+  'R2-S10-QuestionsAnswers2': 'R2-S10-QA2',
+};
+
+function catalogUnitKeyAliases(sessionKey) {
   const key = String(sessionKey || '').trim();
-  if (!key || !catalog?.units) return null;
-  const unit = catalog.units[key];
-  return unit && typeof unit === 'object' ? unit : null;
+  if (!key) return [];
+  const keys = [];
+  const add = (next) => {
+    const value = String(next || '').trim();
+    if (value && !keys.includes(value)) keys.push(value);
+  };
+  add(key);
+  if (/-TQA(\d*)$/i.test(key)) add(key.replace(/-TQA(\d*)$/i, '-QA$1'));
+  else if (/-QA(\d*)$/i.test(key)) add(key.replace(/-QA(\d*)$/i, '-TQA$1'));
+  if (/used$/i.test(key)) add(key.replace(/used$/i, ''));
+  if (CATALOG_UNIT_ALIASES[key]) add(CATALOG_UNIT_ALIASES[key]);
+  const strippedT = key.match(/^(.*-)T([A-Z].*)$/);
+  if (strippedT) add(`${strippedT[1]}${strippedT[2]}`);
+  return keys;
+}
+
+export function lookupCatalogUnit(catalog, sessionKey) {
+  if (!catalog?.units) return null;
+  for (const key of catalogUnitKeyAliases(sessionKey)) {
+    const unit = catalog.units[key];
+    if (unit && typeof unit === 'object') return unit;
+  }
+  return null;
 }
 
 /**
@@ -959,7 +997,7 @@ export function formatRetrievedChunkWithCatalog(chunk, catalog, linkVariant = nu
  */
 export function listMissingCatalogUnits(catalog, sessionKeys) {
   const unique = [...new Set(sessionKeys.filter(Boolean))].sort();
-  return unique.filter((key) => !catalog.units?.[key]);
+  return unique.filter((key) => !lookupCatalogUnit(catalog, key));
 }
 
 /**

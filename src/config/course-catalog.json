@@ -1167,6 +1167,9 @@
         "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886180-monitor-rays-01-05-37"
       }
     },
+    "L2-S19-T8Ray1Full": {
+      "title": "Eighth Ray #1"
+    },
     "L2-S20": {
       "title": "Eighth Ray #2",
       "thinkificUrls": {
@@ -1188,6 +1191,9 @@
         "membership": "https://courses.masteringalchemy.com/courses/take/core-l2/audio/40886187-zadkiel-complete-conversation-57-49"
       }
     },
+    "L2-S20-T8Ray2Fullv2": {
+      "title": "Eighth Ray #2 Full v2"
+    },
     "L2-S21-T8Ray3Fullv2": {
       "title": "Eighth Ray #3"
     },
@@ -1208,6 +1214,18 @@
     },
     "ETPF-S3-HellofromJimVideo": {
       "title": "Hello from Jim - Video"
+    },
+    "ETPF-S3-Week37Level5ArcoftheCovenantCompleteClass": {
+      "title": "Week 37 Level 5 Arc of the Covenant Complete Class"
+    },
+    "ETPF-S3-Week38Level5SpiritualAutonomicSystemCompleteClass": {
+      "title": "Week 38 Level 5 Spiritual Autonomic System Complete Class"
+    },
+    "ETPF-S3-Week39Level5Metatron": {
+      "title": "Week 39 Level 5 Metatron"
+    },
+    "ETPF-S3-Week39Level5ZeandZeonCompleteClass": {
+      "title": "Week 39 Level 5 Ze and Ze-on Complete Class"
     },
     "ETPF-SuggestedClasses-ArcoftheCovenantComplete": {
       "title": "Arc of the Covenant"
@@ -2418,6 +2436,9 @@
     "L4-S13": {
       "title": "Feminine and Masculine Triads"
     },
+    "L4-S14": {
+      "title": "Holy Spirit Initiation"
+    },
     "L4-S15": {
       "title": "Rest"
     },
@@ -2429,6 +2450,12 @@
     },
     "L4-S16-TQA": {
       "title": "Q&A"
+    },
+    "L4-S16-TJimRoxane": {
+      "title": "Jim Roxane"
+    },
+    "L4-S16-TKuthumi": {
+      "title": "Kuthumi"
     },
     "L4-S17": {
       "title": "Match Yeshua, Kuthumi Within the Sacred Heart"
@@ -2447,6 +2474,9 @@
     },
     "L4-S18-TQA": {
       "title": "Q&A"
+    },
+    "L4-S19": {
+      "title": "Creating New Reference Points"
     },
     "L4-S19-TConversationJimRoxane": {
       "title": "Conversation Jim Roxane"
@@ -2552,6 +2582,9 @@
     },
     "L4-S32": {
       "title": "Creative Applications of the Eighth Ray"
+    },
+    "L4-S32-EighthRayApplications": {
+      "title": "Eighth Ray Applications"
     },
     "L4-S32-TMetatron": {
       "title": "Metatron"

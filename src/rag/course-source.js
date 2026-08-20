@@ -97,16 +97,14 @@ function normalizeTitle(raw) {
  * @returns {string}
  */
 function sessionTrackCatalogKey(levelCode, sessionCode, title) {
-  const normalized = normalizeTitle(title);
+  const normalized = normalizeTitle(title).replace(/q&as/gi, 'QA');
   const compact = normalized.replace(/[\s&]+/g, '');
-  // Filenames use TQ&A / TQA; catalog keys are often …-TQA or …-QA.
-  if (/^t?qa\d*$/i.test(compact)) {
-    const num = compact.match(/(\d+)$/);
-    return num
-      ? `${levelCode}-${sessionCode}-TQA${num[1]}`
-      : `${levelCode}-${sessionCode}-TQA`;
+  // TQ&A / TQA stay on catalog …-TQA keys. QA / Q&A / QA1 stay on …-QA keys.
+  const qa = compact.match(/^(t)?qa(\d*)$/i);
+  if (qa) {
+    const prefix = qa[1] ? 'TQA' : 'QA';
+    return `${levelCode}-${sessionCode}-${prefix}${qa[2] || ''}`;
   }
-  if (/^q&a$/i.test(normalized)) return `${levelCode}-${sessionCode}-QA`;
   const slug = normalized.replace(/[^a-z0-9]+/gi, '');
   return `${levelCode}-${sessionCode}-${slug}`;
 }
