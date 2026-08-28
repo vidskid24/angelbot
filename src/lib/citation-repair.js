@@ -153,10 +153,120 @@ export function parseSourceCites(excerpts, catalog = null) {
   return cites;
 }
 
+/** Max chars for merged follow-up excerpts (matches wisdom capStyleExcerpts default). */
+export const MERGED_EXCERPT_MAX_CHARS = 12000;
+
+/** Max distinct source blocks kept when merging prior + new retrieval. */
+export const MERGED_EXCERPT_MAX_BLOCKS = 12;
+
 /**
+ * User wants a fuller or stepwise answer on the same thread topic.
  * @param {string} message
  * @returns {boolean}
  */
+export function userAskedForMoreDetail(message) {
+  const t = String(message || '');
+  if (!t.trim()) return false;
+  if (userAskedForCitation(t)) return false;
+  return (
+    /\bmore\s+(?:detail|explicit|specific|thorough(?:ly)?)\b/i.test(t) ||
+    /\b(?:step[\s-]*by[\s-]*step|walk\s+me\s+through)\b/i.test(t) ||
+    /\b(?:exact|full)\s+(?:sequence|protocol|steps?)\b/i.test(t) ||
+    /\bin\s+what\s+order\b/i.test(t) ||
+    /\b(?:expand|elaborate)\s+(?:on|that|this|it)\b/i.test(t) ||
+    /\bgo\s+(?:deeper|into\s+more\s+detail)\b/i.test(t) ||
+    /\bbreak\s+(?:it|this|that)\s+down\b/i.test(t) ||
+    /\bspell\s+(?:it|this|that)\s+out\b/i.test(t) ||
+    /\blist\s+(?:the\s+)?steps\b/i.test(t) ||
+    /\b(?:what|give)\s+(?:are\s+)?(?:me\s+)?(?:the\s+)?steps\b/i.test(t) ||
+    /\bhow\s+exactly\b/i.test(t)
+  );
+}
+
+/**
+ * @param {SourceBlock} block
+ * @returns {string}
+ */
+function blockDedupeKey(block) {
+  const body = String(block.body || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 400)
+    .toLowerCase();
+  return `${String(block.url || '').trim()}|${String(block.detail || '').trim()}|${body}`;
+}
+
+/**
+ * @param {SourceBlock} block
+ * @param {number} index
+ * @returns {string}
+ */
+function serializeSourceBlockForRetrieval(block, index) {
+  const header = `--- Source ${index} ---`;
+  const title = String(block.title || '').trim();
+  const url = String(block.url || '').trim();
+  const detail = String(block.detail || '').trim();
+  const access = String(block.access || '').trim().toLowerCase();
+  const body = String(block.body || '').trim();
+  const labelLine = String(block.labelLine || '').trim();
+
+  if (title && url) {
+    const headerLines = [header, `cite: [${title}](${url})`];
+    if (detail) headerLines.push(`detail: ${detail}`);
+    if (access) headerLines.push(`access: ${access}`);
+    headerLines.push('---');
+    return body ? `${headerLines.join('\n')}\n${body}` : headerLines.join('\n');
+  }
+
+  if (labelLine && url) {
+    const pipe =
+      access === 'purchase'
+        ? `${labelLine} | purchase: ${url}`
+        : `${labelLine} | ${url}`;
+    return body ? `${header}\n${pipe}\n---\n${body}` : `${header}\n${pipe}`;
+  }
+
+  return body ? `${header}\n---\n${body}` : header;
+}
+
+/**
+ * Merge fresh retrieval with prior stored excerpts on detail follow-ups.
+ * Dedupes by url + detail + body prefix; caps block count and total chars.
+ * @param {string} previousExcerpts
+ * @param {string} newExcerpts
+ * @param {{ maxChars?: number; maxBlocks?: number }} [options]
+ * @returns {string}
+ */
+export function mergeRetrievedExcerpts(previousExcerpts, newExcerpts, options = {}) {
+  const maxChars = Number(options.maxChars) > 0 ? Number(options.maxChars) : MERGED_EXCERPT_MAX_CHARS;
+  const maxBlocks =
+    Number(options.maxBlocks) > 0 ? Number(options.maxBlocks) : MERGED_EXCERPT_MAX_BLOCKS;
+  const incoming = parseSourceBlocks(newExcerpts);
+  const prior = parseSourceBlocks(previousExcerpts);
+  const seen = new Set();
+  /** @type {SourceBlock[]} */
+  const merged = [];
+
+  const add = (block) => {
+    const key = blockDedupeKey(block);
+    if (seen.has(key)) return;
+    seen.add(key);
+    merged.push(block);
+  };
+
+  for (const block of incoming) add(block);
+  for (const block of prior) add(block);
+
+  let text = '';
+  for (let i = 0; i < Math.min(merged.length, maxBlocks); i++) {
+    const part = serializeSourceBlockForRetrieval(merged[i], i + 1);
+    const next = text ? `${text}\n\n${part}` : part;
+    if (next.length > maxChars) break;
+    text = next;
+  }
+  return text;
+}
+
 export function userAskedForCitation(message) {
   const t = String(message || '');
   return (

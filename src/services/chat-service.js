@@ -28,6 +28,8 @@ import {
 import {
   sanitizeReplyCitations,
   userAskedForCitation,
+  userAskedForMoreDetail,
+  mergeRetrievedExcerpts,
   excerptBodiesForModel,
   sourcesFromExcerpts,
 } from '../lib/citation-repair.js';
@@ -174,10 +176,14 @@ function citationRetrievalContext(history) {
   };
 }
 
+function needsRetrievalContext(message) {
+  return isContextDependentFollowup(message) || userAskedForMoreDetail(message);
+}
+
 function buildRetrievalQuery(message, history) {
   const current = String(message || '').trim();
   const citationAsk = userAskedForCitation(current);
-  if (!citationAsk && !isContextDependentFollowup(current)) return current;
+  if (!citationAsk && !needsRetrievalContext(current)) return current;
 
   if (citationAsk) {
     const ctx = citationRetrievalContext(history);
@@ -185,13 +191,20 @@ function buildRetrievalQuery(message, history) {
     return query || current;
   }
 
+  const detailAsk = userAskedForMoreDetail(current);
+  const userCap = detailAsk ? 800 : 400;
+  const assistantCap = detailAsk ? 1000 : 500;
   const lastTopicUser =
     [...history]
       .reverse()
       .find((t) => t.role === 'user' && t.content && !userAskedForCitation(t.content))?.content || '';
   const lastAssistant =
     [...history].reverse().find((t) => t.role === 'assistant' && t.content)?.content || '';
-  return [String(lastTopicUser).slice(0, 400), String(lastAssistant).slice(0, 500), current]
+  return [
+    String(lastTopicUser).slice(0, userCap),
+    String(lastAssistant).slice(0, assistantCap),
+    current,
+  ]
     .filter(Boolean)
     .join('\n\n');
 }
@@ -263,12 +276,25 @@ export async function processWisdomMessage({
         sourceDetail,
         scopeKey: materialScope?.scopeKey || null,
       });
-      styleExcerpts =
+      const newExcerpts =
         typeof retrieved === 'string' ? retrieved : String(retrieved?.text || '');
-      sources =
+      const newSources =
         typeof retrieved === 'object' && Array.isArray(retrieved?.sources) && retrieved.sources.length
           ? retrieved.sources
-          : sourcesFromExcerpts(styleExcerpts, catalog);
+          : sourcesFromExcerpts(newExcerpts, catalog);
+      const detailFollowUp =
+        userAskedForMoreDetail(message) && String(storedExcerpts || '').trim();
+      if (detailFollowUp) {
+        styleExcerpts = mergeRetrievedExcerpts(storedExcerpts, newExcerpts);
+        sources = mergeCatalogSources(
+          sourcesFromExcerpts(storedExcerpts, catalog),
+          newSources,
+          MAX_REPLY_SOURCES
+        );
+      } else {
+        styleExcerpts = newExcerpts;
+        sources = newSources;
+      }
     }
     const result = await getWisdomReply(
       message,
