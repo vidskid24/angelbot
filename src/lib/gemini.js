@@ -42,12 +42,12 @@ export function getGeminiClient() {
 
 /** Effective Gemini chat model (env or default). */
 export function getGeminiChatModel() {
-  return process.env.GEMINI_CHAT_MODEL || 'gemini-3.5-flash-lite';
+  return process.env.GEMINI_CHAT_MODEL || 'gemini-3.5-flash';
 }
 
 /** Effective Gemini fallback chat model for transient overloads. */
 export function getGeminiFallbackChatModel() {
-  return process.env.GEMINI_FALLBACK_CHAT_MODEL || 'gemini-3.5-flash';
+  return process.env.GEMINI_FALLBACK_CHAT_MODEL || 'gemini-3.5-flash-lite';
 }
 
 /** Effective Gemini embedding model (env or default). */
