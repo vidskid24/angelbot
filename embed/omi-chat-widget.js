@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=81
+ * OMIBOT_WIDGET_VERSION=82
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -14,7 +14,7 @@
   }
 
   const API_BASE = API.replace(/\/$/, '');
-  const WIDGET_VERSION = '81';
+  const WIDGET_VERSION = '82';
   const STORAGE_KEY = 'omibot_access_token';
   const STORAGE_KEY_LEGACY = 'angelbot_access_token';
   const TIER_STORAGE_KEY = 'omibot_tier';
@@ -217,11 +217,44 @@
   }
 
   function normalizeBoldMarkers(s) {
-    return String(s)
-      .replace(/[\u200B-\u200D\uFEFF]/g, '')
-      .replace(/[\u2217\uFF0A\u2055]/g, '*')
-      .replace(/\uFF3F/g, '_')
-      .replace(/\\\*\\\*/g, '**');
+    return repairEmphasisMarkers(
+      String(s)
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')
+        .replace(/[\u2217\uFF0A\u2055]/g, '*')
+        .replace(/\uFF3F/g, '_')
+        .replace(/\\\*\\\*/g, '**')
+    );
+  }
+
+  /** Fix asymmetric ** markers common in some model outputs (e.g. consciousness**). */
+  function repairEmphasisMarkers(s) {
+    let t = String(s);
+    t = t.replace(/(?<!\*)\b([\w'-]+)\*\*(?!\*)/g, '**$1**');
+    t = t.replace(/(?<!\*)\*\*([\w'-]+)(?=\s|[,.;:!?\)]|$)(?!\*\*)/g, '**$1**');
+    return t;
+  }
+
+  function parseHeadingLine(line) {
+    const m = String(line || '')
+      .trim()
+      .match(/^(#{1,6})\s+(.+)$/);
+    if (!m) return null;
+    return { level: m[1].length, text: m[2].trim() };
+  }
+
+  /** Lone *, ---, etc. used as section dividers — not supported, drop the line. */
+  function isStrayMarkerLine(line) {
+    const t = String(line || '').trim();
+    if (!t) return false;
+    return /^-{3,}$/.test(t) || /^[*_~]{1,3}$/.test(t);
+  }
+
+  function appendHeadingBlock(parent, text, level) {
+    const tag = level <= 3 ? 'h3' : level === 4 ? 'h4' : 'h5';
+    const h = document.createElement(tag);
+    h.className = 'omibot-heading';
+    appendInlineFormatted(h, text);
+    parent.appendChild(h);
   }
 
   function isValidItalicContent(inner) {
@@ -438,6 +471,18 @@
     const lines = normalized.split('\n');
     let i = 0;
     while (i < lines.length) {
+      if (isStrayMarkerLine(lines[i])) {
+        i += 1;
+        continue;
+      }
+
+      const heading = parseHeadingLine(lines[i]);
+      if (heading) {
+        appendHeadingBlock(parent, heading.text, heading.level);
+        i += 1;
+        continue;
+      }
+
       if (isQuoteLine(lines[i])) {
         const quoteLines = [stripQuoteMarker(lines[i])];
         i += 1;
@@ -503,6 +548,11 @@
       '<style>' +
       '.omibot-shell{font-family:system-ui,-apple-system,sans-serif;max-width:920px;width:100%;margin:0 auto;padding:0 16px;box-sizing:border-box;color:#1a1a1a}' +
       '.omibot-shell .omibot-bold{font-weight:700!important}' +
+      '.omibot-shell .omibot-heading{margin:1em 0 0.35em;font-weight:700;line-height:1.3;color:#1a1a1a}' +
+      '.omibot-shell .omibot-heading:first-child{margin-top:0}' +
+      '.omibot-shell h3.omibot-heading{font-size:1.05rem}' +
+      '.omibot-shell h4.omibot-heading{font-size:1rem}' +
+      '.omibot-shell h5.omibot-heading{font-size:0.95rem}' +
       '.omibot-shell .omibot-italic,.omibot-shell em.omibot-italic{font-style:italic!important}' +
       '.omibot-shell .omibot-quote{display:block;margin:0.65em 0 0.65em 1rem;padding:0.15em 0 0.15em 0.95em;border:none;border-left:3px solid #8a8278!important;background:transparent;font-style:italic!important;font-weight:inherit;line-height:1.55;color:#1a1a1a!important}' +
       '.omibot-shell .omibot-quote .omibot-quote-body,.omibot-shell .omibot-quote .omibot-quote-body *{font-style:italic!important;color:#1a1a1a!important}' +
