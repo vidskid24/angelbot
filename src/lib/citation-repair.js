@@ -504,7 +504,7 @@ export function sanitizeReplyCitations(reply, styleExcerpts, _userMessage) {
   const original = String(reply || '');
   if (!original) return original;
 
-  let text = verifyQuotesAgainstExcerpts(original, styleExcerpts);
+  let text = original;
   text = stripModelCitationMarkup(text);
   text = stripInventedLocations(text);
   text = cleanupRedactedLocationJunk(text);
