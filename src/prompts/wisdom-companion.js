@@ -182,12 +182,11 @@ export function buildDynamicContextBlock(
       ? 'The user named this location — you may acknowledge it. Do not invent other classroom coordinates or URLs. '
       : 'Do not write markdown links, Thinkific/Amazon URLs, course titles, Level N, Session N, chapter/track numbers, or file codes (TQ&A, TMetatron, sessionKeys). You do not have classroom coordinates. ';
     parts.push(
-      `## MA framework and content (source material)\nThe following excerpts are Mastering Alchemy source material. ${toneNote}\n` +
+      `## MA framework and content (source material) The following excerpts are Mastering Alchemy source material. ${toneNote}\n` +
         locationNote +
         'Do not add claims, locations, or terms that are not supported by the source material. ' +
-        'Teach from the excerpts in your companion voice. Paraphrase by default. ' +
         'Do not join sentences or phrases from different places into one quote. ' +
-        'Offer techniques or practices when applicable.\n\n' +
+        'Offer techniques or practices when applicable.' +
         styleExcerpts.trim()
     );
   }
