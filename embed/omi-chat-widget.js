@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=82
+ * OMIBOT_WIDGET_VERSION=83
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -14,7 +14,7 @@
   }
 
   const API_BASE = API.replace(/\/$/, '');
-  const WIDGET_VERSION = '82';
+  const WIDGET_VERSION = '83';
   const STORAGE_KEY = 'omibot_access_token';
   const STORAGE_KEY_LEGACY = 'angelbot_access_token';
   const TIER_STORAGE_KEY = 'omibot_tier';
@@ -217,7 +217,7 @@
   }
 
   function normalizeBoldMarkers(s) {
-    return repairEmphasisMarkers(
+    return sanitizeBoldMarkers(
       String(s)
         .replace(/[\u200B-\u200D\uFEFF]/g, '')
         .replace(/[\u2217\uFF0A\u2055]/g, '*')
@@ -226,12 +226,52 @@
     );
   }
 
-  /** Fix asymmetric ** markers common in some model outputs (e.g. consciousness**). */
-  function repairEmphasisMarkers(s) {
+  const BOLD_STOPWORDS =
+    /^(the|a|an|and|or|of|in|to|is|are|was|were|your|you|it|that|this|for|with|as|at|by|on|be)$/i;
+
+  function isValidBoldContent(inner) {
+    const t = String(inner || '').trim();
+    if (!t || /\n/.test(t)) return false;
+    if (t.length > 40) return false;
+    const words = t.split(/\s+/).filter(Boolean);
+    if (words.length > 3) return false;
+    if (words.every((w) => BOLD_STOPWORDS.test(w))) return false;
+    if (words.length === 1) {
+      if (BOLD_STOPWORDS.test(words[0])) return false;
+      if (words[0].length <= 4 && !/[-]/.test(words[0])) return false;
+    }
+    if (words.length >= 2 && words.some((w) => BOLD_STOPWORDS.test(w))) return false;
+    return true;
+  }
+
+  /**
+   * Keep only well-formed ** pairs with short meaningful terms; drop orphans and junk bold.
+   */
+  function sanitizeBoldMarkers(s) {
     let t = String(s);
-    t = t.replace(/(?<!\*)\b([\w'-]+)\*\*(?!\*)/g, '**$1**');
-    t = t.replace(/(?<!\*)\*\*([\w'-]+)(?=\s|[,.;:!?\)]|$)(?!\*\*)/g, '**$1**');
-    return t;
+    let out = '';
+    let i = 0;
+    while (i < t.length) {
+      const open = t.indexOf('**', i);
+      if (open === -1) {
+        out += t.slice(i);
+        break;
+      }
+      out += t.slice(i, open);
+      const close = t.indexOf('**', open + 2);
+      if (close === -1) {
+        out += t.slice(open + 2);
+        break;
+      }
+      const inner = t.slice(open + 2, close);
+      if (isValidBoldContent(inner)) {
+        out += '**' + inner + '**';
+      } else {
+        out += inner;
+      }
+      i = close + 2;
+    }
+    return out;
   }
 
   function parseHeadingLine(line) {
