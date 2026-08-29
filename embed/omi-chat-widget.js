@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=86
+ * OMIBOT_WIDGET_VERSION=87
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -14,7 +14,7 @@
   }
 
   const API_BASE = API.replace(/\/$/, '');
-  const WIDGET_VERSION = '86';
+  const WIDGET_VERSION = '87';
   const STORAGE_KEY = 'omibot_access_token';
   const STORAGE_KEY_LEGACY = 'angelbot_access_token';
   const TIER_STORAGE_KEY = 'omibot_tier';
@@ -615,7 +615,7 @@
       '.omibot-shell .omibot-bold{font-weight:700!important}' +
       '.omibot-shell .omibot-heading,.omibot-shell h3.omibot-heading,.omibot-shell h4.omibot-heading,.omibot-shell h5.omibot-heading{margin:0 0 0.35em!important;padding-top:5px!important;font-family:inherit!important;font-size:130%!important;font-weight:400!important;font-style:normal!important;line-height:1.45!important;letter-spacing:normal!important;color:#1a1a1a!important}' +
       '.omibot-shell .omibot-italic,.omibot-shell em.omibot-italic{font-style:italic!important}' +
-      '.omibot-shell .omibot-quote{display:block;margin:0.65em 0 0.65em 1rem;padding:0.15em 0 0.15em 0.95em;border:none;border-left:3px solid #8a8278!important;background:transparent;font-style:italic!important;font-weight:inherit;line-height:1.55;color:#1a1a1a!important}' +
+      '.omibot-shell .omibot-quote{display:block;margin:10px 0 10px 1rem;padding:10px 0 10px 0.95em;border:none;border-left:3px solid #8a8278!important;background:transparent;font-style:italic!important;font-weight:inherit;line-height:1.55;color:#1a1a1a!important}' +
       '.omibot-shell .omibot-quote .omibot-quote-body,.omibot-shell .omibot-quote .omibot-quote-body *{font-style:italic!important;color:#1a1a1a!important}' +
       '.omibot-shell .omibot-cite{font-style:italic;color:#1a1a1a}' +
       '.omibot-shell .omibot-cite .omibot-cite-course,.omibot-shell .omibot-cite .omibot-cite-course strong{font-weight:700!important;font-style:italic!important}' +
