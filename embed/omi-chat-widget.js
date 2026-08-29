@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=83
+ * OMIBOT_WIDGET_VERSION=84
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -14,7 +14,7 @@
   }
 
   const API_BASE = API.replace(/\/$/, '');
-  const WIDGET_VERSION = '83';
+  const WIDGET_VERSION = '84';
   const STORAGE_KEY = 'omibot_access_token';
   const STORAGE_KEY_LEGACY = 'angelbot_access_token';
   const TIER_STORAGE_KEY = 'omibot_tier';
@@ -277,7 +277,7 @@
   function parseHeadingLine(line) {
     const m = String(line || '')
       .trim()
-      .match(/^(#{1,6})\s+(.+)$/);
+      .match(/^(#{1,6})\s*(.+)$/);
     if (!m) return null;
     return { level: m[1].length, text: m[2].trim() };
   }
@@ -286,7 +286,15 @@
   function isStrayMarkerLine(line) {
     const t = String(line || '').trim();
     if (!t) return false;
-    return /^-{3,}$/.test(t) || /^[*_~]{1,3}$/.test(t);
+    return /^-{3,}$/.test(t) || /^[*_~]+$/.test(t);
+  }
+
+  function trimProseLines(lines) {
+    let start = 0;
+    let end = lines.length;
+    while (start < end && !String(lines[start]).trim()) start += 1;
+    while (end > start && !String(lines[end - 1]).trim()) end -= 1;
+    return lines.slice(start, end);
   }
 
   function appendHeadingBlock(parent, text, level) {
@@ -490,20 +498,29 @@
     if (!items.length) return;
     const list = document.createElement(ordered ? 'ol' : 'ul');
     list.className = 'omibot-list ' + (ordered ? 'omibot-list-ol' : 'omibot-list-ul');
+    let hasItems = false;
+    let itemNumber = 0;
     for (let i = 0; i < items.length; i++) {
+      const heading = parseHeadingLine(items[i]);
+      if (heading) {
+        appendHeadingBlock(parent, heading.text, heading.level);
+        continue;
+      }
+      itemNumber += 1;
       const li = document.createElement('li');
       const marker = document.createElement('span');
       marker.className = 'omibot-list-marker';
       marker.setAttribute('aria-hidden', 'true');
-      marker.textContent = ordered ? i + 1 + '.' : '\u2022';
+      marker.textContent = ordered ? itemNumber + '.' : '\u2022';
       li.appendChild(marker);
       const body = document.createElement('span');
       body.className = 'omibot-list-text';
       appendInlineFormatted(body, items[i]);
       li.appendChild(body);
       list.appendChild(li);
+      hasItems = true;
     }
-    parent.appendChild(list);
+    if (hasItems) parent.appendChild(list);
   }
 
   function appendFormattedContent(parent, text) {
@@ -569,11 +586,19 @@
       }
 
       const proseLines = [];
-      while (i < lines.length && !isQuoteLine(lines[i]) && !parseListLine(lines[i])) {
+      while (i < lines.length) {
+        if (isStrayMarkerLine(lines[i])) {
+          i += 1;
+          continue;
+        }
+        if (parseHeadingLine(lines[i]) || parseListLine(lines[i]) || isQuoteLine(lines[i])) {
+          break;
+        }
         proseLines.push(lines[i]);
         i += 1;
       }
-      if (proseLines.length) appendProseBlock(parent, proseLines);
+      const trimmedProse = trimProseLines(proseLines);
+      if (trimmedProse.length) appendProseBlock(parent, trimmedProse);
     }
   }
 
