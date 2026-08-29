@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=88
+ * OMIBOT_WIDGET_VERSION=89
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -14,7 +14,15 @@
   }
 
   const API_BASE = API.replace(/\/$/, '');
-  const WIDGET_VERSION = '88';
+  const WIDGET_VERSION = '89';
+
+  function applySpacedBlockStyles(el, paddingTopPx, paddingBottomPx) {
+    el.style.setProperty('display', 'block', 'important');
+    el.style.setProperty('box-sizing', 'border-box', 'important');
+    el.style.setProperty('padding-top', paddingTopPx + 'px', 'important');
+    el.style.setProperty('padding-bottom', paddingBottomPx + 'px', 'important');
+    el.style.setProperty('margin', '0', 'important');
+  }
   const STORAGE_KEY = 'omibot_access_token';
   const STORAGE_KEY_LEGACY = 'angelbot_access_token';
   const TIER_STORAGE_KEY = 'omibot_tier';
@@ -298,11 +306,17 @@
   }
 
   function appendHeadingBlock(parent, text, level) {
-    const tag = level <= 3 ? 'h3' : level === 4 ? 'h4' : 'h5';
-    const h = document.createElement(tag);
-    h.className = 'omibot-heading';
-    appendInlineFormatted(h, text);
-    parent.appendChild(h);
+    const ariaLevel = level <= 3 ? 3 : level === 4 ? 4 : 5;
+    const wrap = document.createElement('div');
+    wrap.className = 'omibot-heading-wrap';
+    applySpacedBlockStyles(wrap, 14, 4);
+    const heading = document.createElement('div');
+    heading.className = 'omibot-heading';
+    heading.setAttribute('role', 'heading');
+    heading.setAttribute('aria-level', String(ariaLevel));
+    appendInlineFormatted(heading, text);
+    wrap.appendChild(heading);
+    parent.appendChild(wrap);
   }
 
   function isValidItalicContent(inner) {
@@ -384,13 +398,17 @@
   }
 
   function appendQuoteBlock(parent, quoteText) {
-    const quote = document.createElement('blockquote');
+    const wrap = document.createElement('div');
+    wrap.className = 'omibot-quote-wrap';
+    applySpacedBlockStyles(wrap, 10, 10);
+    const quote = document.createElement('div');
     quote.className = 'omibot-quote';
     const body = document.createElement('div');
     body.className = 'omibot-quote-body';
     appendInlineFormatted(body, quoteText);
     quote.appendChild(body);
-    parent.appendChild(quote);
+    wrap.appendChild(quote);
+    parent.appendChild(wrap);
   }
 
   function isCourseCitationUrl(url) {
@@ -613,11 +631,11 @@
       '<style>' +
       '.omibot-shell{font-family:system-ui,-apple-system,sans-serif;max-width:920px;width:100%;margin:0 auto;padding:0 16px;box-sizing:border-box;color:#1a1a1a}' +
       '.omibot-shell .omibot-bold{font-weight:700!important}' +
-      '.omibot-shell .omibot-heading,.omibot-shell h3.omibot-heading,.omibot-shell h4.omibot-heading,.omibot-shell h5.omibot-heading{display:block!important;margin:0 0 0.35em!important;padding-top:10px!important;font-family:inherit!important;font-size:130%!important;font-weight:400!important;font-style:normal!important;line-height:1.45!important;letter-spacing:normal!important;color:#1a1a1a!important}' +
-      '.omibot-shell .omibot-prose + .omibot-heading,.omibot-shell .omibot-prose + h3.omibot-heading,.omibot-shell .omibot-prose + h4.omibot-heading,.omibot-shell .omibot-prose + h5.omibot-heading{margin-top:14px!important;padding-top:10px!important}' +
-      '.omibot-shell .omibot-list + .omibot-heading,.omibot-shell .omibot-list + h3.omibot-heading,.omibot-shell .omibot-list + h4.omibot-heading,.omibot-shell .omibot-list + h5.omibot-heading{margin-top:14px!important;padding-top:10px!important}' +
+      '.omibot-shell .omibot-heading-wrap{display:block!important;margin:0!important;padding:14px 0 4px!important;box-sizing:border-box!important}' +
+      '.omibot-shell .omibot-heading{display:block!important;margin:0!important;padding:0!important;font-family:inherit!important;font-size:130%!important;font-weight:400!important;font-style:normal!important;line-height:1.45!important;letter-spacing:normal!important;color:#1a1a1a!important}' +
       '.omibot-shell .omibot-italic,.omibot-shell em.omibot-italic{font-style:italic!important}' +
-      '.omibot-shell .omibot-quote{display:block;margin:10px 0 10px 1rem;padding:10px 0 10px 0.95em;border:none;border-left:3px solid #8a8278!important;background:transparent;font-style:italic!important;font-weight:inherit;line-height:1.55;color:#1a1a1a!important}' +
+      '.omibot-shell .omibot-quote-wrap{display:block!important;margin:0!important;padding:10px 0!important;box-sizing:border-box!important}' +
+      '.omibot-shell .omibot-quote{display:block!important;margin:0 0 0 1rem!important;padding:0 0 0 0.95em!important;border:none;border-left:3px solid #8a8278!important;background:transparent!important;font-style:italic!important;font-weight:inherit!important;line-height:1.55!important;color:#1a1a1a!important}' +
       '.omibot-shell .omibot-quote .omibot-quote-body,.omibot-shell .omibot-quote .omibot-quote-body *{font-style:italic!important;color:#1a1a1a!important}' +
       '.omibot-shell .omibot-cite{font-style:italic;color:#1a1a1a}' +
       '.omibot-shell .omibot-cite .omibot-cite-course,.omibot-shell .omibot-cite .omibot-cite-course strong{font-weight:700!important;font-style:italic!important}' +
