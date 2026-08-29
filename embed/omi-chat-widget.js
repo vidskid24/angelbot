@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=91
+ * OMIBOT_WIDGET_VERSION=92
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -14,38 +14,14 @@
   }
 
   const API_BASE = API.replace(/\/$/, '');
-  const WIDGET_VERSION = '91';
+  const WIDGET_VERSION = '92';
 
   /** Flex column layout — gap between blocks survives themes that zero child margin/padding. */
   function applyMessageBodyLayout(body) {
     body.style.setProperty('display', 'flex', 'important');
     body.style.setProperty('flex-direction', 'column', 'important');
     body.style.setProperty('align-items', 'stretch', 'important');
-    body.style.setProperty('gap', '1em', 'important');
-  }
-
-  /** Non-empty gap element — avoids Thinkific div:empty { display:none } and height collapse. */
-  function appendVisualGap(parent, heightPx) {
-    if (!heightPx || heightPx <= 0) return;
-    const gap = document.createElement('span');
-    gap.className = 'omibot-v-gap';
-    gap.setAttribute('aria-hidden', 'true');
-    gap.textContent = '\u00A0';
-    gap.style.setProperty('display', 'block', 'important');
-    gap.style.setProperty('width', '100%', 'important');
-    gap.style.setProperty('height', heightPx + 'px', 'important');
-    gap.style.setProperty('min-height', heightPx + 'px', 'important');
-    gap.style.setProperty('max-height', heightPx + 'px', 'important');
-    gap.style.setProperty('margin', '0', 'important');
-    gap.style.setProperty('padding', '0', 'important');
-    gap.style.setProperty('border', 'none', 'important');
-    gap.style.setProperty('overflow', 'hidden', 'important');
-    gap.style.setProperty('line-height', heightPx + 'px', 'important');
-    gap.style.setProperty('font-size', '1px', 'important');
-    gap.style.setProperty('color', 'transparent', 'important');
-    gap.style.setProperty('pointer-events', 'none', 'important');
-    gap.style.setProperty('flex-shrink', '0', 'important');
-    parent.appendChild(gap);
+    body.style.setProperty('gap', '0.65em', 'important');
   }
   const STORAGE_KEY = 'omibot_access_token';
   const STORAGE_KEY_LEGACY = 'angelbot_access_token';
@@ -421,7 +397,6 @@
   }
 
   function appendQuoteBlock(parent, quoteText) {
-    appendVisualGap(parent, 12);
     const wrap = document.createElement('div');
     wrap.className = 'omibot-quote-wrap';
     const quote = document.createElement('div');
@@ -432,7 +407,6 @@
     quote.appendChild(body);
     wrap.appendChild(quote);
     parent.appendChild(wrap);
-    appendVisualGap(parent, 12);
   }
 
   function isCourseCitationUrl(url) {
@@ -655,7 +629,6 @@
       '<style>' +
       '.omibot-shell{font-family:system-ui,-apple-system,sans-serif;max-width:920px;width:100%;margin:0 auto;padding:0 16px;box-sizing:border-box;color:#1a1a1a}' +
       '.omibot-shell .omibot-bold{font-weight:700!important}' +
-      '.omibot-shell .omibot-v-gap{display:block!important;margin:0!important;padding:0!important;border:none!important;overflow:hidden!important;pointer-events:none!important;flex-shrink:0!important}' +
       '.omibot-shell .omibot-heading-wrap{display:block!important;margin:0!important;padding:0!important;box-sizing:border-box!important}' +
       '.omibot-shell .omibot-heading{display:block!important;margin:0!important;padding:0!important;font-family:inherit!important;font-size:130%!important;font-weight:400!important;font-style:normal!important;line-height:1.45!important;letter-spacing:normal!important;color:#1a1a1a!important}' +
       '.omibot-shell .omibot-italic,.omibot-shell em.omibot-italic{font-style:italic!important}' +
@@ -730,7 +703,7 @@
       '.omibot-msg-user{display:flex;justify-content:flex-end;margin:12px 0}' +
       '.omibot-msg-user .omibot-bubble{background:#e8e4dc;border-radius:14px;padding:12px 16px;max-width:85%;line-height:1.5;white-space:pre-wrap}' +
       '.omibot-msg-bot{margin:16px 0;line-height:1.55;max-width:100%}' +
-      '#omibot-chat-root .omibot-msg-bot .omibot-message-body{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:1em!important;white-space:normal!important}' +
+      '#omibot-chat-root .omibot-msg-bot .omibot-message-body{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:0.65em!important;white-space:normal!important}' +
       '.omibot-msg-bot .omibot-message-body{white-space:normal}' +
       '.omibot-msg-bot .omibot-prose{white-space:pre-wrap}' +
       '.omibot-shell .omibot-msg-bot ul.omibot-list,.omibot-shell .omibot-msg-bot ol.omibot-list{display:block!important;margin:0.55em 0 0.85em!important;padding:0!important;list-style:none!important;white-space:normal!important}' +
