@@ -185,7 +185,7 @@ export function buildDynamicContextBlock(
       `## MA framework and content (source material)\nThe following excerpts are Mastering Alchemy source material. ${toneNote}\n` +
         locationNote +
         'Do not add claims, locations, or terms that are not supported by the source material. ' +
-        'Teach from the excerpts in your companion voice. Paraphrase by default. Use quotation marks only for deliberate short exact phrases from the source. ' +
+        'Teach from the excerpts in your companion voice. Paraphrase by default. ' +
         'Do not join sentences or phrases from different places into one quote. ' +
         'Offer techniques or practices when applicable.\n\n' +
         styleExcerpts.trim()
