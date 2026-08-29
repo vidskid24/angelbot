@@ -185,11 +185,8 @@ export function buildDynamicContextBlock(
       `## MA framework and content (source material)\nThe following excerpts are Mastering Alchemy source material. ${toneNote}\n` +
         locationNote +
         'Do not add claims, locations, or terms that are not supported by the source material. ' +
-        'Any text inside quotation marks must be copied **verbatim** as one continuous span from the source material. ' +
-        'Preserve the source exactly as written or transcribed, including its grammar, repetition, filler words, and transcription errors. Do not polish, clean up, correct, summarize, combine, complete, or paraphrase quoted wording. ' +
-        'Do not join sentences or phrases from different places into one quote. You may omit timestamps and excerpt labels from inside quotation marks, but do not alter the words between them. ' +
-        'Before responding with any quotation, confirm that every word inside quotation marks appears in the same order in one source excerpt. ' +
-        'Do not use quotation marks around paraphrases. If the excerpts are too short for the requested quote length or count, quote what is available and briefly say that more of the passage is not in the retrieved excerpts. ' +
+        'Teach from the excerpts in your companion voice. Paraphrase by default. Use quotation marks only for deliberate short exact phrases from the source. ' +
+        'Do not join sentences or phrases from different places into one quote. ' +
         'Offer techniques or practices when applicable.\n\n' +
         styleExcerpts.trim()
     );
