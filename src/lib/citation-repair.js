@@ -406,6 +406,37 @@ function normalizeForQuoteCheck(text) {
 }
 
 /**
+ * Opening `"` must follow whitespace or punctuation — not a word character or another quote.
+ * Prevents `"ecstasy" from the universal mind"` from being read as `" from the universal mind"`.
+ * @param {string} text
+ * @param {number} openIndex
+ * @returns {boolean}
+ */
+function isQuoteOpenPosition(text, openIndex) {
+  if (openIndex <= 0) return true;
+  const before = text[openIndex - 1];
+  return !/[\w"'\u2018\u2019\u201C\u201D]/.test(before);
+}
+
+/**
+ * @param {string} text
+ * @param {string} haystack normalized excerpt text; empty means strip all long quotes
+ * @returns {string}
+ */
+function stripUnverifiedQuotes(text, haystack) {
+  const s = String(text || '').replace(/[\u201C\u201D]/g, '"');
+  return s.replace(/"([^"]{12,})"/g, (full, inner, offset) => {
+    if (!isQuoteOpenPosition(s, offset)) return full;
+    const trimmed = String(inner || '').trim();
+    if (trimmed.length < 12) return full;
+    if (!haystack) return trimmed;
+    const needle = normalizeForQuoteCheck(trimmed);
+    if (needle.length >= 12 && haystack.includes(needle)) return full;
+    return trimmed;
+  });
+}
+
+/**
  * If quoted text is not actually in the excerpts, drop the quote marks so we
  * do not present a paraphrase as a verbatim source quote.
  * @param {string} reply
@@ -414,17 +445,7 @@ function normalizeForQuoteCheck(text) {
  */
 export function verifyQuotesAgainstExcerpts(reply, excerpts) {
   const haystack = normalizeForQuoteCheck(excerpts);
-  if (!haystack) {
-    return String(reply || '').replace(/[“”]/g, '"').replace(/"([^"]{12,})"/g, '$1');
-  }
-
-  return String(reply || '').replace(/“([^”]{12,})”|"([^"]{12,})"/g, (full, curly, straight) => {
-    const inner = String(curly || straight || '').trim();
-    if (!inner) return full;
-    const needle = normalizeForQuoteCheck(inner);
-    if (needle.length >= 12 && haystack.includes(needle)) return full;
-    return inner;
-  });
+  return stripUnverifiedQuotes(reply, haystack);
 }
 
 /**
@@ -433,6 +454,7 @@ export function verifyQuotesAgainstExcerpts(reply, excerpts) {
  */
 function tidyProse(text) {
   return String(text || '')
+    .replace(/([a-z])"([A-Z])/g, '$1 $2')
     .replace(/\(\s*\)/g, '')
     .replace(/\s+and\s+[.,]/g, '.')
     .replace(/\bSee\s*[.]/gi, '.')
