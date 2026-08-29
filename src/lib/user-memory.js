@@ -38,6 +38,6 @@ export function buildUserMemoryPromptBlock(mem) {
   if (summary) {
     block += '\n### Summary from their conversations\n' + summary + '\n';
   }
-  block += '\nHonor this context while following all roles, boundaries, and formatting rules.';
+  block += '\nHonor this context while following all roles, boundaries, and grounding rules.';
   return block;
 }

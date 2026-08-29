@@ -90,7 +90,7 @@ export function buildUserPreferencesPromptBlock(prefs) {
   return (
     `${toneBlock}\n\n${maBlock}\n\n` +
     '**Priority:** These tone rules override the general companion voice and any retrieved material\'s tone. ' +
-    'Roles, boundaries, formatting, and factual grounding still apply. ' +
+    'Roles, boundaries, and factual grounding still apply. ' +
     'If earlier turns in this thread used a different voice, **shift to the selected tone now**.'
   );
 }
