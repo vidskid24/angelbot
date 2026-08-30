@@ -1,10 +1,8 @@
 /**
  * Load embeddings index and return top-k chunks by similarity to the query.
- * The embeddings file is kept warm in memory and reloaded when mtime changes.
+ * Large indexes are searched shard-by-shard to avoid loading all vectors into RAM.
  */
 
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import { embed } from '../lib/gemini.js';
 import {
   loadCourseCatalog,
@@ -16,16 +14,20 @@ import {
 import { hydrateRetrievedChunk, loadChunkSourceIndex } from './chunk-source-index.js';
 import { parseCourseSourceLoose } from './course-source.js';
 import { chunkMatchesScope } from './material-scope.js';
-import { loadEmbeddingsChunks } from './embeddings-store.js';
+import {
+  iterateEmbeddingChunks,
+  loadEmbeddingsChunks,
+  readEmbeddingsIndexMeta,
+} from './embeddings-store.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(__dirname, '../..');
 const DEFAULT_TOP_K = 6;
+/** Legacy monolithic indexes at or below this size may stay fully in memory. */
+const LEGACY_IN_MEMORY_MAX_CHUNKS = 3000;
 
+/** @type {{ mtimeMs: number; chunkCount: number; format: string } | null} */
+let embeddingsMetaCache = null;
 /** @type {{ mtimeMs: number; chunks: any[] } | null} */
-let embeddingsIndexCache = null;
-/** @type {Promise<{ mtimeMs: number; chunks: any[] } | null> | null} */
-let embeddingsIndexLoadPromise = null;
+let legacyChunksCache = null;
 
 function embeddingVector(raw) {
   if (Array.isArray(raw)) return raw;
@@ -56,80 +58,137 @@ function cosineSimilarity(aRaw, bRaw) {
   return denom === 0 ? 0 : dot / denom;
 }
 
-/**
- * @returns {Promise<{ mtimeMs: number; chunks: any[] } | null>}
- */
-async function loadEmbeddingsIndex() {
-  const loadedPreview = await loadEmbeddingsChunks();
-  if (!loadedPreview) {
-    embeddingsIndexCache = null;
-    return null;
-  }
-  const mtimeMs = loadedPreview.mtimeMs;
-
-  if (embeddingsIndexCache && embeddingsIndexCache.mtimeMs === mtimeMs) {
-    return embeddingsIndexCache;
-  }
-
-  if (embeddingsIndexLoadPromise) {
-    return embeddingsIndexLoadPromise;
-  }
-
-  embeddingsIndexLoadPromise = (async () => {
-    try {
-      const loaded = await loadEmbeddingsChunks();
-      if (!loaded) {
-        embeddingsIndexCache = null;
-        return null;
-      }
-      if (embeddingsIndexCache && embeddingsIndexCache.mtimeMs === loaded.mtimeMs) {
-        return embeddingsIndexCache;
-      }
-      const sourceIndex = await loadChunkSourceIndex();
-      const rawChunks = loaded.chunks;
-      let hydrated = 0;
-      const chunks = rawChunks.map((chunk, index) => {
-        const hadPath = Boolean(String(chunk?.sourcePath || '').trim());
-        const next = hydrateRetrievedChunk(chunk, sourceIndex, {
-          index,
-          total: rawChunks.length,
-        });
-        if (!hadPath && next?.sourcePath) hydrated += 1;
-        return next;
-      });
-      embeddingsIndexCache = { mtimeMs: loaded.mtimeMs, chunks };
-      console.info(
-        `[rag] Embeddings index loaded into memory (${chunks.length} chunks, hydrated ${hydrated} source paths)`
-      );
-      return embeddingsIndexCache;
-    } finally {
-      embeddingsIndexLoadPromise = null;
-    }
-  })();
-
-  return embeddingsIndexLoadPromise;
-}
-
-/**
- * Warm the embeddings index at process startup (optional; retrieve also lazy-loads).
- * @returns {Promise<void>}
- */
-export async function preloadEmbeddingsIndex() {
-  await loadEmbeddingsIndex();
-}
-
-/** Clear in-memory index (tests / after manual ingest in same process). */
-export function clearEmbeddingsIndexCache() {
-  embeddingsIndexCache = null;
-  embeddingsIndexLoadPromise = null;
-}
-
 function isBookChunk(chunk) {
   const path = String(chunk?.sourcePath || '');
   const source = chunk?.source;
   if (source?.unitType === 'book') return true;
   if (String(source?.sessionKey || '').startsWith('book:')) return true;
   return /(^|\/)ACIMA/i.test(path);
+}
+
+/**
+ * @param {{ score: number; source?: any; sourcePath?: string }} a
+ * @param {{ score: number; source?: any; sourcePath?: string }} b
+ * @returns {number}
+ */
+function compareScoredChunks(a, b) {
+  const diff = b.score - a.score;
+  if (Math.abs(diff) > 0.025) return diff;
+  return Number(isBookChunk(a)) - Number(isBookChunk(b));
+}
+
+/**
+ * @param {Array<{ score: number }>} pool
+ * @param {{ score: number }} item
+ * @param {number} maxSize
+ */
+function pushTopScored(pool, item, maxSize) {
+  pool.push(item);
+  pool.sort(compareScoredChunks);
+  if (pool.length > maxSize) pool.length = maxSize;
+}
+
+/**
+ * @returns {Promise<{ mtimeMs: number; chunkCount: number; format: string } | null>}
+ */
+async function getEmbeddingsMeta() {
+  const meta = await readEmbeddingsIndexMeta();
+  if (!meta) {
+    embeddingsMetaCache = null;
+    legacyChunksCache = null;
+    return null;
+  }
+  if (embeddingsMetaCache && embeddingsMetaCache.mtimeMs === meta.mtimeMs) {
+    return embeddingsMetaCache;
+  }
+  embeddingsMetaCache = {
+    mtimeMs: meta.mtimeMs,
+    chunkCount: meta.chunkCount,
+    format: meta.format,
+  };
+  if (legacyChunksCache && legacyChunksCache.mtimeMs !== meta.mtimeMs) {
+    legacyChunksCache = null;
+  }
+  return embeddingsMetaCache;
+}
+
+/**
+ * @param {number[]} queryEmbedding
+ * @param {number} poolSize
+ * @param {string} scopeKey
+ * @returns {Promise<Array<{ text: string; source: any; sourcePath: string; score: number }>>}
+ */
+async function searchSimilarChunks(queryEmbedding, poolSize, scopeKey) {
+  const meta = await readEmbeddingsIndexMeta();
+  if (!meta || meta.chunkCount === 0) return [];
+
+  const sourceIndex = await loadChunkSourceIndex();
+  /** @type {Array<{ text: string; source: any; sourcePath: string; score: number }>} */
+  const pool = [];
+  let index = 0;
+
+  const consider = (rawChunk) => {
+    const chunk = hydrateRetrievedChunk(rawChunk, sourceIndex, {
+      index,
+      total: meta.chunkCount,
+    });
+    index += 1;
+    const sessionKey =
+      chunk?.source?.sessionKey || parseCourseSourceLoose(chunk?.sourcePath || '')?.sessionKey || '';
+    if (scopeKey && !chunkMatchesScope(scopeKey, sessionKey)) return;
+
+    const score = cosineSimilarity(chunk.embedding, queryEmbedding);
+    pushTopScored(
+      pool,
+      {
+        text: chunk.text || chunk.content || chunk.chunk || '',
+        source: chunk.source ?? null,
+        sourcePath: chunk.sourcePath || chunk.path || chunk.file || chunk.filename,
+        score,
+      },
+      poolSize
+    );
+  };
+
+  if (meta.format === 'legacy' && meta.chunkCount <= LEGACY_IN_MEMORY_MAX_CHUNKS) {
+    if (!legacyChunksCache || legacyChunksCache.mtimeMs !== meta.mtimeMs) {
+      const loaded = await loadEmbeddingsChunks();
+      legacyChunksCache = loaded
+        ? { mtimeMs: loaded.mtimeMs, chunks: loaded.chunks }
+        : null;
+    }
+    for (const rawChunk of legacyChunksCache?.chunks || []) {
+      consider(rawChunk);
+    }
+    return pool;
+  }
+
+  for await (const rawChunk of iterateEmbeddingChunks()) {
+    consider(rawChunk);
+  }
+
+  return pool;
+}
+
+/**
+ * Warm the embeddings index at process startup (metadata only — no vector preload).
+ * @returns {Promise<void>}
+ */
+export async function preloadEmbeddingsIndex() {
+  const meta = await getEmbeddingsMeta();
+  if (!meta) {
+    console.warn('[rag] No embeddings index found');
+    return;
+  }
+  console.info(
+    `[rag] Embeddings index ready (${meta.chunkCount} chunks, ${meta.format}, shard streaming enabled)`
+  );
+}
+
+/** Clear in-memory index (tests / after manual ingest in same process). */
+export function clearEmbeddingsIndexCache() {
+  embeddingsMetaCache = null;
+  legacyChunksCache = null;
 }
 
 /**
@@ -143,18 +202,10 @@ function isBookChunk(chunk) {
  * @returns {Promise<{ text: string; sources: Array<{ title: string; url: string; detail: string; access: string }> }>}
  */
 export async function retrieve(query, topK = DEFAULT_TOP_K, options = {}) {
-  const index = await loadEmbeddingsIndex();
-  if (!index) return { text: '', sources: [] };
+  const meta = await getEmbeddingsMeta();
+  if (!meta) return { text: '', sources: [] };
+
   const scopeKey = String(options.scopeKey || '').trim();
-  const chunks = scopeKey
-    ? index.chunks.filter((c) =>
-        chunkMatchesScope(
-          scopeKey,
-          c?.source?.sessionKey || parseCourseSourceLoose(c?.sourcePath || '')?.sessionKey || ''
-        )
-      )
-    : index.chunks;
-  if (!chunks.length) return { text: '', sources: [] };
 
   let queryEmbedding;
   try {
@@ -167,26 +218,17 @@ export async function retrieve(query, topK = DEFAULT_TOP_K, options = {}) {
     }
     throw err;
   }
-  const withScore = chunks.map((c) => ({
-    text: c.text || c.content || c.chunk || '',
-    source: c.source ?? null,
-    sourcePath: c.sourcePath || c.path || c.file || c.filename,
-    score: cosineSimilarity(c.embedding, queryEmbedding),
-  }));
-  // Prefer online coursework over the book when similarity is close.
-  withScore.sort((a, b) => {
-    const diff = b.score - a.score;
-    if (Math.abs(diff) > 0.025) return diff;
-    return Number(isBookChunk(a)) - Number(isBookChunk(b));
-  });
+
+  const poolSize = Math.max(topK * 3, topK);
+  const withScore = await searchSimilarChunks(queryEmbedding, poolSize, scopeKey);
+  if (!withScore.length) return { text: '', sources: [] };
 
   const catalog = await loadCourseCatalog();
   const linkVariant = options.linkVariant || null;
   const sourceDetail = options.sourceDetail === 'course' ? 'course' : 'full';
 
-  const pool = withScore.slice(0, Math.max(topK * 3, topK));
-  const courses = pool.filter((c) => !isBookChunk(c));
-  const books = pool.filter((c) => isBookChunk(c));
+  const courses = withScore.filter((c) => !isBookChunk(c));
+  const books = withScore.filter((c) => isBookChunk(c));
   /** @type {typeof withScore} */
   const chosen = [];
   for (const c of courses) {

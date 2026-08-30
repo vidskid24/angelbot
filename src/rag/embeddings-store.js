@@ -257,7 +257,72 @@ export async function readEmbeddingsManifest() {
 }
 
 /**
+ * @returns {Promise<{ mtimeMs: number; chunkCount: number; shards: string[]; manifest: Record<string, boolean>; format: 'sharded' | 'legacy' } | null>}
+ */
+export async function readEmbeddingsIndexMeta() {
+  const mtimeMs = await indexMtimeMs();
+  if (!mtimeMs) return null;
+
+  if (await pathExists(EMBEDDINGS_INDEX_PATH)) {
+    const raw = await readFile(EMBEDDINGS_INDEX_PATH, 'utf-8');
+    const index = JSON.parse(raw);
+    return {
+      mtimeMs,
+      chunkCount: Number(index.chunkCount) || 0,
+      shards: Array.isArray(index.shards) ? index.shards : [],
+      manifest: index.manifest && typeof index.manifest === 'object' ? index.manifest : {},
+      format: 'sharded',
+    };
+  }
+
+  if (await pathExists(LEGACY_EMBEDDINGS_PATH)) {
+    const raw = await readFile(LEGACY_EMBEDDINGS_PATH, 'utf-8');
+    const data = JSON.parse(raw);
+    return {
+      mtimeMs,
+      chunkCount: Array.isArray(data.chunks) ? data.chunks.length : 0,
+      shards: [],
+      manifest: data.manifest && typeof data.manifest === 'object' ? data.manifest : {},
+      format: 'legacy',
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Stream chunks one at a time (sharded JSONL or legacy array).
+ * @returns {AsyncGenerator<any, void, unknown>}
+ */
+export async function* iterateEmbeddingChunks() {
+  if (await pathExists(EMBEDDINGS_INDEX_PATH)) {
+    const raw = await readFile(EMBEDDINGS_INDEX_PATH, 'utf-8');
+    const index = JSON.parse(raw);
+    for (const shardName of index.shards || []) {
+      const shardPath = join(EMBEDDINGS_SHARDS_DIR, shardName);
+      const stream = createReadStream(shardPath, { encoding: 'utf8' });
+      const rl = createInterface({ input: stream, crlfDelay: Infinity });
+      for await (const line of rl) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        yield JSON.parse(trimmed);
+      }
+    }
+    return;
+  }
+
+  if (await pathExists(LEGACY_EMBEDDINGS_PATH)) {
+    const raw = await readFile(LEGACY_EMBEDDINGS_PATH, 'utf-8');
+    const data = JSON.parse(raw);
+    for (const chunk of data.chunks || []) {
+      yield chunk;
+    }
+  }
+}
+
+/**
  * Load all chunks from sharded or legacy index.
+ * Prefer {@link iterateEmbeddingChunks} on memory-constrained servers (e.g. Render).
  * @returns {Promise<{ mtimeMs: number; chunks: any[]; manifest: Record<string, boolean> } | null>}
  */
 export async function loadEmbeddingsChunks() {
