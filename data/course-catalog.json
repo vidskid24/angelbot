@@ -2085,6 +2085,9 @@
     "Conf2025-D2PM1": {
       "title": "Day 2 PM1"
     },
+    "Conf2025-D2PM2": {
+      "title": "Day 2 PM2"
+    },
     "Conf2025-D2QA": {
       "title": "Day 2 QA"
     },
@@ -2438,6 +2441,9 @@
     },
     "L4-S14": {
       "title": "Holy Spirit Initiation"
+    },
+    "L4-S14-TJimRoxane": {
+      "title": "Jim Roxane"
     },
     "L4-S15": {
       "title": "Rest"

@@ -3,7 +3,6 @@
  * The embeddings file is kept warm in memory and reloaded when mtime changes.
  */
 
-import { readFile, stat } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { embed } from '../lib/gemini.js';
@@ -17,10 +16,10 @@ import {
 import { hydrateRetrievedChunk, loadChunkSourceIndex } from './chunk-source-index.js';
 import { parseCourseSourceLoose } from './course-source.js';
 import { chunkMatchesScope } from './material-scope.js';
+import { loadEmbeddingsChunks } from './embeddings-store.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '../..');
-const EMBEDDINGS_PATH = join(ROOT, 'data', 'embeddings.json');
 const DEFAULT_TOP_K = 6;
 
 /** @type {{ mtimeMs: number; chunks: any[] } | null} */
@@ -61,17 +60,12 @@ function cosineSimilarity(aRaw, bRaw) {
  * @returns {Promise<{ mtimeMs: number; chunks: any[] } | null>}
  */
 async function loadEmbeddingsIndex() {
-  let mtimeMs = 0;
-  try {
-    const info = await stat(EMBEDDINGS_PATH);
-    mtimeMs = info.mtimeMs;
-  } catch (e) {
-    if (e?.code === 'ENOENT') {
-      embeddingsIndexCache = null;
-      return null;
-    }
-    throw e;
+  const loadedPreview = await loadEmbeddingsChunks();
+  if (!loadedPreview) {
+    embeddingsIndexCache = null;
+    return null;
   }
+  const mtimeMs = loadedPreview.mtimeMs;
 
   if (embeddingsIndexCache && embeddingsIndexCache.mtimeMs === mtimeMs) {
     return embeddingsIndexCache;
@@ -83,14 +77,16 @@ async function loadEmbeddingsIndex() {
 
   embeddingsIndexLoadPromise = (async () => {
     try {
-      // Recheck cache after awaiting — another caller may have finished first.
-      if (embeddingsIndexCache && embeddingsIndexCache.mtimeMs === mtimeMs) {
+      const loaded = await loadEmbeddingsChunks();
+      if (!loaded) {
+        embeddingsIndexCache = null;
+        return null;
+      }
+      if (embeddingsIndexCache && embeddingsIndexCache.mtimeMs === loaded.mtimeMs) {
         return embeddingsIndexCache;
       }
-      const raw = await readFile(EMBEDDINGS_PATH, 'utf-8');
-      const data = JSON.parse(raw);
       const sourceIndex = await loadChunkSourceIndex();
-      const rawChunks = Array.isArray(data?.chunks) ? data.chunks : [];
+      const rawChunks = loaded.chunks;
       let hydrated = 0;
       const chunks = rawChunks.map((chunk, index) => {
         const hadPath = Boolean(String(chunk?.sourcePath || '').trim());
@@ -101,9 +97,9 @@ async function loadEmbeddingsIndex() {
         if (!hadPath && next?.sourcePath) hydrated += 1;
         return next;
       });
-      embeddingsIndexCache = { mtimeMs, chunks };
+      embeddingsIndexCache = { mtimeMs: loaded.mtimeMs, chunks };
       console.info(
-        `[rag] Embeddings index loaded into memory (${chunks.length} chunks, ${(Buffer.byteLength(raw) / (1024 * 1024)).toFixed(1)} MB, hydrated ${hydrated} source paths)`
+        `[rag] Embeddings index loaded into memory (${chunks.length} chunks, hydrated ${hydrated} source paths)`
       );
       return embeddingsIndexCache;
     } finally {

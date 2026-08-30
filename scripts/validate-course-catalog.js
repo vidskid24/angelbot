@@ -3,9 +3,9 @@
  * Run: node scripts/validate-course-catalog.js
  */
 import 'dotenv/config';
-import { readFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { loadEmbeddingsChunks } from '../src/rag/embeddings-store.js';
 import { parseCourseSourceFromPath } from '../src/rag/course-source.js';
 import {
   loadCourseCatalog,
@@ -17,24 +17,16 @@ import {
 } from '../src/rag/course-catalog.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(__dirname, '..');
-const EMBEDDINGS_PATH = join(ROOT, 'data', 'embeddings.json');
 
 clearCourseCatalogCache();
 const catalog = await loadCourseCatalog();
 
-let chunks = [];
-try {
-  const raw = await readFile(EMBEDDINGS_PATH, 'utf-8');
-  const data = JSON.parse(raw);
-  chunks = data.chunks || [];
-} catch (err) {
-  if (err?.code === 'ENOENT') {
-    console.log('No embeddings.json found — run npm run ingest first.');
-    process.exit(0);
-  }
-  throw err;
+const loaded = await loadEmbeddingsChunks();
+if (!loaded) {
+  console.log('No embeddings index found — run npm run ingest first.');
+  process.exit(0);
 }
+const chunks = loaded.chunks;
 
 const sessionKeys = [];
 const labels = new Map();

@@ -3,6 +3,7 @@ node_modules/
 *.log
 debug-*.log
 data/embeddings.json
+data/embeddings/
 data/user-memories.json
 data/style-guides/*.txt
 

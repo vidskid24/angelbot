@@ -1,17 +1,17 @@
 /**
- * Build data/chunk-source-index.json from local embeddings.json.
+ * Build data/chunk-source-index.json from local embeddings index.
  * Maps chunk text → sourcePath so production can cite even when vectors
  * were uploaded without source metadata.
  *
  * Run from repo root: node scripts/build-chunk-source-index.js
  */
 import { createHash } from 'crypto';
-import { mkdir, readFile, writeFile } from 'fs/promises';
+import { mkdir, writeFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { loadEmbeddingsChunks } from '../src/rag/embeddings-store.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const EMBEDDINGS_PATH = join(ROOT, 'data', 'embeddings.json');
 const OUT_PATHS = [
   join(ROOT, 'src', 'config', 'chunk-source-index.json'),
   join(ROOT, 'data', 'chunk-source-index.json'),
@@ -25,9 +25,12 @@ function normalize(text) {
     .trim();
 }
 
-const raw = await readFile(EMBEDDINGS_PATH, 'utf-8');
-const data = JSON.parse(raw);
-const chunks = Array.isArray(data?.chunks) ? data.chunks : [];
+const loaded = await loadEmbeddingsChunks();
+if (!loaded) {
+  console.log('No embeddings index found — run npm run ingest first.');
+  process.exit(0);
+}
+const chunks = loaded.chunks;
 
 /** @type {Record<string, string>} */
 const byHash = {};
