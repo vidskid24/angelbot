@@ -6,7 +6,7 @@ import { getWisdomReply } from '../bot/wisdom.js';
 import { getHistory, appendTurn, getStoredExcerpts, setStoredExcerpts } from '../bot/memory.js';
 import * as threadDb from '../db/threads.js';
 import * as users from '../db/users.js';
-import { generateThreadTitleFromMessage } from '../lib/gemini.js';
+import { generateThreadTitleFromReply } from '../lib/gemini.js';
 import { buildUserPreferencesPromptBlock } from '../lib/user-preferences.js';
 import { buildUserMemoryPromptBlock } from '../lib/user-memory.js';
 import { retrieve } from '../rag/retrieve.js';
@@ -348,7 +348,7 @@ export async function processWisdomMessage({
         try {
           const thread = await threadDb.getThreadForUser(threadId, userId);
           if (thread && threadDb.isDefaultThreadTitle(thread.title)) {
-            const aiTitle = await generateThreadTitleFromMessage(message);
+            const aiTitle = await generateThreadTitleFromReply(reply);
             const updated = await threadDb.updateThreadTitle(threadId, userId, aiTitle);
             threadTitle = updated?.title || null;
           }

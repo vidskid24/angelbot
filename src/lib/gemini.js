@@ -947,11 +947,14 @@ function capThreadTitleWords(title, maxWords = MAX_THREAD_TITLE_WORDS) {
 }
 
 /**
- * @param {string} message
+ * @param {string} text
  * @returns {string}
  */
-function fallbackThreadTitleFromMessage(message) {
-  const cleaned = String(message || '').trim().replace(/\s+/g, ' ');
+function fallbackThreadTitleFromText(text) {
+  const cleaned = String(text || '')
+    .replace(/\*\*/g, '')
+    .trim()
+    .replace(/\s+/g, ' ');
   if (!cleaned) return 'Conversation';
   const line = cleaned.split('\n')[0].trim();
   const sentence = (line.split(/[.!?]/)[0] || line).trim() || line;
@@ -1002,13 +1005,16 @@ const THREAD_TITLE_MAX_ATTEMPTS = 3;
 const THREAD_TITLE_RETRY_DELAYS_MS = [2000, 5000];
 
 /**
- * Generate a short conversation title from the user's first message.
- * @param {string} message
+ * Generate a short conversation title from the assistant's first reply.
+ * @param {string} reply
  * @returns {Promise<string>}
  */
-export async function generateThreadTitleFromMessage(message) {
-  const text = String(message).trim().slice(0, 2000);
-  const fallback = fallbackThreadTitleFromMessage(text);
+export async function generateThreadTitleFromReply(reply) {
+  const text = String(reply || '')
+    .replace(/\*\*/g, '')
+    .trim()
+    .slice(0, 2000);
+  const fallback = fallbackThreadTitleFromText(text);
   if (!text) return fallback;
 
   const genAI = getGeminiClient();
@@ -1018,10 +1024,10 @@ export async function generateThreadTitleFromMessage(message) {
     generationConfig: shortLabelGenerationConfig(256),
   });
   const prompt =
-    'The user started a new chat with the message below. Write a very short conversation title ' +
-    '(4 words or fewer) that names their main topic or question. Use title case. ' +
+    'The assistant just gave the first reply in a new chat. Write a very short conversation title ' +
+    '(4 words or fewer) that summarizes the main topic of this reply. Use title case. ' +
     'No quotes, no trailing punctuation, no prefix like "Title:". Reply with only the title.\n\n' +
-    `User message:\n${text}`;
+    `Assistant reply:\n${text}`;
 
   for (let attempt = 0; attempt < THREAD_TITLE_MAX_ATTEMPTS; attempt++) {
     if (attempt > 0) {
@@ -1041,12 +1047,12 @@ export async function generateThreadTitleFromMessage(message) {
       const canRetry = isTransientGeminiError(err) && attempt < THREAD_TITLE_MAX_ATTEMPTS - 1;
       if (canRetry) {
         console.warn(
-          `generateThreadTitleFromMessage transient error (attempt ${attempt + 1}/${THREAD_TITLE_MAX_ATTEMPTS}, model=${modelName}):`,
+          `generateThreadTitleFromReply transient error (attempt ${attempt + 1}/${THREAD_TITLE_MAX_ATTEMPTS}, model=${modelName}):`,
           err?.message || err
         );
         continue;
       }
-      console.error('generateThreadTitleFromMessage error:', err);
+      console.error('generateThreadTitleFromReply error:', err);
     }
   }
   return fallback;
