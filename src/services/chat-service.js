@@ -193,20 +193,11 @@ function buildRetrievalQuery(message, history) {
 
   const detailAsk = userAskedForMoreDetail(current);
   const userCap = detailAsk ? 800 : 400;
-  const assistantCap = detailAsk ? 1000 : 500;
   const lastTopicUser =
     [...history]
       .reverse()
       .find((t) => t.role === 'user' && t.content && !userAskedForCitation(t.content))?.content || '';
-  const lastAssistant =
-    [...history].reverse().find((t) => t.role === 'assistant' && t.content)?.content || '';
-  return [
-    String(lastTopicUser).slice(0, userCap),
-    String(lastAssistant).slice(0, assistantCap),
-    current,
-  ]
-    .filter(Boolean)
-    .join('\n\n');
+  return [String(lastTopicUser).slice(0, userCap), current].filter(Boolean).join('\n\n');
 }
 
 /**
