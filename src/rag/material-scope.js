@@ -62,8 +62,11 @@ function levelAliasNeedles(levelCode, title) {
   const titleNorm = normalize(title);
   const withoutLevel = titleNorm.replace(/\s*-\s*level\s*\d+\s*$/, '').replace(/\s+level\s*\d+\s*$/, '').trim();
   const needles = [normalize(code), titleNorm, withoutLevel];
-  const firstWord = withoutLevel.split(' ')[0] || '';
-  if (firstWord.length >= 4) needles.push(firstWord);
+  // Only use a single-word title alias (e.g. "rewire", "connect").
+  // Multi-word titles like "Mastery Live 8" must not pin on bare "mastery"
+  // or "mastery level".
+  const words = withoutLevel.split(' ').filter(Boolean);
+  if (words.length === 1 && words[0].length >= 4) needles.push(words[0]);
   const levelNum = code.match(/^L(\d+)$/i);
   if (levelNum) {
     needles.push(`level ${levelNum[1]}`);
