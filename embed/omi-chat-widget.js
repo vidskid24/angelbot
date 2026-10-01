@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=92
+ * OMIBOT_WIDGET_VERSION=93
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -852,7 +852,7 @@
       '<button type="button" class="omibot-prefs-save" id="omibot-prefs-save">Save preferences</button>' +
       '</div></div>' +
       '<div class="omibot-prefs-danger-zone" id="omibot-prefs-danger-zone">' +
-      '<p class="omibot-prefs-danger-desc">Permanently delete all saved conversations, memory, and preferences from Omi. This cannot be undone. Your course account is not affected.</p>' +
+      '<p class="omibot-prefs-danger-desc">Permanently delete all saved conversations, memory, and preferences from Omi. <strong>This cannot be undone.</strong> Your Mastering Alchemy course account, purchases, or login is not affected.</p>' +
       '<button type="button" class="omibot-prefs-delete-data" id="omibot-prefs-delete-data">Delete all my data</button>' +
       '<p class="omibot-prefs-privacy-notice" id="omibot-prefs-privacy-notice">' +
       '<strong>Privacy:</strong> Omi saves your chats and preferences so you can continue conversations later. We do not share, train or sell your data. You can delete all Omi data anytime. See our ' +
