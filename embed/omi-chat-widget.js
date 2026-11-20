@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=99
+ * OMIBOT_WIDGET_VERSION=100
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -14,7 +14,7 @@
   }
 
   const API_BASE = API.replace(/\/$/, '');
-  const WIDGET_VERSION = '99';
+  const WIDGET_VERSION = '100';
 
   /** Flex column layout — gap between blocks survives themes that zero child margin/padding. */
   function applyMessageBodyLayout(body) {
@@ -516,20 +516,48 @@
     return m ? m[1].trim() : t;
   }
 
-  /** Title on its own line, then description — bold the title and keep a line break. */
-  function appendListItemBody(body, itemText) {
+  /**
+   * Split list item into title + description when the model uses a title line,
+   * **Label:** prose, or Label: prose (after bold sanitize strips markers).
+   * @returns {{ title: string, desc: string } | null}
+   */
+  function splitListItemTitleDesc(itemText) {
     const parts = String(itemText || '')
       .split(/\n/)
       .map((line) => line.trim())
       .filter(Boolean);
     if (parts.length >= 2) {
+      return { title: stripOuterBoldMarkers(parts[0]), desc: parts.slice(1).join(' ') };
+    }
+    const single = parts[0] || '';
+    const boldLead = single.match(/^\*\*([^*]+?)\*\*(:?)\s+(\S[\s\S]*)$/);
+    if (boldLead) {
+      let title = boldLead[1].trim();
+      if (boldLead[2] === ':' && !title.endsWith(':')) title += ':';
+      return { title, desc: boldLead[3].trim() };
+    }
+    const colonLead = single.match(/^(.{1,80}?):\s+(\S[\s\S]*)$/);
+    if (colonLead) {
+      const titleCore = colonLead[1].trim();
+      const wordCount = titleCore.split(/\s+/).filter(Boolean).length;
+      if (wordCount >= 1 && wordCount <= 8 && !/[.!?]$/.test(titleCore)) {
+        return { title: titleCore + ':', desc: colonLead[2].trim() };
+      }
+    }
+    return null;
+  }
+
+  /** Bold the title on its own line; keep the description below. */
+  function appendListItemBody(body, itemText) {
+    const split = splitListItemTitleDesc(itemText);
+    if (split) {
       const titleEl = document.createElement('strong');
       titleEl.className = 'omibot-list-title';
-      titleEl.textContent = stripOuterBoldMarkers(parts[0]);
+      titleEl.textContent = split.title;
       body.appendChild(titleEl);
       const desc = document.createElement('span');
       desc.className = 'omibot-list-desc';
-      appendInlineFormatted(desc, parts.slice(1).join(' '));
+      appendInlineFormatted(desc, split.desc);
       body.appendChild(desc);
       return;
     }

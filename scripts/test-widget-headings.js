@@ -180,6 +180,29 @@ test('widget heading smoke tests', async (t) => {
     assert.equal(parent.querySelectorAll('.omibot-list-title').length, 2);
   });
 
+  await t.test('bullet Label: description splits title and stays bold', () => {
+    const parent = document.createElement('div');
+    appendFormattedContent(
+      parent,
+      [
+        '- **Red Color Code:** Functions as an expansive mechanism.',
+        '- **Yellow Color Code:** Focuses on shifting vibratory levels.',
+        '- Cobalt Blue & Iridescent Hues: Indicate an awakening awareness.',
+      ].join('\n')
+    );
+    const list = parent.querySelector('.omibot-list-ul');
+    assert.ok(list, 'expected one unordered list');
+    const titles = [...list.querySelectorAll('.omibot-list-title')].map((el) => el.textContent);
+    assert.deepEqual(titles, [
+      'Red Color Code:',
+      'Yellow Color Code:',
+      'Cobalt Blue & Iridescent Hues:',
+    ]);
+    const descs = [...list.querySelectorAll('.omibot-list-desc')].map((el) => el.textContent);
+    assert.match(descs[0], /expansive mechanism/);
+    assert.match(descs[2], /awakening awareness/);
+  });
+
   await t.test('repeated 1. markers still renumber inside one list', () => {
     const parent = document.createElement('div');
     appendFormattedContent(

@@ -112,6 +112,37 @@ function parseListLine(line) {
 }
 
 /**
+ * @param {string} itemText
+ * @returns {{ title: string, desc: string } | null}
+ */
+function splitListItemTitleDesc(itemText) {
+  const parts = String(itemText || '')
+    .split(/\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (parts.length >= 2) {
+    const title = parts[0].replace(/^\*\*([^*][\s\S]*?)\*\*$/, '$1').trim();
+    return { title, desc: parts.slice(1).join(' ') };
+  }
+  const single = parts[0] || '';
+  const boldLead = single.match(/^\*\*([^*]+?)\*\*(:?)\s+(\S[\s\S]*)$/);
+  if (boldLead) {
+    let title = boldLead[1].trim();
+    if (boldLead[2] === ':' && !title.endsWith(':')) title += ':';
+    return { title, desc: boldLead[3].trim() };
+  }
+  const colonLead = single.match(/^(.{1,80}?):\s+(\S[\s\S]*)$/);
+  if (colonLead) {
+    const titleCore = colonLead[1].trim();
+    const wordCount = titleCore.split(/\s+/).filter(Boolean).length;
+    if (wordCount >= 1 && wordCount <= 8 && !/[.!?]$/.test(titleCore)) {
+      return { title: `${titleCore}:`, desc: colonLead[2].trim() };
+    }
+  }
+  return null;
+}
+
+/**
  * Web chat display: escape HTML and render bold, italic, and lists.
  * @param {string} text
  * @returns {string} Safe HTML fragment
@@ -159,20 +190,10 @@ export function formatChatTextHtml(text) {
         `<${tag} class="${cls}">${items
           .map((item, idx) => {
             const marker = ordered ? `${idx + 1}.` : '\u2022';
-            const linesOfItem = String(item || '')
-              .split(/\n/)
-              .map((line) => line.trim())
-              .filter(Boolean);
-            let bodyHtml;
-            if (linesOfItem.length >= 2) {
-              const title = escapeHtml(
-                linesOfItem[0].replace(/^\*\*([^*][\s\S]*?)\*\*$/, '$1').trim()
-              );
-              const desc = formatInlineHtml(linesOfItem.slice(1).join(' '));
-              bodyHtml = `<strong class="omibot-list-title">${title}</strong><span class="omibot-list-desc">${desc}</span>`;
-            } else {
-              bodyHtml = formatInlineHtml(item);
-            }
+            const split = splitListItemTitleDesc(item);
+            const bodyHtml = split
+              ? `<strong class="omibot-list-title">${escapeHtml(split.title)}</strong><span class="omibot-list-desc">${formatInlineHtml(split.desc)}</span>`
+              : formatInlineHtml(item);
             return `<li><span class="omibot-list-marker" aria-hidden="true">${marker}</span><span class="omibot-list-text">${bodyHtml}</span></li>`;
           })
           .join('')}</${tag}>`
