@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=94
+ * OMIBOT_WIDGET_VERSION=95
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -14,7 +14,7 @@
   }
 
   const API_BASE = API.replace(/\/$/, '');
-  const WIDGET_VERSION = '94';
+  const WIDGET_VERSION = '95';
 
   /** Flex column layout — gap between blocks survives themes that zero child margin/padding. */
   function applyMessageBodyLayout(body) {
@@ -719,8 +719,8 @@
       '.omibot-thinking-dots span:nth-child(2){animation-delay:.15s}' +
       '.omibot-thinking-dots span:nth-child(3){animation-delay:.3s}' +
       '@keyframes omibot-dot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}' +
-      '.omibot-jump-wrap{display:flex;justify-content:center;align-items:center;margin:0 0 8px;min-height:0}' +
-      '.omibot-jump-latest{width:32px;height:32px;border:1px solid #e0dcd4;border-radius:999px;background:#f5f3ef;color:#722668;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;box-shadow:0 1px 3px rgba(0,0,0,.06)}' +
+      '.omibot-jump-wrap{height:0;margin:0;padding:0;overflow:visible;pointer-events:none}' +
+      '.omibot-jump-latest{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:40;width:36px;height:36px;border:1px solid #e0dcd4;border-radius:999px;background:#f5f3ef;color:#722668;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.14);pointer-events:auto}' +
       '.omibot-jump-latest[hidden]{display:none!important}' +
       '.omibot-jump-latest:hover{background:#ebe6dc;border-color:#c9c0b5}' +
       '.omibot-jump-latest:focus-visible{outline:2px solid #c9c0b5;outline-offset:2px}' +
@@ -1912,6 +1912,34 @@
       return viewportBottom >= pageBottom - threshold;
     }
 
+    function positionJumpLatestBtn() {
+      if (!jumpLatestBtn || jumpLatestBtn.hidden) return;
+      const vh = window.innerHeight || 0;
+      const vw = window.innerWidth || 0;
+      let left = vw / 2;
+      let bottom = 24;
+      if (composeEl) {
+        const rect = composeEl.getBoundingClientRect();
+        left = rect.left + rect.width / 2;
+        // Keep the control just above the message box when it is near the
+        // viewport; otherwise float near the bottom of the screen.
+        if (rect.top < vh && rect.top > 72) {
+          bottom = Math.max(16, vh - rect.top + 10);
+        }
+      }
+      jumpLatestBtn.style.left = Math.round(left) + 'px';
+      jumpLatestBtn.style.bottom = Math.round(bottom) + 'px';
+      jumpLatestBtn.style.top = 'auto';
+      jumpLatestBtn.style.transform = 'translateX(-50%)';
+    }
+
+    function isComposeVisibleInViewport() {
+      if (!composeEl) return isNearPageBottom(160);
+      const rect = composeEl.getBoundingClientRect();
+      const vh = window.innerHeight || 0;
+      return rect.top < vh - 8 && rect.bottom > 8;
+    }
+
     function updateJumpLatestVisibility() {
       if (!jumpLatestBtn) return;
       if (chatViewEl && chatViewEl.hidden) {
@@ -1922,7 +1950,9 @@
         jumpLatestBtn.hidden = true;
         return;
       }
-      jumpLatestBtn.hidden = isNearPageBottom(160);
+      // Hide at the latest reply (message box on screen); show when scrolled up.
+      jumpLatestBtn.hidden = isComposeVisibleInViewport();
+      if (!jumpLatestBtn.hidden) positionJumpLatestBtn();
     }
 
     function scrollChatToBottom(options) {
