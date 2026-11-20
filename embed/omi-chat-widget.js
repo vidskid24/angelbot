@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=98
+ * OMIBOT_WIDGET_VERSION=99
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -14,7 +14,7 @@
   }
 
   const API_BASE = API.replace(/\/$/, '');
-  const WIDGET_VERSION = '98';
+  const WIDGET_VERSION = '99';
 
   /** Flex column layout — gap between blocks survives themes that zero child margin/padding. */
   function applyMessageBodyLayout(body) {
@@ -510,6 +510,32 @@
     parent.appendChild(wrap);
   }
 
+  function stripOuterBoldMarkers(text) {
+    const t = String(text || '').trim();
+    const m = t.match(/^\*\*([^*][\s\S]*?)\*\*$/);
+    return m ? m[1].trim() : t;
+  }
+
+  /** Title on its own line, then description — bold the title and keep a line break. */
+  function appendListItemBody(body, itemText) {
+    const parts = String(itemText || '')
+      .split(/\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (parts.length >= 2) {
+      const titleEl = document.createElement('strong');
+      titleEl.className = 'omibot-list-title';
+      titleEl.textContent = stripOuterBoldMarkers(parts[0]);
+      body.appendChild(titleEl);
+      const desc = document.createElement('span');
+      desc.className = 'omibot-list-desc';
+      appendInlineFormatted(desc, parts.slice(1).join(' '));
+      body.appendChild(desc);
+      return;
+    }
+    appendInlineFormatted(body, itemText);
+  }
+
   function appendListBlock(parent, items, ordered) {
     if (!items.length) return;
     const list = document.createElement(ordered ? 'ol' : 'ul');
@@ -531,7 +557,7 @@
       li.appendChild(marker);
       const body = document.createElement('span');
       body.className = 'omibot-list-text';
-      appendInlineFormatted(body, items[i]);
+      appendListItemBody(body, items[i]);
       li.appendChild(body);
       list.appendChild(li);
       hasItems = true;
@@ -607,7 +633,7 @@
             !isQuoteLine(lines[i]) &&
             !isStrayMarkerLine(lines[i])
           ) {
-            items[items.length - 1] += ' ' + String(lines[i]).trim();
+            items[items.length - 1] += '\n' + String(lines[i]).trim();
             i += 1;
             continue;
           }
@@ -726,6 +752,8 @@
       '.omibot-shell .omibot-msg-bot .omibot-list li{display:flex!important;align-items:flex-start!important;gap:0.55em!important;margin:0.45em 0 0.45em 0.15em!important;padding:0!important;line-height:1.55;white-space:normal!important;list-style:none!important}' +
       '.omibot-shell .omibot-msg-bot .omibot-list-marker{flex:0 0 auto!important;display:inline-block!important;min-width:1.35em!important;width:auto!important;margin:0!important;padding:0!important;color:#1a1a1a!important;font-weight:700!important;line-height:1.55!important}' +
       '.omibot-shell .omibot-msg-bot .omibot-list-text{flex:1 1 auto!important;min-width:0!important;display:block!important}' +
+      '.omibot-shell .omibot-msg-bot .omibot-list-title{display:block!important;font-weight:700!important;line-height:1.45!important}' +
+      '.omibot-shell .omibot-msg-bot .omibot-list-desc{display:block!important;margin-top:0.2em!important}' +
       '.omibot-msg-system{margin:12px 0;padding:10px 12px;border-radius:8px;background:#f0ebe3;color:#5c5348;font-size:0.9rem;line-height:1.45}' +
       '.omibot-msg-system a.omibot-tier-link{color:#7a5c1e;text-decoration:none;border-bottom:1px solid rgba(122,92,30,.45)}' +
       '.omibot-msg-system a.omibot-tier-link:hover{color:#1a1a1a;border-bottom-color:#1a1a1a}' +

@@ -147,7 +147,7 @@ export function formatChatTextHtml(text) {
         }
         // Continuation of the current item (indented or plain description prose).
         if (!next && !/^\s*#{1,6}\s+\S/.test(lines[i])) {
-          items[items.length - 1] += ` ${String(lines[i]).trim()}`;
+          items[items.length - 1] += `\n${String(lines[i]).trim()}`;
           i += 1;
           continue;
         }
@@ -159,7 +159,21 @@ export function formatChatTextHtml(text) {
         `<${tag} class="${cls}">${items
           .map((item, idx) => {
             const marker = ordered ? `${idx + 1}.` : '\u2022';
-            return `<li><span class="omibot-list-marker" aria-hidden="true">${marker}</span><span class="omibot-list-text">${formatInlineHtml(item)}</span></li>`;
+            const linesOfItem = String(item || '')
+              .split(/\n/)
+              .map((line) => line.trim())
+              .filter(Boolean);
+            let bodyHtml;
+            if (linesOfItem.length >= 2) {
+              const title = escapeHtml(
+                linesOfItem[0].replace(/^\*\*([^*][\s\S]*?)\*\*$/, '$1').trim()
+              );
+              const desc = formatInlineHtml(linesOfItem.slice(1).join(' '));
+              bodyHtml = `<strong class="omibot-list-title">${title}</strong><span class="omibot-list-desc">${desc}</span>`;
+            } else {
+              bodyHtml = formatInlineHtml(item);
+            }
+            return `<li><span class="omibot-list-marker" aria-hidden="true">${marker}</span><span class="omibot-list-text">${bodyHtml}</span></li>`;
           })
           .join('')}</${tag}>`
       );

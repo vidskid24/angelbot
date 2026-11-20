@@ -157,6 +157,29 @@ test('widget heading smoke tests', async (t) => {
     assert.ok(prose.some((t) => /Would you like/.test(t)), 'trailing prose should stay outside the list');
   });
 
+  await t.test('list titles stay bold and break above descriptions', () => {
+    const parent = document.createElement('div');
+    appendFormattedContent(
+      parent,
+      [
+        '1. **Re-activating the First Chakra Grounding Cord**',
+        'Acknowledge the line of energy from the spine.',
+        '',
+        '2. **Present-Time Attention**',
+        'Bring awareness back to the Now.',
+      ].join('\n')
+    );
+    const titles = [...parent.querySelectorAll('.omibot-list-title')].map((el) => el.textContent);
+    assert.deepEqual(titles, [
+      'Re-activating the First Chakra Grounding Cord',
+      'Present-Time Attention',
+    ]);
+    const descs = [...parent.querySelectorAll('.omibot-list-desc')].map((el) => el.textContent);
+    assert.match(descs[0], /Acknowledge the line/);
+    assert.match(descs[1], /Bring awareness/);
+    assert.equal(parent.querySelectorAll('.omibot-list-title').length, 2);
+  });
+
   await t.test('repeated 1. markers still renumber inside one list', () => {
     const parent = document.createElement('div');
     appendFormattedContent(
