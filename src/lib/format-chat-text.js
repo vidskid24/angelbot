@@ -128,14 +128,25 @@ export function formatChatTextHtml(text) {
       const items = [listLine.text];
       i += 1;
       while (i < lines.length) {
-        if (!String(lines[i] || '').trim()) break;
+        // Blank lines: keep the list if another same-type item follows.
+        if (!String(lines[i] || '').trim()) {
+          let j = i + 1;
+          while (j < lines.length && !String(lines[j] || '').trim()) j += 1;
+          const peek = j < lines.length ? parseListLine(lines[j]) : null;
+          if (peek && peek.ordered === ordered) {
+            i = j;
+            continue;
+          }
+          break;
+        }
         const next = parseListLine(lines[i]);
         if (next && next.ordered === ordered) {
           items.push(next.text);
           i += 1;
           continue;
         }
-        if (!next && /^\s{2,}\S/.test(lines[i])) {
+        // Continuation of the current item (indented or plain description prose).
+        if (!next && !/^\s*#{1,6}\s+\S/.test(lines[i])) {
           items[items.length - 1] += ` ${String(lines[i]).trim()}`;
           i += 1;
           continue;

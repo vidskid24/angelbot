@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=97
+ * OMIBOT_WIDGET_VERSION=98
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -14,7 +14,7 @@
   }
 
   const API_BASE = API.replace(/\/$/, '');
-  const WIDGET_VERSION = '97';
+  const WIDGET_VERSION = '98';
 
   /** Flex column layout — gap between blocks survives themes that zero child margin/padding. */
   function applyMessageBodyLayout(body) {
@@ -583,14 +583,30 @@
         const items = [listLine.text];
         i += 1;
         while (i < lines.length) {
-          if (!String(lines[i] || '').trim()) break;
+          // Blank lines: keep the list if another same-type item follows.
+          if (!String(lines[i] || '').trim()) {
+            let j = i + 1;
+            while (j < lines.length && !String(lines[j] || '').trim()) j += 1;
+            const peek = j < lines.length ? parseListLine(lines[j]) : null;
+            if (peek && peek.ordered === ordered) {
+              i = j;
+              continue;
+            }
+            break;
+          }
           const next = parseListLine(lines[i]);
           if (next && next.ordered === ordered) {
             items.push(next.text);
             i += 1;
             continue;
           }
-          if (!next && /^\s{2,}\S/.test(lines[i]) && !isQuoteLine(lines[i])) {
+          // Continuation of the current item (indented or plain description prose).
+          if (
+            !next &&
+            !parseHeadingLine(lines[i]) &&
+            !isQuoteLine(lines[i]) &&
+            !isStrayMarkerLine(lines[i])
+          ) {
             items[items.length - 1] += ' ' + String(lines[i]).trim();
             i += 1;
             continue;
@@ -708,7 +724,7 @@
       '.omibot-msg-bot .omibot-prose{white-space:pre-wrap}' +
       '.omibot-shell .omibot-msg-bot ul.omibot-list,.omibot-shell .omibot-msg-bot ol.omibot-list{display:block!important;margin:0.55em 0 0.85em!important;padding:0!important;list-style:none!important;white-space:normal!important}' +
       '.omibot-shell .omibot-msg-bot .omibot-list li{display:flex!important;align-items:flex-start!important;gap:0.55em!important;margin:0.45em 0 0.45em 0.15em!important;padding:0!important;line-height:1.55;white-space:normal!important;list-style:none!important}' +
-      '.omibot-shell .omibot-msg-bot .omibot-list-marker{flex:0 0 auto!important;display:inline-block!important;width:1em!important;margin:0!important;padding:0!important;color:#1a1a1a!important;font-weight:700!important;line-height:1.55!important}' +
+      '.omibot-shell .omibot-msg-bot .omibot-list-marker{flex:0 0 auto!important;display:inline-block!important;min-width:1.35em!important;width:auto!important;margin:0!important;padding:0!important;color:#1a1a1a!important;font-weight:700!important;line-height:1.55!important}' +
       '.omibot-shell .omibot-msg-bot .omibot-list-text{flex:1 1 auto!important;min-width:0!important;display:block!important}' +
       '.omibot-msg-system{margin:12px 0;padding:10px 12px;border-radius:8px;background:#f0ebe3;color:#5c5348;font-size:0.9rem;line-height:1.45}' +
       '.omibot-msg-system a.omibot-tier-link{color:#7a5c1e;text-decoration:none;border-bottom:1px solid rgba(122,92,30,.45)}' +
