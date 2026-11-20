@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=93
+ * OMIBOT_WIDGET_VERSION=94
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -14,7 +14,7 @@
   }
 
   const API_BASE = API.replace(/\/$/, '');
-  const WIDGET_VERSION = '92';
+  const WIDGET_VERSION = '94';
 
   /** Flex column layout — gap between blocks survives themes that zero child margin/padding. */
   function applyMessageBodyLayout(body) {
@@ -719,6 +719,12 @@
       '.omibot-thinking-dots span:nth-child(2){animation-delay:.15s}' +
       '.omibot-thinking-dots span:nth-child(3){animation-delay:.3s}' +
       '@keyframes omibot-dot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}' +
+      '.omibot-jump-wrap{display:flex;justify-content:center;align-items:center;margin:0 0 8px;min-height:0}' +
+      '.omibot-jump-latest{width:32px;height:32px;border:1px solid #e0dcd4;border-radius:999px;background:#f5f3ef;color:#722668;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;box-shadow:0 1px 3px rgba(0,0,0,.06)}' +
+      '.omibot-jump-latest[hidden]{display:none!important}' +
+      '.omibot-jump-latest:hover{background:#ebe6dc;border-color:#c9c0b5}' +
+      '.omibot-jump-latest:focus-visible{outline:2px solid #c9c0b5;outline-offset:2px}' +
+      '.omibot-jump-icon{display:block;width:16px;height:16px}' +
       '.omibot-compose{position:relative;margin:0}' +
       '#omibot-input{width:100%;box-sizing:border-box;padding:12px 48px 12px 14px;border-radius:12px;border:1px solid #ddd;background:#fff;font:inherit;font-size:1rem;line-height:1.45;resize:vertical;min-height:3.25rem;display:block}' +
       '#omibot-input:focus{outline:2px solid #c9c0b5;outline-offset:1px;border-color:#c9c0b5}' +
@@ -796,6 +802,10 @@
       '<div class="omibot-chat-view" id="omibot-chat-view">' +
       '<div id="omibot-welcome"></div>' +
       '<div id="omibot-log"></div>' +
+      '<div class="omibot-jump-wrap">' +
+      '<button type="button" class="omibot-jump-latest" id="omibot-jump-latest" title="Scroll to bottom" aria-label="Scroll to bottom" hidden>' +
+      '<svg class="omibot-jump-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>' +
+      '</button></div>' +
       '<div class="omibot-compose" id="omibot-compose">' +
       '<textarea id="omibot-input" rows="2" placeholder="Write a message..."></textarea>' +
       '<button type="button" class="omibot-send-btn" id="omibot-send" aria-label="Send message" disabled>' +
@@ -862,6 +872,8 @@
     const status = root.querySelector('#omibot-status');
     const welcome = root.querySelector('#omibot-welcome');
     const log = root.querySelector('#omibot-log');
+    const jumpLatestBtn = root.querySelector('#omibot-jump-latest');
+    const composeEl = root.querySelector('#omibot-compose');
     const input = root.querySelector('#omibot-input');
     const sendBtn = root.querySelector('#omibot-send');
     const suggestionsEl = root.querySelector('#omibot-suggestions');
@@ -1096,6 +1108,7 @@
       } catch (e) {
         root.scrollIntoView(true);
       }
+      updateJumpLatestVisibility();
     }
 
     function showChatView() {
@@ -1105,6 +1118,7 @@
       if (layoutEl) layoutEl.classList.remove('is-prefs-mode');
       syncPrefsFormFromState();
       setPrefsError('');
+      updateJumpLatestVisibility();
     }
 
     async function fetchPreferences(token) {
@@ -1898,10 +1912,49 @@
       return viewportBottom >= pageBottom - threshold;
     }
 
+    function updateJumpLatestVisibility() {
+      if (!jumpLatestBtn) return;
+      if (chatViewEl && chatViewEl.hidden) {
+        jumpLatestBtn.hidden = true;
+        return;
+      }
+      if (!log || !log.lastElementChild) {
+        jumpLatestBtn.hidden = true;
+        return;
+      }
+      jumpLatestBtn.hidden = isNearPageBottom(160);
+    }
+
+    function scrollChatToBottom(options) {
+      const force = Boolean(options && options.force);
+      const target = (log && log.lastElementChild) || composeEl || null;
+      if (!target) {
+        updateJumpLatestVisibility();
+        return;
+      }
+      if (force || isNearPageBottom()) {
+        try {
+          target.scrollIntoView({ block: 'end' });
+        } catch (e) {
+          try {
+            target.scrollIntoView(false);
+          } catch (e2) {}
+        }
+      }
+      requestAnimationFrame(updateJumpLatestVisibility);
+    }
+
     function scrollIntoViewIfNearBottom(el) {
       if (el && isNearPageBottom()) {
-        el.scrollIntoView({ block: 'end' });
+        try {
+          el.scrollIntoView({ block: 'end' });
+        } catch (e) {
+          try {
+            el.scrollIntoView(false);
+          } catch (e2) {}
+        }
       }
+      updateJumpLatestVisibility();
     }
 
     function removeThinking() {
@@ -2147,8 +2200,13 @@
             Boolean(m.sources && m.sources.length)
           );
         }
+        // Force jump only when a conversation is first opened/selected.
+        requestAnimationFrame(function () {
+          scrollChatToBottom({ force: true });
+        });
       } else {
         restoreWelcome();
+        updateJumpLatestVisibility();
       }
       renderThreadList(threadId);
       updateActiveToolbar(threadId);
@@ -2164,6 +2222,7 @@
       threadToolbar.hidden = true;
       renderThreadList(null);
       syncDailyLimitUi();
+      updateJumpLatestVisibility();
     }
 
     async function createNewThread() {
@@ -2398,6 +2457,15 @@
         send();
       });
     }
+
+    if (jumpLatestBtn) {
+      jumpLatestBtn.addEventListener('click', function () {
+        scrollChatToBottom({ force: true });
+      });
+    }
+    window.addEventListener('scroll', updateJumpLatestVisibility, { passive: true });
+    window.addEventListener('resize', updateJumpLatestVisibility);
+    updateJumpLatestVisibility();
   }
 
   if (document.readyState === 'loading') {
