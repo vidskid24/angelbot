@@ -1,6 +1,6 @@
 /**
  * Minimal embeddable chat for a Thinkific (or any) site page.
- * OMIBOT_WIDGET_VERSION=95
+ * OMIBOT_WIDGET_VERSION=96
  *
  * Hosted by the API at GET /omi-chat-widget.js when deployed.
  * Legacy URL /angel-chat-widget.js serves the same file.
@@ -14,7 +14,7 @@
   }
 
   const API_BASE = API.replace(/\/$/, '');
-  const WIDGET_VERSION = '95';
+  const WIDGET_VERSION = '96';
 
   /** Flex column layout — gap between blocks survives themes that zero child margin/padding. */
   function applyMessageBodyLayout(body) {
@@ -627,7 +627,7 @@
 
     root.innerHTML =
       '<style>' +
-      '.omibot-shell{font-family:system-ui,-apple-system,sans-serif;max-width:920px;width:100%;margin:0 auto;padding:0 16px;box-sizing:border-box;color:#1a1a1a}' +
+      '.omibot-shell{font-family:system-ui,-apple-system,sans-serif;max-width:1100px;width:100%;margin:0 auto;padding:0 16px;box-sizing:border-box;color:#1a1a1a}' +
       '.omibot-shell .omibot-bold{font-weight:700!important}' +
       '.omibot-shell .omibot-heading-wrap{display:block!important;margin:0!important;padding:0!important;box-sizing:border-box!important}' +
       '.omibot-shell .omibot-heading{display:block!important;margin:0!important;padding:0!important;font-family:inherit!important;font-size:130%!important;font-weight:400!important;font-style:normal!important;line-height:1.45!important;letter-spacing:normal!important;color:#1a1a1a!important}' +
