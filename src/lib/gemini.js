@@ -42,7 +42,7 @@ export function getGeminiClient() {
 
 /** Effective Gemini chat model (env or default). */
 export function getGeminiChatModel() {
-  return process.env.GEMINI_CHAT_MODEL || 'gemini-3.5-flash';
+  return process.env.GEMINI_CHAT_MODEL || 'gemini-3.6-flash';
 }
 
 /** Effective Gemini fallback chat model for transient overloads. */
