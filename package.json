@@ -17,7 +17,7 @@
     "db:migrate": "node -e \"import('dotenv/config'); import('./src/db/migrate.js').then(m => m.runMigrations()).then(() => console.log('Done')).catch(e => { console.error(e); process.exit(1); })\""
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22.23.4 <23"
   },
   "keywords": [
     "web",

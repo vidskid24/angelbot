@@ -4,7 +4,7 @@ Omi Bot runs as a web API for an embedded chat experience on Thinkific site page
 
 ## Requirements
 
-- Node.js 18+
+- Node.js 22.23.4+ (pinned via `.node-version` for Render)
 - Google AI (Gemini) API key
 - Render PostgreSQL (`DATABASE_URL`) for saved threads and durable chat history
 - A Thinkific page with `<div id="omibot-chat-root"></div>` (legacy id `angelbot-chat-root` still works)
