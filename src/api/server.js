@@ -47,7 +47,11 @@ export function startWebServer() {
   );
 
   app.get('/healthz', async (_req, res) => {
-    const payload = { ok: true, database: isDbEnabled() ? 'configured' : 'disabled' };
+    const payload = {
+      ok: true,
+      node: process.version,
+      database: isDbEnabled() ? 'configured' : 'disabled',
+    };
     if (isDbEnabled()) {
       try {
         payload.databaseOk = await pingDb();
@@ -93,7 +97,7 @@ export function startWebServer() {
 
   const port = parseInt(process.env.PORT || '3000', 10) || 3000;
   app.listen(port, () => {
-    console.log(`Omi Bot web API listening on :${port}`);
+    console.log(`Omi Bot web API listening on :${port} (Node ${process.version})`);
     console.log('Bootstrap token route: POST /auth/bootstrap');
     console.log('Embed widget: GET /omi-chat-widget.js (legacy: /angel-chat-widget.js)');
   });
